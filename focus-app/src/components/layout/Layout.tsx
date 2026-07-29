@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useRef,
   useState,
   type TouchEvent,
@@ -7,9 +6,6 @@ import {
 import {
   Outlet,
 } from 'react-router-dom'
-import {
-  Menu,
-} from 'lucide-react'
 
 import {
   SidebarDesktop,
@@ -17,6 +13,9 @@ import {
 import {
   SidebarMobile,
 } from './SidebarMobile'
+import {
+  MobileTopBar,
+} from './MobileTopBar'
 
 const EDGE_WIDTH = 30
 const SWIPE_DISTANCE = 60
@@ -27,35 +26,6 @@ export function Layout() {
     mobileOpen,
     setMobileOpen,
   ] = useState(false)
-
-  const [
-    isScrolled,
-    setIsScrolled,
-  ] = useState(false)
-
-  useEffect(() => {
-    function handleScroll() {
-      setIsScrolled(
-        window.scrollY > 20,
-      )
-    }
-
-    handleScroll()
-
-    window.addEventListener(
-      'scroll',
-      handleScroll,
-      {
-        passive: true,
-      },
-    )
-
-    return () =>
-      window.removeEventListener(
-        'scroll',
-        handleScroll,
-      )
-  }, [])
 
   const touchStartXRef =
     useRef<number | null>(null)
@@ -176,53 +146,6 @@ export function Layout() {
         }
       />
 
-      <button
-        type="button"
-        onClick={() =>
-          setMobileOpen(true)
-        }
-        aria-label="Open navigation"
-        className={`
-          lg:hidden
-          fixed
-          z-30
-          rounded-2xl
-          bg-[#161616]/95
-          backdrop-blur-md
-          border
-          border-white/[0.08]
-          shadow-xl
-          text-white/70
-          hover:text-white
-          active:scale-95
-          transition-all
-          duration-300
-          ${
-            isScrolled
-              ? `
-                top-4
-                left-4
-                p-2
-                scale-90
-              `
-              : `
-                top-8
-                left-5
-                p-3
-                scale-100
-              `
-          }
-        `}
-      >
-        <Menu
-          size={
-            isScrolled
-              ? 18
-              : 20
-          }
-        />
-      </button>
-
       <main
         className="
           flex-1
@@ -230,6 +153,12 @@ export function Layout() {
           overflow-x-hidden
         "
       >
+        <MobileTopBar
+          onOpenMenu={() =>
+            setMobileOpen(true)
+          }
+        />
+
         <div
           className="
             w-full
