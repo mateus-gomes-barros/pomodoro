@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   Calendar,
+  Check,
   Flame,
   LoaderCircle,
+  Lock,
   Trophy,
   Zap,
 } from 'lucide-react'
@@ -20,6 +22,12 @@ import { useAnalytics } from '@/hooks/analytics/useAnalytics'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { StatCard } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
+import {
+  getNextStreakBadge,
+  getStreakBadge,
+  getStreakBadgeProgress,
+  STREAK_BADGES,
+} from '@/lib/streakBadges'
 import { cn, formatDuration } from '@/utils'
 
 import type {
@@ -39,19 +47,19 @@ const ACHIEVEMENTS = [
     id: 'week_streak',
     icon: '🔥',
     title: 'On Fire',
-    desc: '7-day streak',
+    desc: 'Reach a 7-day streak',
   },
   {
     id: 'month_streak',
     icon: '🏆',
     title: 'Iron Will',
-    desc: '30-day streak',
+    desc: 'Reach a 30-day streak',
   },
   {
     id: 'ten_hours',
     icon: '⚡',
     title: 'Power User',
-    desc: '600+ focus minutes',
+    desc: 'Complete 600 focus minutes',
   },
 ]
 
@@ -106,6 +114,7 @@ function buildStreak(
   )
 
   const today = new Date()
+
   const todayString = format(
     today,
     'yyyy-MM-dd',
@@ -122,7 +131,9 @@ function buildStreak(
     todayString,
   )
     ? today
-    : activeDateSet.has(yesterdayString)
+    : activeDateSet.has(
+          yesterdayString,
+        )
       ? subDays(today, 1)
       : null
 
@@ -132,12 +143,18 @@ function buildStreak(
       'yyyy-MM-dd',
     )
 
-    if (!activeDateSet.has(dateString)) {
+    if (
+      !activeDateSet.has(dateString)
+    ) {
       break
     }
 
     currentStreak += 1
-    currentDate = subDays(currentDate, 1)
+
+    currentDate = subDays(
+      currentDate,
+      1,
+    )
   }
 
   let longestStreak = 1
@@ -163,10 +180,13 @@ function buildStreak(
     )
 
     if (
-      format(previousDate, 'yyyy-MM-dd') ===
-      expectedDate
+      format(
+        previousDate,
+        'yyyy-MM-dd',
+      ) === expectedDate
     ) {
       runningStreak += 1
+
       longestStreak = Math.max(
         longestStreak,
         runningStreak,
@@ -212,7 +232,9 @@ export function StreaksPage() {
         (session) =>
           session.type === 'work',
       )
-      .map((session) => session.date)
+      .map(
+        (session) => session.date,
+      )
 
     return buildStreak(activeDates)
   }, [sessions])
@@ -224,6 +246,37 @@ export function StreaksPage() {
     subMonths(today, 1),
     today,
   ]
+
+  const currentBadge =
+    getStreakBadge(
+      streak.currentStreak,
+    )
+
+  const nextBadge =
+    getNextStreakBadge(
+      streak.currentStreak,
+    )
+
+  const badgeProgress =
+    getStreakBadgeProgress(
+      streak.currentStreak,
+    )
+
+  const progressPercentage =
+    Math.round(
+      badgeProgress * 100,
+    )
+
+  const daysUntilNextBadge =
+    nextBadge
+      ? nextBadge.minimumDays -
+        streak.currentStreak
+      : 0
+
+  const streakLabel =
+    streak.currentStreak === 1
+      ? 'day'
+      : 'days'
 
   const isLoading =
     isAnalyticsLoading ||
@@ -281,8 +334,6 @@ export function StreaksPage() {
         subtitle="Keep your momentum going"
       />
 
-      {/* Top cards */}
-
       <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Current"
@@ -318,41 +369,550 @@ export function StreaksPage() {
         />
       </div>
 
-      {/* Main streak */}
-
-      <motion.div
+      <motion.section
         initial={{
           opacity: 0,
-          y: 10,
+          y: 12,
         }}
         animate={{
           opacity: 1,
           y: 0,
         }}
-        className="card mb-6 flex flex-col items-center p-6"
+        transition={{
+          duration: 0.4,
+          ease: 'easeOut',
+        }}
+        className="
+          card
+          relative
+          mb-6
+          overflow-hidden
+          p-6
+          sm:p-8
+        "
       >
-        <div className="mb-4 text-6xl">
-          {streak.currentStreak >= 30
-            ? '🏆'
-            : streak.currentStreak >= 7
-              ? '🔥'
-              : streak.currentStreak >= 3
-                ? '✨'
-                : '💧'}
+        <div
+          className="
+            pointer-events-none
+            absolute
+            left-1/2
+            top-0
+            h-48
+            w-48
+            -translate-x-1/2
+            -translate-y-1/2
+            rounded-full
+            bg-white/[0.04]
+            blur-3xl
+          "
+          aria-hidden="true"
+        />
+
+        <div
+          className="
+            relative
+            flex
+            flex-col
+            items-center
+            text-center
+          "
+        >
+          <motion.div
+            key={currentBadge.name}
+            initial={{
+              opacity: 0,
+              scale: 0.78,
+              rotate: -6,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              rotate: 0,
+            }}
+            transition={{
+              duration: 0.4,
+              ease: 'easeOut',
+            }}
+            className="
+              flex
+              h-24
+              w-24
+              items-center
+              justify-center
+              rounded-[2rem]
+              border
+              border-white/[0.08]
+              bg-white/[0.045]
+              text-6xl
+              shadow-[0_20px_60px_rgba(0,0,0,0.28)]
+            "
+            aria-hidden="true"
+          >
+            {currentBadge.icon}
+          </motion.div>
+
+          <p
+            className="
+              mt-6
+              text-xs
+              font-semibold
+              uppercase
+              tracking-[0.2em]
+              text-white/30
+            "
+          >
+            Current badge
+          </p>
+
+          <h2
+            className="
+              mt-2
+              text-2xl
+              font-bold
+              tracking-[-0.03em]
+              text-accent-white
+              sm:text-3xl
+            "
+          >
+            {currentBadge.name}
+          </h2>
+
+          <p
+            className="
+              mt-2
+              max-w-md
+              text-sm
+              leading-6
+              text-accent-subtle
+            "
+          >
+            {currentBadge.description}
+          </p>
+
+          <div className="mt-6 flex items-end gap-2">
+            <span
+              className="
+                text-5xl
+                font-bold
+                tracking-[-0.05em]
+                text-accent-white
+              "
+            >
+              {streak.currentStreak}
+            </span>
+
+            <span
+              className="
+                pb-1
+                text-sm
+                font-medium
+                text-accent-subtle
+              "
+            >
+              {streakLabel} streak
+            </span>
+          </div>
+
+          {nextBadge ? (
+            <div
+              className="
+                mt-8
+                w-full
+                max-w-xl
+                rounded-2xl
+                border
+                border-white/[0.06]
+                bg-white/[0.025]
+                p-4
+                text-left
+              "
+            >
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-between
+                  gap-4
+                "
+              >
+                <div
+                  className="
+                    flex
+                    min-w-0
+                    items-center
+                    gap-3
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      h-11
+                      w-11
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-2xl
+                      bg-white/[0.05]
+                      text-2xl
+                    "
+                    aria-hidden="true"
+                  >
+                    {nextBadge.icon}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-white/35">
+                      Next badge
+                    </p>
+
+                    <p
+                      className="
+                        truncate
+                        text-sm
+                        font-semibold
+                        text-accent-white
+                      "
+                    >
+                      {nextBadge.name}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-semibold text-accent-white">
+                    {daysUntilNextBadge}
+                  </p>
+
+                  <p className="text-xs text-accent-subtle">
+                    {daysUntilNextBadge === 1
+                      ? 'day left'
+                      : 'days left'}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="
+                  mt-4
+                  h-2
+                  overflow-hidden
+                  rounded-full
+                  bg-white/[0.06]
+                "
+              >
+                <motion.div
+                  initial={{
+                    width: 0,
+                  }}
+                  animate={{
+                    width: `${progressPercentage}%`,
+                  }}
+                  transition={{
+                    duration: 0.7,
+                    delay: 0.2,
+                    ease: 'easeOut',
+                  }}
+                  className="
+                    h-full
+                    rounded-full
+                    bg-accent-green
+                  "
+                />
+              </div>
+
+              <div
+                className="
+                  mt-2
+                  flex
+                  items-center
+                  justify-between
+                  text-[11px]
+                  text-white/30
+                "
+              >
+                <span>
+                  {currentBadge.minimumDays}{' '}
+                  days
+                </span>
+
+                <span>
+                  {progressPercentage}%
+                </span>
+
+                <span>
+                  {nextBadge.minimumDays}{' '}
+                  days
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="
+                mt-8
+                rounded-2xl
+                border
+                border-accent-green/20
+                bg-accent-green/10
+                px-5
+                py-4
+                text-sm
+                font-medium
+                text-accent-green
+              "
+            >
+              You reached the highest streak level.
+            </div>
+          )}
+        </div>
+      </motion.section>
+
+      <motion.section
+        initial={{
+          opacity: 0,
+          y: 12,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.08,
+          duration: 0.4,
+          ease: 'easeOut',
+        }}
+        className="card mb-6 p-6"
+      >
+        <div className="mb-6">
+          <h3 className="font-semibold text-accent-white">
+            Badge Journey
+          </h3>
+
+          <p className="mt-1 text-sm text-accent-subtle">
+            Build your streak and unlock every
+            level.
+          </p>
         </div>
 
-        <h2 className="text-5xl font-bold text-accent-white">
-          {streak.currentStreak}
-        </h2>
+        <div className="space-y-3">
+          {STREAK_BADGES.map(
+            (badge, index) => {
+              const unlocked =
+                streak.currentStreak >=
+                badge.minimumDays
 
-        <p className="mt-2 text-accent-subtle">
-          day streak
-        </p>
-      </motion.div>
+              const isCurrent =
+                badge.minimumDays ===
+                currentBadge.minimumDays
 
-      {/* Heatmap */}
+              const daysRemaining =
+                Math.max(
+                  badge.minimumDays -
+                    streak.currentStreak,
+                  0,
+                )
 
-      <motion.div
+              return (
+                <motion.div
+                  key={badge.minimumDays}
+                  initial={{
+                    opacity: 0,
+                    x: 8,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    x: 0,
+                  }}
+                  transition={{
+                    delay:
+                      0.12 +
+                      index * 0.025,
+                    duration: 0.3,
+                    ease: 'easeOut',
+                  }}
+                  className={cn(
+                    `
+                      relative
+                      flex
+                      items-center
+                      gap-4
+                      rounded-2xl
+                      border
+                      p-4
+                      transition
+                    `,
+                    isCurrent
+                      ? `
+                          border-accent-green/35
+                          bg-accent-green/[0.08]
+                        `
+                      : unlocked
+                        ? `
+                            border-white/[0.07]
+                            bg-white/[0.025]
+                          `
+                        : `
+                            border-white/[0.05]
+                            bg-white/[0.015]
+                          `,
+                  )}
+                >
+                  <div
+                    className={cn(
+                      `
+                        flex
+                        h-12
+                        w-12
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-2xl
+                        border
+                        text-2xl
+                      `,
+                      unlocked
+                        ? `
+                            border-white/[0.08]
+                            bg-white/[0.05]
+                          `
+                        : `
+                            border-white/[0.05]
+                            bg-white/[0.02]
+                            grayscale
+                            opacity-40
+                          `,
+                    )}
+                    aria-hidden="true"
+                  >
+                    {badge.icon}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="
+                        flex
+                        flex-wrap
+                        items-center
+                        gap-2
+                      "
+                    >
+                      <p
+                        className={cn(
+                          `
+                            truncate
+                            text-sm
+                            font-semibold
+                          `,
+                          unlocked
+                            ? 'text-accent-white'
+                            : 'text-white/45',
+                        )}
+                      >
+                        {badge.name}
+                      </p>
+
+                      {isCurrent && (
+                        <span
+                          className="
+                            rounded-full
+                            border
+                            border-accent-green/20
+                            bg-accent-green/10
+                            px-2
+                            py-0.5
+                            text-[10px]
+                            font-semibold
+                            uppercase
+                            tracking-[0.12em]
+                            text-accent-green
+                          "
+                        >
+                          Current
+                        </span>
+                      )}
+                    </div>
+
+                    <p
+                      className={cn(
+                        `
+                          mt-1
+                          text-xs
+                          leading-5
+                        `,
+                        unlocked
+                          ? 'text-accent-subtle'
+                          : 'text-white/25',
+                      )}
+                    >
+                      {badge.description}
+                    </p>
+                  </div>
+
+                  <div
+                    className="
+                      flex
+                      shrink-0
+                      flex-col
+                      items-end
+                      gap-1
+                      text-right
+                    "
+                  >
+                    <div
+                      className={cn(
+                        `
+                          flex
+                          h-7
+                          w-7
+                          items-center
+                          justify-center
+                          rounded-full
+                        `,
+                        unlocked
+                          ? `
+                              bg-accent-green/10
+                              text-accent-green
+                            `
+                          : `
+                              bg-white/[0.04]
+                              text-white/25
+                            `,
+                      )}
+                    >
+                      {unlocked ? (
+                        <Check size={14} />
+                      ) : (
+                        <Lock size={13} />
+                      )}
+                    </div>
+
+                    <p
+                      className={cn(
+                        `
+                          text-[11px]
+                          font-medium
+                        `,
+                        unlocked
+                          ? 'text-white/35'
+                          : 'text-white/25',
+                      )}
+                    >
+                      {unlocked
+                        ? `${badge.minimumDays} days`
+                        : `${daysRemaining} ${
+                            daysRemaining === 1
+                              ? 'day'
+                              : 'days'
+                          } left`}
+                    </p>
+                  </div>
+                </motion.div>
+              )
+            },
+          )}
+        </div>
+      </motion.section>
+
+      <motion.section
         initial={{
           opacity: 0,
           y: 10,
@@ -379,11 +939,9 @@ export function StreaksPage() {
             />
           ))}
         </div>
-      </motion.div>
+      </motion.section>
 
-      {/* Achievements */}
-
-      <div className="card p-6">
+      <section className="card p-6">
         <h3 className="mb-4 font-semibold text-accent-white">
           Achievements
         </h3>
@@ -433,7 +991,7 @@ export function StreaksPage() {
             },
           )}
         </div>
-      </div>
+      </section>
     </div>
   )
 }
@@ -448,20 +1006,28 @@ function MonthGrid({
     DailyStats
   >
 }) {
-  const start = startOfMonth(month)
-  const end = endOfMonth(month)
+  const start =
+    startOfMonth(month)
 
-  const days = eachDayOfInterval({
-    start,
-    end,
-  })
+  const end =
+    endOfMonth(month)
 
-  const startDay = start.getDay()
+  const days =
+    eachDayOfInterval({
+      start,
+      end,
+    })
+
+  const startDay =
+    start.getDay()
 
   return (
     <div>
       <p className="mb-2 text-xs text-accent-subtle">
-        {format(month, 'MMMM yyyy')}
+        {format(
+          month,
+          'MMMM yyyy',
+        )}
       </p>
 
       <div className="grid grid-cols-7 gap-1">
@@ -491,19 +1057,21 @@ function MonthGrid({
         ))}
 
         {days.map((day) => {
-          const dateString = format(
-            day,
-            'yyyy-MM-dd',
-          )
+          const dateString =
+            format(
+              day,
+              'yyyy-MM-dd',
+            )
 
           const minutes =
             dailyStats[dateString]
               ?.focusMinutes ?? 0
 
-          const intensity = Math.min(
-            minutes / 120,
-            1,
-          )
+          const intensity =
+            Math.min(
+              minutes / 120,
+              1,
+            )
 
           return (
             <div
