@@ -9,7 +9,7 @@ import {
   Settings,
 } from 'lucide-react'
 
-import { cn } from '@/utils'
+import { cn } from '../../utils'
 
 const navItems = [
   {
@@ -47,133 +47,87 @@ const navItems = [
 export function SidebarDesktop() {
   return (
     <aside
-      className="
-        hidden
-        lg:flex
-        lg:flex-col
-        w-72
-        h-screen
-        sticky
-        top-0
-        bg-[#111111]
-        border-r
-        border-white/10
-        flex-shrink-0
-      "
+      className={cn(
+        'hidden lg:flex flex-col',
+        'w-64 flex-shrink-0',
+        'h-screen sticky top-0',
+        'bg-[#111111] border-r border-white/[0.07]',
+      )}
     >
-      <div
-        className="
-          h-16
-          flex
-          items-center
-          px-5
-          border-b
-          border-white/10
-        "
-      >
-        <div
-          className="
-            w-8
-            h-8
-            rounded-xl
-            bg-gradient-to-br
-            from-emerald-400
-            to-emerald-600
-            flex
-            items-center
-            justify-center
-          "
-        >
+      {/* Logo */}
+
+      <div className="h-14 flex items-center px-5 border-b border-white/[0.07] flex-shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0">
           <Timer
-            size={16}
+            size={14}
             className="text-black"
           />
         </div>
 
-        <span className="ml-3 font-semibold text-white">
+        <span className="ml-3 font-semibold text-white text-sm tracking-tight">
           Focus
         </span>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      {/* Navigation */}
 
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {navItems.map(
           ({
             icon: Icon,
             label,
             path,
           }) => (
-
             <NavLink
               key={path}
               to={path}
               end={path === '/'}
               className={({ isActive }) =>
                 cn(
-                  `
-                  flex
-                  items-center
-                  gap-3
-                  px-3
-                  py-2.5
-                  rounded-xl
-                  text-sm
-                  font-medium
-                  transition-colors
-                  `,
+                  'flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
                   isActive
                     ? 'bg-white/10 text-white'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                    : 'text-white/50 hover:text-white/80 hover:bg-white/5',
                 )
               }
             >
-              <Icon size={18}/>
+              <Icon
+                size={16}
+                className="flex-shrink-0"
+              />
 
-              <span>
+              <span className="truncate">
                 {label}
               </span>
-
             </NavLink>
-
-          )
+          ),
         )}
-
       </nav>
 
-      <div className="p-3 border-t border-white/10">
+      {/* Footer */}
 
+      <div className="px-3 pb-4 border-t border-white/[0.07] pt-3 flex-shrink-0">
         <NavLink
           to="/settings"
           className={({ isActive }) =>
             cn(
-              `
-              flex
-              items-center
-              gap-3
-              px-3
-              py-2.5
-              rounded-xl
-              text-sm
-              font-medium
-              transition-colors
-              `,
+              'flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
               isActive
                 ? 'bg-white/10 text-white'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                : 'text-white/50 hover:text-white/80 hover:bg-white/5',
             )
           }
         >
+          <Settings
+            size={16}
+            className="flex-shrink-0"
+          />
 
-          <Settings size={18}/>
-
-          <span>
+          <span className="truncate">
             Settings
           </span>
-
         </NavLink>
-
       </div>
-
     </aside>
   )
 }

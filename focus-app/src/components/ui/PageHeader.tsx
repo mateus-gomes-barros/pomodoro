@@ -12,14 +12,39 @@ export function PageHeader({
   action,
 }: PageHeaderProps) {
   return (
-    <div className="flex items-start justify-between mb-8">
-      <div>
-        <h1 className="text-2xl font-bold text-accent-white tracking-tight">
+    <div
+      className="
+        flex
+        flex-col
+        gap-5
+        md:flex-row
+        md:items-start
+        md:justify-between
+        mb-8
+      "
+    >
+      <div className="min-w-0">
+        <h1
+          className="
+            text-3xl
+            font-bold
+            tracking-tight
+            text-white
+          "
+        >
           {title}
         </h1>
 
         {subtitle && (
-          <p className="text-sm text-accent-subtle mt-1">
+          <p
+            className="
+              mt-2
+              max-w-2xl
+              text-sm
+              leading-relaxed
+              text-white/50
+            "
+          >
             {subtitle}
           </p>
         )}

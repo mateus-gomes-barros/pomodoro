@@ -1,5 +1,20 @@
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
+import { cn } from '@/utils'
+
+// ─────────────────────────────────────────────────────────────
+// Design Tokens
+// ─────────────────────────────────────────────────────────────
+
+const CARD_BASE =
+  'bg-[#161616] rounded-2xl border border-white/[0.07] shadow-[0_1px_3px_rgba(0,0,0,0.4),0_6px_20px_rgba(0,0,0,0.25)]'
+
+const CARD_HOVER =
+  'hover:border-white/[0.12] hover:shadow-[0_4px_12px_rgba(0,0,0,0.5),0_12px_32px_rgba(0,0,0,0.3)] transition-all duration-300'
+
+// ─────────────────────────────────────────────────────────────
+// Card
+// ─────────────────────────────────────────────────────────────
 
 interface CardProps {
   children: ReactNode
@@ -11,22 +26,20 @@ interface CardProps {
 
 export function Card({
   children,
-  className = '',
+  className,
   hover = false,
   onClick,
   animate = true,
 }: CardProps) {
-
-  const Comp = animate ? motion.div : 'div'
-
   return (
-    <Comp
-      initial={animate ? { opacity: 0, y: 8 } : undefined}
+    <motion.div
+      initial={animate ? { opacity: 0, y: 6 } : undefined}
       animate={animate ? { opacity: 1, y: 0 } : undefined}
       transition={
         animate
           ? {
-              duration: 0.3,
+              duration: 0.28,
+              ease: [0.16, 1, 0.3, 1],
             }
           : undefined
       }
@@ -34,24 +47,28 @@ export function Card({
         hover
           ? {
               y: -2,
+              transition: {
+                duration: 0.18,
+              },
             }
           : undefined
       }
       onClick={onClick}
-      className={`
-        bg-[#161616]
-        border
-        border-[#2A2A2A]
-        rounded-3xl
-        shadow-lg
-        ${hover ? 'cursor-pointer hover:bg-[#1E1E1E]' : ''}
-        ${className}
-      `}
+      className={cn(
+        CARD_BASE,
+        hover && CARD_HOVER,
+        hover && 'cursor-pointer',
+        className,
+      )}
     >
       {children}
-    </Comp>
+    </motion.div>
   )
 }
+
+// ─────────────────────────────────────────────────────────────
+// Stat Card
+// ─────────────────────────────────────────────────────────────
 
 interface StatCardProps {
   label: string
@@ -70,85 +87,59 @@ export function StatCard({
   accent = false,
   delay = 0,
 }: StatCardProps) {
-
   return (
     <motion.div
-      initial={{
-        opacity: 0,
-        y: 12,
-      }}
-      animate={{
-        opacity: 1,
-        y: 0,
-      }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{
         delay,
-        duration: .35,
+        duration: 0.3,
+        ease: [0.16, 1, 0.3, 1],
       }}
-      className="
-      bg-[#161616]
-      border
-      border-[#2A2A2A]
-      rounded-3xl
-      p-5
-      flex
-      flex-col
-      gap-3
-      "
+      className={cn(
+        CARD_BASE,
+        'p-6 flex flex-col justify-between min-h-[124px]',
+      )}
     >
+      {/* Header */}
 
-      <div className="flex items-center justify-between">
-
-        <span className="text-xs uppercase tracking-widest text-gray-500">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
           {label}
         </span>
 
         {icon && (
           <div
-            className={`
-            w-8
-            h-8
-            rounded-xl
-            flex
-            items-center
-            justify-center
-            ${
+            className={cn(
+              'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
               accent
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-[#1E1E1E] text-gray-400'
-            }
-            `}
+                ? 'bg-emerald-500/15 text-emerald-400'
+                : 'bg-white/5 text-white/40',
+            )}
           >
             {icon}
           </div>
         )}
-
       </div>
 
-      <div>
+      {/* Body */}
 
+      <div className="mt-4">
         <div
-          className={`
-          text-3xl
-          font-bold
-          ${
-            accent
-              ? 'text-green-400'
-              : 'text-white'
-          }
-          `}
+          className={cn(
+            'text-[30px] font-bold tracking-tight leading-none',
+            accent ? 'text-emerald-400' : 'text-white',
+          )}
         >
           {value}
         </div>
 
         {sub && (
-          <div className="text-xs text-gray-500 mt-1">
+          <p className="mt-2 text-[12px] leading-relaxed text-white/35">
             {sub}
-          </div>
+          </p>
         )}
-
       </div>
-
     </motion.div>
   )
 }

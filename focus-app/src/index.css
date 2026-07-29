@@ -1,89 +1,210 @@
 @import "tailwindcss";
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ─────────────────────────────────────────────────────────────
+   Base
+───────────────────────────────────────────────────────────── */
 
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100vh;
+    background: #0a0a0a;
+    color: #f5f5f5;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgba(52, 211, 153, 0.2);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2b2b2b;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3d3d3d;
+  }
 }
 
-html {
-  background-color: #0A0A0A;
-  color: #F5F5F5;
-}
+/* ─────────────────────────────────────────────────────────────
+   Components
+───────────────────────────────────────────────────────────── */
 
-body {
-  min-height: 100dvh;
-  background-color: #0A0A0A;
-  overflow-x: hidden;
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "SF Pro Display",
-    Inter,
-    system-ui,
-    sans-serif;
-}
+@layer components {
 
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
+  .card {
+    @apply bg-[#161616] rounded-2xl border border-white/[0.07];
+    box-shadow:
+      0 1px 3px rgba(0,0,0,.4),
+      0 8px 24px rgba(0,0,0,.28);
+  }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+  .surface {
+    @apply bg-[#1c1c1c] rounded-xl border border-white/[0.06];
+  }
 
-::-webkit-scrollbar-thumb {
-  background: #2A2A2A;
-  border-radius: 999px;
-}
+  .card-p {
+    @apply p-6;
+  }
 
-::selection {
-  background: rgba(126, 224, 129, 0.25);
-}
+  .card-p-lg {
+    @apply p-7;
+  }
 
-/* Components reutilizáveis */
+  .chart-wrap {
+    @apply w-full h-72 lg:h-80;
+    min-width: 0;
+  }
 
-.card {
-  background: #161616;
-  border: 1px solid #2A2A2A;
-  border-radius: 24px;
-  padding: 20px;
-}
+  .input {
+    @apply
+      w-full
+      rounded-xl
+      border
+      border-white/[0.08]
+      bg-[#1c1c1c]
+      px-4
+      py-3
+      text-sm
+      text-white
+      placeholder:text-white/25
+      outline-none
+      transition-all
+      duration-200
+      focus:border-white/20
+      focus:ring-1
+      focus:ring-white/10;
+  }
 
-.surface {
-  background: #1E1E1E;
-  border: 1px solid #2A2A2A;
-  border-radius: 16px;
-}
+  .btn-primary {
+    @apply
+      inline-flex
+      items-center
+      gap-2
+      rounded-xl
+      bg-white
+      px-4
+      py-2.5
+      text-sm
+      font-semibold
+      text-[#0a0a0a]
+      transition-all
+      duration-200
+      hover:bg-white/90
+      active:scale-95;
+  }
 
-.btn-primary {
-  background: #F5F5F5;
-  color: #0A0A0A;
-  border: none;
-  border-radius: 16px;
-  padding: 10px 20px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: .2s;
-}
+  .btn-ghost {
+    @apply
+      inline-flex
+      items-center
+      gap-2
+      rounded-xl
+      border
+      border-white/[0.1]
+      bg-transparent
+      px-4
+      py-2.5
+      text-sm
+      font-medium
+      text-white/60
+      transition-all
+      duration-200
+      hover:bg-white/5
+      hover:text-white
+      active:scale-95;
+  }
 
-.btn-primary:hover {
-  opacity: .85;
-}
+  .btn-danger {
+    @apply
+      inline-flex
+      items-center
+      gap-2
+      rounded-xl
+      border
+      border-red-500/20
+      bg-red-500/10
+      px-4
+      py-2.5
+      text-sm
+      font-medium
+      text-red-400
+      transition-all
+      duration-200
+      hover:bg-red-500/20
+      active:scale-95;
+  }
 
-.input {
-  width: 100%;
-  background: #1E1E1E;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
-  padding: 12px;
-  color: white;
-}
+  .segment {
+    @apply
+      flex
+      gap-1
+      rounded-xl
+      border
+      border-white/[0.07]
+      bg-[#161616]
+      p-1;
+  }
 
-.input::placeholder {
-  color: #6A6A6A;
+  .segment-item {
+    @apply
+      rounded-lg
+      px-3
+      py-2
+      text-xs
+      font-medium
+      transition-colors;
+  }
+
+  .segment-item.active {
+    @apply bg-white/10 text-white;
+  }
+
+  .segment-item.inactive {
+    @apply text-white/40 hover:text-white/70;
+  }
+
+  .badge-green {
+    @apply
+      rounded-full
+      border
+      border-emerald-500/20
+      bg-emerald-500/10
+      px-2
+      py-0.5
+      text-[11px]
+      font-medium
+      text-emerald-400;
+  }
+
+  .label-section {
+    @apply
+      text-[10px]
+      font-semibold
+      uppercase
+      tracking-widest
+      text-white/35;
+  }
 }
