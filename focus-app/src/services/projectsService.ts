@@ -23,10 +23,13 @@ export interface CreateProjectInput {
 }
 
 export interface UpdateProjectInput {
-  name: string
-  description: string
-  color: string
-  emoji: string
+  name?: string
+  description?: string
+  color?: string
+  emoji?: string
+  totalSessions?: number
+  completedSessions?: number
+  totalFocusMinutes?: number
 }
 
 const PROJECT_SELECT = `
@@ -42,7 +45,9 @@ const PROJECT_SELECT = `
   updated_at
 `
 
-function mapProjectRow(row: ProjectRow): Project {
+function mapProjectRow(
+  row: ProjectRow,
+): Project {
   return {
     id: row.id,
     name: row.name,
@@ -50,14 +55,18 @@ function mapProjectRow(row: ProjectRow): Project {
     color: row.color ?? '#10b981',
     emoji: row.emoji,
     totalSessions: row.total_sessions,
-    completedSessions: row.completed_sessions,
-    totalFocusMinutes: row.total_focus_minutes,
+    completedSessions:
+      row.completed_sessions,
+    totalFocusMinutes:
+      row.total_focus_minutes,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
 }
 
-export async function getProjects(): Promise<Project[]> {
+export async function getProjects(): Promise<
+  Project[]
+> {
   const { data, error } = await supabase
     .from('projects')
     .select(PROJECT_SELECT)
@@ -69,7 +78,9 @@ export async function getProjects(): Promise<Project[]> {
     throw error
   }
 
-  return (data as ProjectRow[]).map(mapProjectRow)
+  return (data as ProjectRow[]).map(
+    mapProjectRow,
+  )
 }
 
 export async function createProject(
@@ -95,7 +106,8 @@ export async function createProject(
     .insert({
       user_id: user.id,
       name: input.name.trim(),
-      description: input.description.trim() || null,
+      description:
+        input.description.trim() || null,
       color: input.color,
       emoji: input.emoji,
     })
@@ -113,15 +125,50 @@ export async function updateProject(
   projectId: string,
   input: UpdateProjectInput,
 ): Promise<Project> {
+  const updates: Record<string, unknown> = {}
+
+  if (input.name !== undefined) {
+    updates.name = input.name.trim()
+  }
+
+  if (input.description !== undefined) {
+    updates.description =
+      input.description.trim() || null
+  }
+
+  if (input.color !== undefined) {
+    updates.color = input.color
+  }
+
+  if (input.emoji !== undefined) {
+    updates.emoji = input.emoji
+  }
+
+  if (input.totalSessions !== undefined) {
+    updates.total_sessions =
+      input.totalSessions
+  }
+
+  if (
+    input.completedSessions !== undefined
+  ) {
+    updates.completed_sessions =
+      input.completedSessions
+  }
+
+  if (
+    input.totalFocusMinutes !== undefined
+  ) {
+    updates.total_focus_minutes =
+      input.totalFocusMinutes
+  }
+
+  updates.updated_at =
+    new Date().toISOString()
+
   const { data, error } = await supabase
     .from('projects')
-    .update({
-      name: input.name.trim(),
-      description: input.description.trim() || null,
-      color: input.color,
-      emoji: input.emoji,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq('id', projectId)
     .select(PROJECT_SELECT)
     .single()
@@ -144,4 +191,18 @@ export async function deleteProject(
   if (error) {
     throw error
   }
+}
+
+export async function incrementProjectSession(
+  project: Project,
+  minutes: number,
+): Promise<Project> {
+  return updateProject(project.id, {
+    totalSessions:
+      project.totalSessions + 1,
+    completedSessions:
+      project.completedSessions + 1,
+    totalFocusMinutes:
+      project.totalFocusMinutes + minutes,
+  })
 }

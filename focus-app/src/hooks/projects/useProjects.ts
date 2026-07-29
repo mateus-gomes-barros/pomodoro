@@ -6,10 +6,13 @@ import {
   createProject,
   deleteProject,
   getProjects,
+  incrementProjectSession,
   updateProject,
   type CreateProjectInput,
   type UpdateProjectInput,
 } from '@/services/projectsService'
+
+import type { Project } from '@/types'
 
 export const projectsQueryKey = ['projects']
 
@@ -56,6 +59,27 @@ export function useDeleteProject() {
       mutationFn: (
         projectId: string,
       ) => deleteProject(projectId),
+    },
+  )
+}
+
+interface IncrementProjectSessionVariables {
+  project: Project
+  minutes: number
+}
+
+export function useIncrementProjectSession() {
+  return useInvalidateQuery(
+    projectsQueryKey,
+    {
+      mutationFn: ({
+        project,
+        minutes,
+      }: IncrementProjectSessionVariables) =>
+        incrementProjectSession(
+          project,
+          minutes,
+        ),
     },
   )
 }

@@ -1,9 +1,15 @@
 import { useEffect, useRef } from 'react'
 
 import { useCreatePomodoroSession } from '@/hooks/pomodoro/usePomodoroSessions'
+import {
+  useIncrementProjectSession,
+  useProjects,
+} from '@/hooks/projects/useProjects'
+import {
+  useIncrementTaskPomodoro,
+  useTasks,
+} from '@/hooks/tasks/useTasks'
 import { usePomodoroStore } from '@/store/pomodoroStore'
-import { useProjectsStore } from '@/store/projectsStore'
-import { useTasksStore } from '@/store/tasksStore'
 
 import type {
   SessionType,
@@ -36,19 +42,17 @@ export function useTimer() {
     activeProjectId,
   } = usePomodoroStore()
 
+  const tasksQuery = useTasks()
+  const projectsQuery = useProjects()
+
   const createPomodoroSessionMutation =
     useCreatePomodoroSession()
 
-  const incrementTaskPomodoro =
-    useTasksStore(
-      (state) =>
-        state.incrementTaskPomodoro,
-    )
+  const incrementTaskPomodoroMutation =
+    useIncrementTaskPomodoro()
 
-  const incrementProjectSession =
-    useProjectsStore(
-      (state) => state.incrementSession,
-    )
+  const incrementProjectSessionMutation =
+    useIncrementProjectSession()
 
   const intervalRef =
     useRef<ReturnType<
@@ -110,16 +114,45 @@ export function useTimer() {
         completedSessionType === 'work'
       ) {
         if (activeTaskId) {
-          incrementTaskPomodoro(
-            activeTaskId,
-          )
+          const activeTask =
+            tasksQuery.data?.find(
+              (task) =>
+                task.id === activeTaskId,
+            )
+
+          if (activeTask) {
+            void incrementTaskPomodoroMutation
+              .mutateAsync(activeTask)
+              .catch((error: unknown) => {
+                console.error(
+                  'Failed to increment task pomodoro:',
+                  error,
+                )
+              })
+          }
         }
 
         if (activeProjectId) {
-          incrementProjectSession(
-            activeProjectId,
-            durationMinutes,
-          )
+          const activeProject =
+            projectsQuery.data?.find(
+              (project) =>
+                project.id ===
+                activeProjectId,
+            )
+
+          if (activeProject) {
+            void incrementProjectSessionMutation
+              .mutateAsync({
+                project: activeProject,
+                minutes: durationMinutes,
+              })
+              .catch((error: unknown) => {
+                console.error(
+                  'Failed to increment project session:',
+                  error,
+                )
+              })
+          }
         }
       }
 
@@ -141,9 +174,11 @@ export function useTimer() {
     settings,
     activeTaskId,
     activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
     createPomodoroSessionMutation,
-    incrementTaskPomodoro,
-    incrementProjectSession,
+    incrementTaskPomodoroMutation,
+    incrementProjectSessionMutation,
   ])
 
   useEffect(() => {
