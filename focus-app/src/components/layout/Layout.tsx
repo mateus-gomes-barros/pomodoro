@@ -148,30 +148,34 @@ export function Layout() {
         }
       />
 
-      <button
-        type="button"
-        onClick={() =>
-          setMobileOpen(true)
-        }
-        aria-label="Open navigation"
-        className="
-          lg:hidden
-          fixed
-          top-3.5
-          left-4
-          z-30
-          p-2
-          rounded-xl
-          bg-[#161616]
-          border
-          border-white/[0.08]
-          text-white/70
-          hover:text-white
-          transition-colors
-        "
-      >
-        <Menu size={18} />
-      </button>
+<button
+  type="button"
+  onClick={() =>
+    setMobileOpen(true)
+  }
+  aria-label="Open navigation"
+  className="
+    lg:hidden
+    fixed
+    top-8
+    left-5
+    z-30
+    p-3
+    rounded-2xl
+    bg-[#161616]/95
+    backdrop-blur-md
+    border
+    border-white/[0.08]
+    shadow-xl
+    text-white/70
+    hover:text-white
+    active:scale-95
+    transition-all
+    duration-200
+  "
+>
+  <Menu size={20} />
+</button>
 
       <main
         className="
