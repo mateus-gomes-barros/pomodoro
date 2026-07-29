@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Play,
@@ -7,22 +8,25 @@ import {
   VolumeX,
   ChevronDown,
 } from 'lucide-react'
-import { useState } from 'react'
 
-import { usePomodoroStore } from '../store/pomodoroStore'
-import { useProjectsStore } from '../store/projectsStore'
+import { usePomodoroStore } from '@/store/pomodoroStore'
+import { useProjectsStore } from '@/store/projectsStore'
+import { CircularProgress } from '@/components/ui/CircularProgress'
+import { formatTime, cn } from '@/utils'
 
-import { CircularProgress } from '../components/ui/CircularProgress'
-
-import { formatTime, cn } from '../utils'
-
-import type { SessionType } from '../types'
+import type { SessionType } from '@/types'
 
 const SESSION_LABELS: Record<SessionType, string> = {
   work: 'Focus',
   short_break: 'Short Break',
   long_break: 'Long Break',
 }
+
+const SESSION_TYPES: SessionType[] = [
+  'work',
+  'short_break',
+  'long_break',
+]
 
 export function TimerPage() {
   const {
@@ -40,7 +44,7 @@ export function TimerPage() {
     updateSettings,
   } = usePomodoroStore()
 
-  const projects = useProjectsStore((s) => s.projects)
+  const projects = useProjectsStore((state) => state.projects)
 
   const [showSettings, setShowSettings] = useState(false)
 
@@ -48,44 +52,49 @@ export function TimerPage() {
     sessionType === 'work'
       ? settings.workDuration * 60
       : sessionType === 'short_break'
-      ? settings.shortBreakDuration * 60
-      : settings.longBreakDuration * 60
+        ? settings.shortBreakDuration * 60
+        : settings.longBreakDuration * 60
 
-  const progress =
-    status !== 'idle'
+  const rawProgress =
+    status !== 'idle' && totalSeconds > 0
       ? 1 - secondsLeft / totalSeconds
       : 0
 
-  const isWork = sessionType === 'work'
+  const progress = Math.min(Math.max(rawProgress, 0), 1)
 
-  const ringColor = isWork
-    ? '#7EE081'
-    : '#7EA8E0'
+  const ringColor =
+    sessionType === 'work'
+      ? '#34d399'
+      : '#60a5fa'
 
-  const sessionsUntilLong =
-    settings.sessionsUntilLongBreak || 4
+  const completedSessionDots =
+    settings.sessionsUntilLongBreak > 0
+      ? currentSessionCount % settings.sessionsUntilLongBreak
+      : 0
+
+  const isRunning = status === 'running'
 
   return (
-    <div className="p-6 lg:p-10 max-w-2xl mx-auto flex flex-col items-center min-h-screen">
-
-      {/* Session switcher */}
+    <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col items-center space-y-7">
+      {/* Session type switcher */}
 
       <motion.div
-        initial={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex gap-1 bg-bg-card rounded-2xl p-1 border border-border-subtle mt-4 mb-10"
+        className="segment grid w-full grid-cols-3 sm:w-auto"
       >
-        {(
-          ['work', 'short_break', 'long_break'] as SessionType[]
-        ).map((type) => (
+        {SESSION_TYPES.map((type) => (
           <button
             key={type}
+            type="button"
             onClick={() => switchSession(type)}
+            disabled={isRunning}
             className={cn(
-              'px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+              'segment-item min-w-0 whitespace-nowrap',
               sessionType === type
-                ? 'bg-bg-elevated text-accent-white'
-                : 'text-accent-subtle hover:text-accent-muted'
+                ? 'active'
+                : 'inactive',
+              isRunning && 'cursor-not-allowed opacity-60',
             )}
           >
             {SESSION_LABELS[type]}
@@ -93,44 +102,46 @@ export function TimerPage() {
         ))}
       </motion.div>
 
-      {/* Timer */}
+      {/* Timer ring */}
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{
-          duration: 0.5,
+          duration: 0.45,
           ease: [0.16, 1, 0.3, 1],
         }}
-        className="relative mb-10"
+        className="relative"
       >
         <CircularProgress
           progress={progress}
-          size={280}
+          size={260}
           strokeWidth={5}
           color={ringColor}
         >
           <AnimatePresence mode="wait">
             <motion.div
-              key={secondsLeft}
-              initial={{ opacity: 0.7 }}
+              key={`${sessionType}-${secondsLeft}`}
+              initial={{ opacity: 0.65 }}
               animate={{ opacity: 1 }}
+              exit={{ opacity: 0.65 }}
+              transition={{ duration: 0.12 }}
               className="flex flex-col items-center"
             >
-              <span className="text-6xl font-bold font-mono text-accent-white">
+              <span className="font-mono text-[52px] font-bold leading-none tracking-[-3px] text-white sm:text-[56px]">
                 {formatTime(secondsLeft)}
               </span>
 
-              <span className="text-accent-subtle text-sm mt-2">
+              <span className="mt-2 text-[13px] text-white/40">
                 {SESSION_LABELS[sessionType]}
               </span>
             </motion.div>
           </AnimatePresence>
         </CircularProgress>
 
-        {status === 'running' && isWork && (
+        {isRunning && sessionType === 'work' && (
           <div
-            className="absolute inset-0 rounded-full opacity-10 animate-pulse pointer-events-none"
+            className="pointer-events-none absolute inset-0 animate-pulse rounded-full opacity-[0.07]"
             style={{
               background: `radial-gradient(circle, ${ringColor} 0%, transparent 70%)`,
             }}
@@ -138,137 +149,174 @@ export function TimerPage() {
         )}
       </motion.div>
 
-      {/* Session indicators */}
-
-      <div className="flex items-center gap-2 mb-10">
-        {Array.from({
-          length: sessionsUntilLong,
-        }).map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              'w-2 h-2 rounded-full',
-              i <
-                (currentSessionCount %
-                  sessionsUntilLong)
-                ? 'bg-accent-green'
-                : 'bg-border-muted'
-            )}
-          />
-        ))}
-
-        <span className="text-xs text-accent-subtle ml-2">
-          until long break
-        </span>
-      </div>
-
-      {/* Controls */}
+      {/* Session dots */}
 
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex items-center gap-4 mb-10"
+        transition={{ delay: 0.15 }}
+        className="flex flex-wrap items-center justify-center gap-2"
+      >
+        {Array.from({
+          length: settings.sessionsUntilLongBreak,
+        }).map((_, index) => (
+          <div
+            key={index}
+            className="h-2 w-2 rounded-full transition-all duration-300"
+            style={{
+              backgroundColor:
+                index < completedSessionDots
+                  ? '#34d399'
+                  : 'rgba(255,255,255,0.12)',
+            }}
+          />
+        ))}
+
+        <span className="ml-1 text-[11px] text-white/30">
+          until long break
+        </span>
+      </motion.div>
+
+      {/* Timer controls */}
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="flex items-center gap-4"
       >
         <button
+          type="button"
           onClick={reset}
-          className="w-12 h-12 rounded-2xl bg-bg-card border border-border-subtle flex items-center justify-center"
+          className="btn-ghost h-11 w-11 justify-center p-0"
+          aria-label="Reset timer"
         >
-          <RotateCcw size={18} />
+          <RotateCcw size={16} />
         </button>
 
         <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={
-            status === 'running'
-              ? pause
-              : start
-          }
+          type="button"
+          whileTap={{ scale: 0.94 }}
+          onClick={isRunning ? pause : start}
           className={cn(
-            'w-20 h-20 rounded-3xl flex items-center justify-center text-bg-primary shadow-glow',
-            status === 'running'
-              ? 'bg-accent-white'
-              : 'bg-gradient-green'
+            'flex h-[72px] w-[72px] items-center justify-center rounded-2xl font-bold text-black',
+            'transition-all duration-150',
+            isRunning
+              ? 'bg-white hover:bg-white/85'
+              : 'bg-gradient-to-br from-emerald-400 to-emerald-500 hover:opacity-90',
           )}
+          style={{
+            boxShadow: '0 0 24px rgba(52,211,153,0.18)',
+          }}
+          aria-label={isRunning ? 'Pause timer' : 'Start timer'}
         >
-          {status === 'running' ? (
-            <Pause size={28} />
+          {isRunning ? (
+            <Pause size={26} />
           ) : (
-            <Play size={28} />
+            <Play size={26} className="translate-x-[1px]" />
           )}
         </motion.button>
 
         <button
+          type="button"
           onClick={() =>
             updateSettings({
-              soundEnabled:
-                !settings.soundEnabled,
+              soundEnabled: !settings.soundEnabled,
             })
           }
-          className="w-12 h-12 rounded-2xl bg-bg-card border border-border-subtle flex items-center justify-center"
+          className="btn-ghost h-11 w-11 justify-center p-0"
+          aria-label={
+            settings.soundEnabled
+              ? 'Mute sound'
+              : 'Enable sound'
+          }
         >
           {settings.soundEnabled ? (
-            <Volume2 size={18} />
+            <Volume2 size={16} />
           ) : (
-            <VolumeX size={18} />
+            <VolumeX size={16} />
           )}
         </button>
       </motion.div>
 
-      {/* Projects */}
+      {/* Project and timer settings */}
 
-      <div className="w-full space-y-4">
-
-        <div className="card p-4">
-          <p className="label mb-3">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.28 }}
+        className="w-full space-y-3"
+      >
+        <div className="card p-5">
+          <p className="label-section mb-3">
             Assign to Project
           </p>
 
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveProject(null)}
+              className={cn(
+                'rounded-xl px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                activeProjectId === null
+                  ? 'bg-white/10 text-white'
+                  : 'bg-white/[0.04] text-white/40 hover:text-white/60',
+              )}
+            >
+              None
+            </button>
+
             {projects.map((project) => (
               <button
                 key={project.id}
+                type="button"
                 onClick={() =>
-                  setActiveProject(
-                    project.id
-                  )
+                  setActiveProject(project.id)
                 }
+                title={project.name}
                 className={cn(
-                  'px-3 py-2 rounded-xl text-sm',
-                  activeProjectId ===
-                    project.id
-                    ? 'bg-bg-elevated text-accent-white'
-                    : 'bg-bg-secondary text-accent-subtle'
+                  'flex max-w-full items-center gap-1.5 rounded-xl px-3 py-1.5',
+                  'text-xs font-medium transition-all duration-150',
+                  activeProjectId === project.id
+                    ? 'border border-white/10 bg-white/10 text-white'
+                    : 'bg-white/[0.04] text-white/40 hover:text-white/60',
                 )}
               >
-                {project.emoji} {project.name}
+                <span className="flex-shrink-0">
+                  {project.emoji}
+                </span>
+
+                <span className="max-w-[190px] truncate">
+                  {project.name}
+                </span>
               </button>
             ))}
           </div>
         </div>
 
+        {/* Settings trigger */}
+
         <button
+          type="button"
           onClick={() =>
-            setShowSettings(
-              !showSettings
-            )
+            setShowSettings((current) => !current)
           }
-          className="card p-4 w-full flex justify-between items-center"
+          className="card flex w-full items-center justify-between p-4 text-[13px] text-white/40 transition-colors hover:text-white/70"
+          aria-expanded={showSettings}
         >
           <span>Timer Settings</span>
 
-          <motion.div
+          <motion.span
             animate={{
-              rotate:
-                showSettings
-                  ? 180
-                  : 0,
+              rotate: showSettings ? 180 : 0,
             }}
+            transition={{ duration: 0.2 }}
           >
-            <ChevronDown size={18} />
-          </motion.div>
+            <ChevronDown size={15} />
+          </motion.span>
         </button>
 
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {showSettings && (
             <motion.div
               initial={{
@@ -283,94 +331,106 @@ export function TimerPage() {
                 opacity: 0,
                 height: 0,
               }}
-              className="card p-5 overflow-hidden"
+              transition={{
+                duration: 0.25,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="card overflow-hidden"
             >
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2">
+                {([
+                  [
+                    'Focus',
+                    settings.workDuration,
+                    'workDuration',
+                    5,
+                    90,
+                  ],
+                  [
+                    'Short Break',
+                    settings.shortBreakDuration,
+                    'shortBreakDuration',
+                    1,
+                    30,
+                  ],
+                  [
+                    'Long Break',
+                    settings.longBreakDuration,
+                    'longBreakDuration',
+                    5,
+                    60,
+                  ],
+                  [
+                    'Sessions until long break',
+                    settings.sessionsUntilLongBreak,
+                    'sessionsUntilLongBreak',
+                    2,
+                    8,
+                  ],
+                ] as const).map(
+                  ([label, value, key, min, max]) => (
+                    <div key={key}>
+                      <div className="label-section mb-2">
+                        {label}
+                      </div>
 
-                <DurationInput
-                  label="Focus"
-                  value={settings.workDuration}
-                  onChange={(v) =>
-                    updateSettings({
-                      workDuration: v,
-                    })
-                  }
-                  min={5}
-                  max={90}
-                />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={isRunning || value <= min}
+                          onClick={() =>
+                            updateSettings({
+                              [key]: Math.max(
+                                min,
+                                value - 1,
+                              ),
+                            })
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-base text-white/60 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                          aria-label={`Decrease ${label}`}
+                        >
+                          −
+                        </button>
 
-                <DurationInput
-                  label="Short Break"
-                  value={settings.shortBreakDuration}
-                  onChange={(v) =>
-                    updateSettings({
-                      shortBreakDuration: v,
-                    })
-                  }
-                  min={1}
-                  max={30}
-                />
+                        <span className="w-12 text-center font-mono text-[13px] text-white">
+                          {value}
+                          {key !==
+                            'sessionsUntilLongBreak' &&
+                            'm'}
+                        </span>
 
+                        <button
+                          type="button"
+                          disabled={isRunning || value >= max}
+                          onClick={() =>
+                            updateSettings({
+                              [key]: Math.min(
+                                max,
+                                value + 1,
+                              ),
+                            })
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-base text-white/60 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                          aria-label={`Increase ${label}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ),
+                )}
               </div>
+
+              {isRunning && (
+                <p className="border-t border-white/[0.05] px-5 py-3 text-xs text-white/30">
+                  Pause or reset the timer to change its
+                  duration.
+                </p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
-
-      </div>
-    </div>
-  )
-}
-
-function DurationInput({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-}: {
-  label: string
-  value: number
-  onChange: (v: number) => void
-  min: number
-  max: number
-}) {
-  return (
-    <div>
-      <label className="label mb-2 block">
-        {label}
-      </label>
-
-      <div className="flex gap-2 items-center">
-
-        <button
-          onClick={() =>
-            onChange(
-              Math.max(
-                min,
-                value - 1
-              )
-            )
-          }
-        >
-          −
-        </button>
-
-        <span>{value}m</span>
-
-        <button
-          onClick={() =>
-            onChange(
-              Math.min(
-                max,
-                value + 1
-              )
-            )
-          }
-        >
-          +
-        </button>
-
-      </div>
+      </motion.div>
     </div>
   )
 }
