@@ -1,9 +1,19 @@
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, Timer } from 'lucide-react'
+import { useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  LoaderCircle,
+  Pencil,
+  Plus,
+  Timer,
+  Trash2,
+} from 'lucide-react'
 
-import { getProjects } from '@/services/projectsService'
-import { useProjectsStore } from '../store/projectsStore'
+import {
+  useCreateProject,
+  useDeleteProject,
+  useProjects,
+  useUpdateProject,
+} from '@/hooks/projects/useProjects'
 
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -33,13 +43,23 @@ const EMPTY_FORM: ProjectForm = {
 
 export function ProjectsPage() {
   const {
-    projects,
-    addProject,
-    updateProject,
-    deleteProject,
-  } = useProjectsStore()
+    data: projects = [],
+    isLoading,
+    isError,
+    error,
+  } = useProjects()
 
-  const [modalOpen, setModalOpen] = useState(false)
+  const createProjectMutation =
+    useCreateProject()
+
+  const updateProjectMutation =
+    useUpdateProject()
+
+  const deleteProjectMutation =
+    useDeleteProject()
+
+  const [modalOpen, setModalOpen] =
+    useState(false)
 
   const [editingId, setEditingId] =
     useState<string | null>(null)
@@ -50,22 +70,12 @@ export function ProjectsPage() {
   const [form, setForm] =
     useState<ProjectForm>(EMPTY_FORM)
 
-  useEffect(() => {
-    async function loadProjects() {
-      try {
-        const data = await getProjects()
+  const isSaving =
+    createProjectMutation.isPending ||
+    updateProjectMutation.isPending
 
-        console.log('Supabase projects:', data)
-      } catch (error) {
-        console.error(
-          'Failed to load Supabase projects:',
-          error,
-        )
-      }
-    }
-
-    void loadProjects()
-  }, [])
+  const isDeleting =
+    deleteProjectMutation.isPending
 
   function openCreate() {
     setEditingId(null)
@@ -86,20 +96,98 @@ export function ProjectsPage() {
     setModalOpen(true)
   }
 
-  function handleSubmit() {
-    if (!form.name.trim()) {
+  function closeProjectModal() {
+    if (isSaving) {
       return
     }
 
-    if (editingId) {
-      updateProject(editingId, form)
-    } else {
-      addProject(form)
+    setModalOpen(false)
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+  }
+
+  async function handleSubmit() {
+    if (!form.name.trim() || isSaving) {
+      return
     }
 
-    setForm(EMPTY_FORM)
-    setEditingId(null)
-    setModalOpen(false)
+    try {
+      if (editingId) {
+        await updateProjectMutation.mutateAsync({
+          projectId: editingId,
+          input: form,
+        })
+      } else {
+        await createProjectMutation.mutateAsync(
+          form,
+        )
+      }
+
+      setForm(EMPTY_FORM)
+      setEditingId(null)
+      setModalOpen(false)
+    } catch (mutationError) {
+      console.error(
+        'Failed to save project:',
+        mutationError,
+      )
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteConfirmId || isDeleting) {
+      return
+    }
+
+    try {
+      await deleteProjectMutation.mutateAsync(
+        deleteConfirmId,
+      )
+
+      setDeleteConfirmId(null)
+    } catch (mutationError) {
+      console.error(
+        'Failed to delete project:',
+        mutationError,
+      )
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+        <PageHeader
+          title="Projects"
+          subtitle="Loading projects"
+        />
+
+        <div className="flex items-center justify-center py-20">
+          <LoaderCircle
+            size={28}
+            className="animate-spin text-accent-subtle"
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+        <PageHeader
+          title="Projects"
+          subtitle="Unable to load projects"
+        />
+
+        <div className="card p-6">
+          <p className="text-sm text-accent-subtle">
+            {error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred while loading your projects.'}
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -139,7 +227,9 @@ export function ProjectsPage() {
                     openEdit(project)
                   }
                   onDelete={() =>
-                    setDeleteConfirmId(project.id)
+                    setDeleteConfirmId(
+                      project.id,
+                    )
                   }
                 />
               ),
@@ -150,9 +240,7 @@ export function ProjectsPage() {
 
       <Modal
         isOpen={modalOpen}
-        onClose={() =>
-          setModalOpen(false)
-        }
+        onClose={closeProjectModal}
         title={
           editingId
             ? 'Edit Project'
@@ -179,11 +267,14 @@ export function ProjectsPage() {
                         }),
                       )
                     }
+                    disabled={isSaving}
                     className={cn(
                       'w-10 h-10 rounded-xl transition-all',
                       'bg-bg-secondary',
                       form.emoji === emoji &&
                         'bg-bg-elevated border border-border-muted',
+                      isSaving &&
+                        'cursor-not-allowed opacity-50',
                     )}
                   >
                     {emoji}
@@ -202,6 +293,7 @@ export function ProjectsPage() {
               className="input"
               placeholder="Project name"
               value={form.name}
+              disabled={isSaving}
               onChange={(event) =>
                 setForm(
                   (currentForm) => ({
@@ -222,6 +314,7 @@ export function ProjectsPage() {
               className="input"
               placeholder="Optional description"
               value={form.description}
+              disabled={isSaving}
               onChange={(event) =>
                 setForm(
                   (currentForm) => ({
@@ -253,6 +346,7 @@ export function ProjectsPage() {
                         }),
                       )
                     }
+                    disabled={isSaving}
                     style={{
                       backgroundColor: color,
                     }}
@@ -260,6 +354,8 @@ export function ProjectsPage() {
                       'w-8 h-8 rounded-full transition-all',
                       form.color === color &&
                         'ring-2 ring-white scale-110',
+                      isSaving &&
+                        'cursor-not-allowed opacity-50',
                     )}
                   />
                 ),
@@ -267,24 +363,47 @@ export function ProjectsPage() {
             </div>
           </div>
 
+          {(createProjectMutation.isError ||
+            updateProjectMutation.isError) && (
+            <p className="text-sm text-red-400">
+              Unable to save the project. Please
+              try again.
+            </p>
+          )}
+
           <button
             type="button"
-            onClick={handleSubmit}
-            disabled={!form.name.trim()}
-            className="btn-primary w-full disabled:opacity-40"
+            onClick={() => {
+              void handleSubmit()
+            }}
+            disabled={
+              !form.name.trim() || isSaving
+            }
+            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40"
           >
-            {editingId
-              ? 'Save Changes'
-              : 'Create Project'}
+            {isSaving && (
+              <LoaderCircle
+                size={16}
+                className="animate-spin"
+              />
+            )}
+
+            {isSaving
+              ? 'Saving...'
+              : editingId
+                ? 'Save Changes'
+                : 'Create Project'}
           </button>
         </div>
       </Modal>
 
       <Modal
         isOpen={Boolean(deleteConfirmId)}
-        onClose={() =>
-          setDeleteConfirmId(null)
-        }
+        onClose={() => {
+          if (!isDeleting) {
+            setDeleteConfirmId(null)
+          }
+        }}
         title="Delete Project"
       >
         <div className="space-y-4">
@@ -292,13 +411,21 @@ export function ProjectsPage() {
             Delete this project permanently?
           </p>
 
+          {deleteProjectMutation.isError && (
+            <p className="text-sm text-red-400">
+              Unable to delete the project. Please
+              try again.
+            </p>
+          )}
+
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() =>
                 setDeleteConfirmId(null)
               }
-              className="flex-1 btn-ghost"
+              disabled={isDeleting}
+              className="flex-1 btn-ghost disabled:opacity-40"
             >
               Cancel
             </button>
@@ -306,15 +433,21 @@ export function ProjectsPage() {
             <button
               type="button"
               onClick={() => {
-                if (deleteConfirmId) {
-                  deleteProject(deleteConfirmId)
-                }
-
-                setDeleteConfirmId(null)
+                void handleDelete()
               }}
-              className="flex-1 btn-primary"
+              disabled={isDeleting}
+              className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-40"
             >
-              Delete
+              {isDeleting && (
+                <LoaderCircle
+                  size={16}
+                  className="animate-spin"
+                />
+              )}
+
+              {isDeleting
+                ? 'Deleting...'
+                : 'Delete'}
             </button>
           </div>
         </div>
@@ -345,6 +478,10 @@ function ProjectCard({
       animate={{
         opacity: 1,
         y: 0,
+      }}
+      exit={{
+        opacity: 0,
+        y: -10,
       }}
       transition={{
         delay: index * 0.06,
