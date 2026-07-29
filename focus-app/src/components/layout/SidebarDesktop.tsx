@@ -1,24 +1,32 @@
-import { useState } from 'react'
+import {
+  useMemo,
+  useState,
+} from 'react'
 import {
   NavLink,
   useNavigate,
 } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  Timer,
-  FolderOpen,
+  BarChart3,
   CheckSquare,
   Flame,
-  BarChart3,
-  Settings,
-  LogOut,
+  FolderOpen,
+  LayoutDashboard,
   LogIn,
+  LogOut,
+  Settings,
+  Timer,
 } from 'lucide-react'
+import {
+  format,
+  subDays,
+} from 'date-fns'
 
 import { useAuth } from '@/contexts/AuthContext'
+import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
+import { getStreakBadge } from '@/lib/streakBadges'
 import { signOut } from '@/services/authService'
-
-import { cn } from '../../utils'
+import { cn } from '@/utils'
 
 const navItems = [
   {
@@ -53,6 +61,64 @@ const navItems = [
   },
 ]
 
+function calculateCurrentStreak(
+  activeDates: string[],
+): number {
+  const uniqueDates = new Set(
+    activeDates,
+  )
+
+  const today = new Date()
+
+  const todayString = format(
+    today,
+    'yyyy-MM-dd',
+  )
+
+  const yesterday = subDays(
+    today,
+    1,
+  )
+
+  const yesterdayString = format(
+    yesterday,
+    'yyyy-MM-dd',
+  )
+
+  let currentDate: Date | null =
+    uniqueDates.has(todayString)
+      ? today
+      : uniqueDates.has(
+            yesterdayString,
+          )
+        ? yesterday
+        : null
+
+  let currentStreak = 0
+
+  while (currentDate) {
+    const dateString = format(
+      currentDate,
+      'yyyy-MM-dd',
+    )
+
+    if (
+      !uniqueDates.has(dateString)
+    ) {
+      break
+    }
+
+    currentStreak += 1
+
+    currentDate = subDays(
+      currentDate,
+      1,
+    )
+  }
+
+  return currentStreak
+}
+
 export function SidebarDesktop() {
   const navigate = useNavigate()
 
@@ -62,10 +128,43 @@ export function SidebarDesktop() {
     exitDemoMode,
   } = useAuth()
 
+  const sessionsQuery =
+    usePomodoroSessions()
+
   const [
     isSigningOut,
     setIsSigningOut,
   ] = useState(false)
+
+  const workSessions = useMemo(
+    () =>
+      (sessionsQuery.data ?? []).filter(
+        (session) =>
+          session.type === 'work',
+      ),
+    [sessionsQuery.data],
+  )
+
+  const currentStreak = useMemo(
+    () =>
+      calculateCurrentStreak(
+        workSessions.map(
+          (session) => session.date,
+        ),
+      ),
+    [workSessions],
+  )
+
+  const currentBadge =
+    getStreakBadge(currentStreak)
+
+  const totalPomodoros =
+    workSessions.length
+
+  const streakLabel =
+    currentStreak === 1
+      ? '1 day streak'
+      : `${currentStreak} days streak`
 
   async function handleSignOut() {
     try {
@@ -160,6 +259,168 @@ export function SidebarDesktop() {
           ),
         )}
       </nav>
+
+      <div className="px-3 pb-3 flex-shrink-0">
+        <NavLink
+          to="/streaks"
+          className={({
+            isActive,
+          }) =>
+            cn(
+              `
+                group
+                block
+                overflow-hidden
+                rounded-2xl
+                border
+                p-3
+                transition
+                duration-200
+              `,
+              isActive
+                ? `
+                    border-emerald-400/25
+                    bg-emerald-400/[0.08]
+                  `
+                : `
+                    border-white/[0.07]
+                    bg-white/[0.025]
+                    hover:border-white/[0.11]
+                    hover:bg-white/[0.045]
+                  `,
+            )
+          }
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="
+                flex
+                h-11
+                w-11
+                shrink-0
+                items-center
+                justify-center
+                rounded-2xl
+                border
+                border-white/[0.07]
+                bg-white/[0.045]
+                text-2xl
+                shadow-[0_8px_24px_rgba(0,0,0,0.18)]
+                transition
+                duration-200
+                group-hover:scale-[1.03]
+              "
+              aria-hidden="true"
+            >
+              {currentBadge.icon}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p
+                className="
+                  truncate
+                  text-[13px]
+                  font-semibold
+                  tracking-[-0.01em]
+                  text-white/90
+                "
+              >
+                {currentBadge.name}
+              </p>
+
+              <p
+                className="
+                  mt-0.5
+                  truncate
+                  text-[11px]
+                  font-medium
+                  text-white/35
+                "
+              >
+                {streakLabel}
+              </p>
+            </div>
+
+            <Flame
+              size={15}
+              className={cn(
+                'shrink-0 transition-colors',
+                currentStreak > 0
+                  ? 'text-emerald-400'
+                  : 'text-white/20',
+              )}
+            />
+          </div>
+
+          <div
+            className="
+              mt-3
+              flex
+              items-center
+              justify-between
+              border-t
+              border-white/[0.06]
+              pt-3
+            "
+          >
+            <div>
+              <p
+                className="
+                  text-[10px]
+                  font-medium
+                  uppercase
+                  tracking-[0.12em]
+                  text-white/25
+                "
+              >
+                Streak
+              </p>
+
+              <p
+                className="
+                  mt-0.5
+                  text-sm
+                  font-semibold
+                  text-white/80
+                "
+              >
+                {currentStreak}
+              </p>
+            </div>
+
+            <div className="text-right">
+              <p
+                className="
+                  text-[10px]
+                  font-medium
+                  uppercase
+                  tracking-[0.12em]
+                  text-white/25
+                "
+              >
+                Pomodoros
+              </p>
+
+              <p
+                className="
+                  mt-0.5
+                  text-sm
+                  font-semibold
+                  text-white/80
+                "
+              >
+                {totalPomodoros}
+                <span
+                  className="ml-1 text-xs"
+                  aria-hidden="true"
+                >
+                  🍅
+                </span>
+              </p>
+            </div>
+          </div>
+        </NavLink>
+      </div>
 
       <div className="px-3 pb-4 border-t border-white/[0.07] pt-3 flex-shrink-0 space-y-1">
         <NavLink
