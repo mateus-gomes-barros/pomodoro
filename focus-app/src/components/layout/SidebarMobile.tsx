@@ -1,18 +1,16 @@
-import { useRef } from 'react'
-import type { TouchEvent } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   AnimatePresence,
   motion,
 } from 'framer-motion'
 import {
-  LayoutDashboard,
-  Timer,
-  FolderOpen,
+  BarChart3,
   CheckSquare,
   Flame,
-  BarChart3,
+  FolderOpen,
+  LayoutDashboard,
   Settings,
+  Timer,
   X,
 } from 'lucide-react'
 
@@ -51,8 +49,9 @@ const navItems = [
   },
 ]
 
-const SWIPE_DISTANCE = 60
-const VERTICAL_TOLERANCE = 80
+const DRAWER_WIDTH = 256
+const CLOSE_DISTANCE = 70
+const CLOSE_VELOCITY = -500
 
 interface SidebarMobileProps {
   open: boolean
@@ -63,79 +62,6 @@ export function SidebarMobile({
   open,
   onClose,
 }: SidebarMobileProps) {
-  const touchStartXRef =
-    useRef<number | null>(null)
-
-  const touchStartYRef =
-    useRef<number | null>(null)
-
-  function handleTouchStart(
-    event: TouchEvent<HTMLElement>,
-  ) {
-    const touch = event.touches[0]
-
-    if (!touch) {
-      return
-    }
-
-    touchStartXRef.current =
-      touch.clientX
-
-    touchStartYRef.current =
-      touch.clientY
-  }
-
-  function handleTouchEnd(
-    event: TouchEvent<HTMLElement>,
-  ) {
-    if (
-      touchStartXRef.current === null ||
-      touchStartYRef.current === null
-    ) {
-      resetSwipe()
-      return
-    }
-
-    const touch =
-      event.changedTouches[0]
-
-    if (!touch) {
-      resetSwipe()
-      return
-    }
-
-    const horizontalDistance =
-      touch.clientX -
-      touchStartXRef.current
-
-    const verticalDistance =
-      Math.abs(
-        touch.clientY -
-          touchStartYRef.current,
-      )
-
-    const isLeftSwipe =
-      horizontalDistance <=
-        -SWIPE_DISTANCE &&
-      verticalDistance <=
-        VERTICAL_TOLERANCE
-
-    if (isLeftSwipe) {
-      onClose()
-    }
-
-    resetSwipe()
-  }
-
-  function handleTouchCancel() {
-    resetSwipe()
-  }
-
-  function resetSwipe() {
-    touchStartXRef.current = null
-    touchStartYRef.current = null
-  }
-
   return (
     <AnimatePresence>
       {open && (
@@ -162,9 +88,15 @@ export function SidebarMobile({
 
           <motion.aside
             key="drawer"
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
+            initial={{
+              x: -DRAWER_WIDTH,
+            }}
+            animate={{
+              x: 0,
+            }}
+            exit={{
+              x: -DRAWER_WIDTH,
+            }}
             transition={{
               type: 'tween',
               duration: 0.22,
@@ -175,17 +107,34 @@ export function SidebarMobile({
                 0,
               ],
             }}
-            onTouchStart={
-              handleTouchStart
-            }
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={
-              handleTouchCancel
-            }
+            drag="x"
+            dragConstraints={{
+              left: -DRAWER_WIDTH,
+              right: 0,
+            }}
+            dragElastic={0.04}
+            dragMomentum={false}
+            onDragEnd={(_, info) => {
+              const draggedFarEnough =
+                info.offset.x <=
+                -CLOSE_DISTANCE
+
+              const draggedFastEnough =
+                info.velocity.x <=
+                CLOSE_VELOCITY
+
+              if (
+                draggedFarEnough ||
+                draggedFastEnough
+              ) {
+                onClose()
+              }
+            }}
             className={cn(
               'lg:hidden fixed top-0 left-0 z-50',
               'flex flex-col w-64 h-screen',
               'bg-[#111111] border-r border-white/[0.07]',
+              'touch-pan-y',
             )}
           >
             <div
@@ -303,9 +252,9 @@ export function SidebarMobile({
               className="
                 px-3
                 pb-4
+                pt-3
                 border-t
                 border-white/[0.07]
-                pt-3
                 flex-shrink-0
               "
             >
