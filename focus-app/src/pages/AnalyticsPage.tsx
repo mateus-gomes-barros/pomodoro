@@ -11,9 +11,9 @@ import {
   YAxis,
 } from 'recharts'
 import { format, parseISO } from 'date-fns'
+import { LoaderCircle } from 'lucide-react'
 
-import { useStatsStore } from '@/store/statsStore'
-import { useProjectsStore } from '@/store/projectsStore'
+import { useAnalytics } from '@/hooks/analytics/useAnalytics'
 import { StatCard } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { cn, formatDuration } from '@/utils'
@@ -79,58 +79,90 @@ function ChartTooltip({
 
 export function AnalyticsPage() {
   const {
-    getWeeklyData,
-    getMonthlyData,
-    getTotalFocusMinutes,
-    getTotalSessions,
-  } = useStatsStore()
+    weeklyData,
+    monthlyData,
+    totalFocusMinutes,
+    totalSessions,
+    averageDailyFocusMinutes,
+    projectAnalytics,
+    topProject,
+    isLoading,
+    isError,
+    error,
+  } = useAnalytics()
 
-  const projects = useProjectsStore((state) => state.projects)
-
-  const [range, setRange] = useState<'week' | 'month'>('week')
-
-  const weeklyData = getWeeklyData()
-  const monthlyData = getMonthlyData()
+  const [range, setRange] = useState<
+    'week' | 'month'
+  >('week')
 
   const sourceData =
     range === 'week'
       ? weeklyData
       : monthlyData
 
-  const chartData = sourceData.map((day) => ({
-    ...day,
-    label: format(
-      parseISO(day.date),
-      range === 'week' ? 'EEE' : 'd',
-    ),
-    hours: Number((day.focusMinutes / 60).toFixed(1)),
-  }))
+  const chartData = sourceData.map(
+    (day) => ({
+      ...day,
 
-  const totalMinutes = getTotalFocusMinutes()
-  const totalSessions = getTotalSessions()
+      label: format(
+        parseISO(day.date),
+        range === 'week'
+          ? 'EEE'
+          : 'd',
+      ),
 
-  const avgDaily = weeklyData.length
-    ? Math.round(
-        weeklyData.reduce(
-          (total, day) => total + day.focusMinutes,
-          0,
-        ) / weeklyData.length,
-      )
-    : 0
-
-  const sortedProjects = [...projects].sort(
-    (a, b) =>
-      b.totalFocusMinutes - a.totalFocusMinutes,
+      hours: Number(
+        (
+          day.focusMinutes / 60
+        ).toFixed(1),
+      ),
+    }),
   )
 
-  const topProject = sortedProjects[0]
-
   const maxProjectMinutes = Math.max(
-    ...projects.map(
-      (project) => project.totalFocusMinutes,
+    ...projectAnalytics.map(
+      (project) =>
+        project.calculatedFocusMinutes,
     ),
     1,
   )
+
+  if (isLoading) {
+    return (
+      <div className="w-full min-w-0 space-y-8">
+        <PageHeader
+          title="Analytics"
+          subtitle="Loading your productivity data"
+        />
+
+        <div className="flex items-center justify-center py-24">
+          <LoaderCircle
+            size={30}
+            className="animate-spin text-white/40"
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full min-w-0 space-y-8">
+        <PageHeader
+          title="Analytics"
+          subtitle="Unable to load your productivity data"
+        />
+
+        <div className="card p-6">
+          <p className="text-sm text-red-400">
+            {error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred while loading analytics.'}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full min-w-0 space-y-8">
@@ -144,7 +176,9 @@ export function AnalyticsPage() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Total Focus"
-          value={formatDuration(totalMinutes)}
+          value={formatDuration(
+            totalFocusMinutes,
+          )}
           sub="all time"
           delay={0}
         />
@@ -158,7 +192,9 @@ export function AnalyticsPage() {
 
         <StatCard
           label="Daily Average"
-          value={formatDuration(avgDaily)}
+          value={formatDuration(
+            averageDailyFocusMinutes,
+          )}
           sub="this week"
           delay={0.1}
         />
@@ -166,7 +202,9 @@ export function AnalyticsPage() {
         <StatCard
           label="Top Project"
           value={topProject?.emoji ?? '—'}
-          sub={topProject?.name ?? 'None yet'}
+          sub={
+            topProject?.name ?? 'None yet'
+          }
           accent={Boolean(topProject)}
           delay={0.15}
         />
@@ -175,11 +213,15 @@ export function AnalyticsPage() {
       {/* Range selector */}
 
       <div className="segment w-fit">
-        {(['week', 'month'] as const).map((item) => (
+        {(
+          ['week', 'month'] as const
+        ).map((item) => (
           <button
             key={item}
             type="button"
-            onClick={() => setRange(item)}
+            onClick={() =>
+              setRange(item)
+            }
             className={cn(
               'segment-item',
               range === item
@@ -197,9 +239,17 @@ export function AnalyticsPage() {
       {/* Focus hours chart */}
 
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.18 }}
+        initial={{
+          opacity: 0,
+          y: 6,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.18,
+        }}
         className="card p-6"
       >
         <div className="mb-5">
@@ -268,7 +318,9 @@ export function AnalyticsPage() {
               />
 
               <Tooltip
-                content={<ChartTooltip />}
+                content={
+                  <ChartTooltip />
+                }
                 cursor={{
                   stroke: '#ffffff10',
                   strokeWidth: 1,
@@ -297,9 +349,17 @@ export function AnalyticsPage() {
       {/* Sessions and tasks chart */}
 
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.24 }}
+        initial={{
+          opacity: 0,
+          y: 6,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.24,
+        }}
         className="card p-6"
       >
         <div className="mb-5">
@@ -347,7 +407,9 @@ export function AnalyticsPage() {
               />
 
               <Tooltip
-                content={<ChartTooltip />}
+                content={
+                  <ChartTooltip />
+                }
                 cursor={{
                   fill: '#ffffff05',
                 }}
@@ -357,7 +419,12 @@ export function AnalyticsPage() {
                 dataKey="sessionsCompleted"
                 name="sessionsCompleted"
                 fill="#34d399"
-                radius={[3, 3, 0, 0]}
+                radius={[
+                  3,
+                  3,
+                  0,
+                  0,
+                ]}
                 opacity={0.8}
               />
 
@@ -365,7 +432,12 @@ export function AnalyticsPage() {
                 dataKey="tasksCompleted"
                 name="tasksCompleted"
                 fill="#60a5fa"
-                radius={[3, 3, 0, 0]}
+                radius={[
+                  3,
+                  3,
+                  0,
+                  0,
+                ]}
                 opacity={0.6}
               />
             </BarChart>
@@ -388,16 +460,25 @@ export function AnalyticsPage() {
       {/* Project breakdown */}
 
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        initial={{
+          opacity: 0,
+          y: 6,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.3,
+        }}
         className="card p-6"
       >
         <p className="mb-5 text-[13px] font-semibold text-white">
           Project Breakdown
         </p>
 
-        {projects.length === 0 ? (
+        {projectAnalytics.length ===
+        0 ? (
           <div className="flex min-h-[140px] items-center justify-center">
             <p className="text-[13px] text-white/30">
               No projects created yet.
@@ -405,62 +486,78 @@ export function AnalyticsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {sortedProjects.map((project, index) => {
-              const percentage = Math.min(
-                project.totalFocusMinutes /
-                  maxProjectMinutes,
-                1,
-              )
+            {projectAnalytics.map(
+              (project, index) => {
+                const percentage =
+                  Math.min(
+                    project.calculatedFocusMinutes /
+                      maxProjectMinutes,
+                    1,
+                  )
 
-              return (
-                <motion.div
-                  key={project.id}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{
-                    delay: 0.35 + index * 0.06,
-                  }}
-                  className="flex items-center gap-3"
-                >
-                  <span className="w-6 flex-shrink-0 text-center text-base">
-                    {project.emoji}
-                  </span>
+                return (
+                  <motion.div
+                    key={project.id}
+                    initial={{
+                      opacity: 0,
+                      x: -6,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      x: 0,
+                    }}
+                    transition={{
+                      delay:
+                        0.35 +
+                        index * 0.06,
+                    }}
+                    className="flex items-center gap-3"
+                  >
+                    <span className="w-6 flex-shrink-0 text-center text-base">
+                      {project.emoji}
+                    </span>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1.5 flex items-center justify-between gap-3">
-                      <span className="truncate text-[13px] font-medium text-white/80">
-                        {project.name}
-                      </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1.5 flex items-center justify-between gap-3">
+                        <span className="truncate text-[13px] font-medium text-white/80">
+                          {project.name}
+                        </span>
 
-                      <span className="flex-shrink-0 font-mono text-[11px] text-white/30">
-                        {formatDuration(
-                          project.totalFocusMinutes,
-                        )}
-                      </span>
+                        <span className="flex-shrink-0 font-mono text-[11px] text-white/30">
+                          {formatDuration(
+                            project.calculatedFocusMinutes,
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                        <motion.div
+                          initial={{
+                            width: 0,
+                          }}
+                          animate={{
+                            width: `${percentage * 100}%`,
+                          }}
+                          transition={{
+                            duration: 0.8,
+                            ease: 'easeOut',
+                            delay:
+                              0.4 +
+                              index *
+                                0.07,
+                          }}
+                          className="h-full rounded-full"
+                          style={{
+                            backgroundColor:
+                              project.color,
+                          }}
+                        />
+                      </div>
                     </div>
-
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{
-                          width: `${percentage * 100}%`,
-                        }}
-                        transition={{
-                          duration: 0.8,
-                          ease: 'easeOut',
-                          delay: 0.4 + index * 0.07,
-                        }}
-                        className="h-full rounded-full"
-                        style={{
-                          backgroundColor:
-                            project.color,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              )
-            })}
+                  </motion.div>
+                )
+              },
+            )}
           </div>
         )}
       </motion.div>

@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react'
 import { useCreatePomodoroSession } from '@/hooks/pomodoro/usePomodoroSessions'
 import { usePomodoroStore } from '@/store/pomodoroStore'
 import { useProjectsStore } from '@/store/projectsStore'
-import { useStatsStore } from '@/store/statsStore'
 import { useTasksStore } from '@/store/tasksStore'
 
 import type {
@@ -40,13 +39,11 @@ export function useTimer() {
   const createPomodoroSessionMutation =
     useCreatePomodoroSession()
 
-  const recordFocusSession = useStatsStore(
-    (state) => state.recordFocusSession,
-  )
-
-  const incrementTaskPomodoro = useTasksStore(
-    (state) => state.incrementTaskPomodoro,
-  )
+  const incrementTaskPomodoro =
+    useTasksStore(
+      (state) =>
+        state.incrementTaskPomodoro,
+    )
 
   const incrementProjectSession =
     useProjectsStore(
@@ -58,7 +55,8 @@ export function useTimer() {
       typeof setInterval
     > | null>(null)
 
-  const previousStatusRef = useRef(status)
+  const previousStatusRef =
+    useRef(status)
 
   const previousSessionTypeRef =
     useRef(sessionType)
@@ -95,7 +93,8 @@ export function useTimer() {
           type: completedSessionType,
           projectId:
             activeProjectId ?? undefined,
-          taskId: activeTaskId ?? undefined,
+          taskId:
+            activeTaskId ?? undefined,
           durationMinutes,
           completedAt,
           date: completedAt.split('T')[0],
@@ -107,11 +106,13 @@ export function useTimer() {
           )
         })
 
-      if (completedSessionType === 'work') {
-        recordFocusSession(durationMinutes)
-
+      if (
+        completedSessionType === 'work'
+      ) {
         if (activeTaskId) {
-          incrementTaskPomodoro(activeTaskId)
+          incrementTaskPomodoro(
+            activeTaskId,
+          )
         }
 
         if (activeProjectId) {
@@ -132,7 +133,8 @@ export function useTimer() {
     previousStatusRef.current = status
     previousSessionTypeRef.current =
       sessionType
-    previousSettingsRef.current = settings
+    previousSettingsRef.current =
+      settings
   }, [
     status,
     sessionType,
@@ -140,21 +142,21 @@ export function useTimer() {
     activeTaskId,
     activeProjectId,
     createPomodoroSessionMutation,
-    recordFocusSession,
     incrementTaskPomodoro,
     incrementProjectSession,
   ])
 
   useEffect(() => {
     if (status === 'running') {
-      intervalRef.current = setInterval(
-        () => {
+      intervalRef.current =
+        setInterval(() => {
           tick()
-        },
-        1000,
-      )
+        }, 1000)
     } else if (intervalRef.current) {
-      clearInterval(intervalRef.current)
+      clearInterval(
+        intervalRef.current,
+      )
+
       intervalRef.current = null
     }
 
@@ -172,7 +174,8 @@ export function useTimer() {
 
 function playCompletionSound() {
   try {
-    const context = new AudioContext()
+    const context =
+      new AudioContext()
 
     const notes = [
       523.25,
@@ -185,10 +188,13 @@ function playCompletionSound() {
         const oscillator =
           context.createOscillator()
 
-        const gain = context.createGain()
+        const gain =
+          context.createGain()
 
         oscillator.connect(gain)
-        gain.connect(context.destination)
+        gain.connect(
+          context.destination,
+        )
 
         oscillator.frequency.value =
           frequency
