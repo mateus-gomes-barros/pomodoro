@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import {
+  NavLink,
+  useNavigate,
+} from 'react-router-dom'
 import {
   LayoutDashboard,
   Timer,
@@ -9,9 +12,12 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  LogIn,
 } from 'lucide-react'
 
+import { useAuth } from '@/contexts/AuthContext'
 import { signOut } from '@/services/authService'
+
 import { cn } from '../../utils'
 
 const navItems = [
@@ -48,16 +54,54 @@ const navItems = [
 ]
 
 export function SidebarDesktop() {
-  const [isSigningOut, setIsSigningOut] = useState(false)
+  const navigate = useNavigate()
+
+  const {
+    user,
+    isDemoMode,
+    exitDemoMode,
+  } = useAuth()
+
+  const [
+    isSigningOut,
+    setIsSigningOut,
+  ] = useState(false)
 
   async function handleSignOut() {
     try {
       setIsSigningOut(true)
+
       await signOut()
+
+      navigate(
+        '/login',
+        {
+          replace: true,
+        },
+      )
     } catch (error) {
-      console.error('Failed to sign out:', error)
+      console.error(
+        'Failed to sign out:',
+        error,
+      )
+    } finally {
       setIsSigningOut(false)
     }
+  }
+
+  function handleLogin() {
+    navigate('/login')
+  }
+
+  function handleExitDemoMode() {
+    exitDemoMode()
+
+    navigate(
+      '/login',
+      {
+        replace: true,
+      },
+    )
   }
 
   return (
@@ -93,7 +137,9 @@ export function SidebarDesktop() {
               key={path}
               to={path}
               end={path === '/'}
-              className={({ isActive }) =>
+              className={({
+                isActive,
+              }) =>
                 cn(
                   'flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
                   isActive
@@ -118,7 +164,9 @@ export function SidebarDesktop() {
       <div className="px-3 pb-4 border-t border-white/[0.07] pt-3 flex-shrink-0 space-y-1">
         <NavLink
           to="/settings"
-          className={({ isActive }) =>
+          className={({
+            isActive,
+          }) =>
             cn(
               'flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
               isActive
@@ -137,27 +185,69 @@ export function SidebarDesktop() {
           </span>
         </NavLink>
 
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={isSigningOut}
-          className={cn(
-            'flex w-full items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
-            'text-white/50 hover:text-red-300 hover:bg-red-500/10',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-          )}
-        >
-          <LogOut
-            size={16}
-            className="flex-shrink-0"
-          />
+        {user && (
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className={cn(
+              'flex w-full items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
+              'text-white/50 hover:text-red-300 hover:bg-red-500/10',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+            )}
+          >
+            <LogOut
+              size={16}
+              className="flex-shrink-0"
+            />
 
-          <span className="truncate">
-            {isSigningOut
-              ? 'Signing out...'
-              : 'Sign out'}
-          </span>
-        </button>
+            <span className="truncate">
+              {isSigningOut
+                ? 'Signing out...'
+                : 'Sign out'}
+            </span>
+          </button>
+        )}
+
+        {!user && isDemoMode && (
+          <>
+            <button
+              type="button"
+              onClick={handleLogin}
+              className={cn(
+                'flex w-full items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
+                'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10',
+              )}
+            >
+              <LogIn
+                size={16}
+                className="flex-shrink-0"
+              />
+
+              <span className="truncate">
+                Log in
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExitDemoMode}
+              className={cn(
+                'flex w-full items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
+                'text-white/50 hover:text-red-300 hover:bg-red-500/10',
+              )}
+            >
+              <LogOut
+                size={16}
+                className="flex-shrink-0"
+              />
+
+              <span className="truncate">
+                Exit guest mode
+              </span>
+            </button>
+          </>
+        )}
       </div>
     </aside>
   )
