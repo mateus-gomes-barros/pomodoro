@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Pencil, Trash2, Timer } from 'lucide-react'
 
+import { getProjects } from '@/services/projectsService'
 import { useProjectsStore } from '../store/projectsStore'
 
 import { Modal } from '../components/ui/Modal'
@@ -49,6 +50,23 @@ export function ProjectsPage() {
   const [form, setForm] =
     useState<ProjectForm>(EMPTY_FORM)
 
+  useEffect(() => {
+    async function loadProjects() {
+      try {
+        const data = await getProjects()
+
+        console.log('Supabase projects:', data)
+      } catch (error) {
+        console.error(
+          'Failed to load Supabase projects:',
+          error,
+        )
+      }
+    }
+
+    void loadProjects()
+  }, [])
+
   function openCreate() {
     setEditingId(null)
     setForm(EMPTY_FORM)
@@ -69,7 +87,9 @@ export function ProjectsPage() {
   }
 
   function handleSubmit() {
-    if (!form.name.trim()) return
+    if (!form.name.trim()) {
+      return
+    }
 
     if (editingId) {
       updateProject(editingId, form)
@@ -84,7 +104,6 @@ export function ProjectsPage() {
 
   return (
     <div className="p-6 lg:p-10 max-w-5xl mx-auto">
-
       <PageHeader
         title="Projects"
         subtitle={`${projects.length} active ${
@@ -94,24 +113,24 @@ export function ProjectsPage() {
         }`}
         action={
           <button
+            type="button"
             onClick={openCreate}
             className="btn-primary flex items-center gap-2"
           >
-            <Plus size={16}/>
+            <Plus size={16} />
+
             New Project
           </button>
         }
       />
 
       {projects.length === 0 ? (
-        <EmptyState onAdd={openCreate}/>
+        <EmptyState onAdd={openCreate} />
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-
           <AnimatePresence>
-
             {projects.map(
-              (project,index)=>(
+              (project, index) => (
                 <ProjectCard
                   key={project.id}
                   project={project}
@@ -123,11 +142,9 @@ export function ProjectsPage() {
                     setDeleteConfirmId(project.id)
                   }
                 />
-              )
+              ),
             )}
-
           </AnimatePresence>
-
         </div>
       )}
 
@@ -142,47 +159,41 @@ export function ProjectsPage() {
             : 'Create Project'
         }
       >
-
         <div className="space-y-4">
-
           <div>
-
             <label className="label block mb-2">
               Icon
             </label>
 
             <div className="flex flex-wrap gap-2">
-
               {PROJECT_EMOJIS.map(
-                emoji=>(
+                (emoji) => (
                   <button
                     key={emoji}
+                    type="button"
                     onClick={() =>
                       setForm(
-                        f=>({
-                          ...f,
-                          emoji
-                        })
+                        (currentForm) => ({
+                          ...currentForm,
+                          emoji,
+                        }),
                       )
                     }
                     className={cn(
                       'w-10 h-10 rounded-xl transition-all',
                       'bg-bg-secondary',
-                      form.emoji===emoji &&
-                      'bg-bg-elevated border border-border-muted'
+                      form.emoji === emoji &&
+                        'bg-bg-elevated border border-border-muted',
                     )}
                   >
                     {emoji}
                   </button>
-                )
+                ),
               )}
-
             </div>
-
           </div>
 
           <div>
-
             <label className="label block mb-2">
               Name
             </label>
@@ -191,20 +202,18 @@ export function ProjectsPage() {
               className="input"
               placeholder="Project name"
               value={form.name}
-              onChange={(e)=>
+              onChange={(event) =>
                 setForm(
-                  f=>({
-                    ...f,
-                    name:e.target.value
-                  })
+                  (currentForm) => ({
+                    ...currentForm,
+                    name: event.target.value,
+                  }),
                 )
               }
             />
-
           </div>
 
           <div>
-
             <label className="label block mb-2">
               Description
             </label>
@@ -213,55 +222,53 @@ export function ProjectsPage() {
               className="input"
               placeholder="Optional description"
               value={form.description}
-              onChange={(e)=>
+              onChange={(event) =>
                 setForm(
-                  f=>({
-                    ...f,
-                    description:e.target.value
-                  })
+                  (currentForm) => ({
+                    ...currentForm,
+                    description:
+                      event.target.value,
+                  }),
                 )
               }
             />
-
           </div>
 
           <div>
-
             <label className="label block mb-2">
               Color
             </label>
 
             <div className="flex gap-2">
-
               {PROJECT_COLORS.map(
-                color=>(
+                (color) => (
                   <button
                     key={color}
+                    type="button"
                     onClick={() =>
                       setForm(
-                        f=>({
-                          ...f,
-                          color
-                        })
+                        (currentForm) => ({
+                          ...currentForm,
+                          color,
+                        }),
                       )
                     }
                     style={{
-                      backgroundColor:color
+                      backgroundColor: color,
                     }}
                     className={cn(
                       'w-8 h-8 rounded-full transition-all',
-                      form.color===color &&
-                      'ring-2 ring-white scale-110'
+                      form.color === color &&
+                        'ring-2 ring-white scale-110',
                     )}
                   />
-                )
+                ),
               )}
-
             </div>
-
           </div>
 
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={!form.name.trim()}
             className="btn-primary w-full disabled:opacity-40"
@@ -270,28 +277,24 @@ export function ProjectsPage() {
               ? 'Save Changes'
               : 'Create Project'}
           </button>
-
         </div>
-
       </Modal>
 
       <Modal
-        isOpen={!!deleteConfirmId}
+        isOpen={Boolean(deleteConfirmId)}
         onClose={() =>
           setDeleteConfirmId(null)
         }
         title="Delete Project"
       >
-
         <div className="space-y-4">
-
           <p className="text-sm text-accent-subtle">
             Delete this project permanently?
           </p>
 
           <div className="flex gap-3">
-
             <button
+              type="button"
               onClick={() =>
                 setDeleteConfirmId(null)
               }
@@ -301,8 +304,9 @@ export function ProjectsPage() {
             </button>
 
             <button
-              onClick={()=>{
-                if(deleteConfirmId){
+              type="button"
+              onClick={() => {
+                if (deleteConfirmId) {
                   deleteProject(deleteConfirmId)
                 }
 
@@ -312,15 +316,18 @@ export function ProjectsPage() {
             >
               Delete
             </button>
-
           </div>
-
         </div>
-
       </Modal>
-
     </div>
   )
+}
+
+interface ProjectCardProps {
+  project: Project
+  index: number
+  onEdit: () => void
+  onDelete: () => void
 }
 
 function ProjectCard({
@@ -328,38 +335,28 @@ function ProjectCard({
   index,
   onEdit,
   onDelete,
-}:{
-  project:Project
-  index:number
-  onEdit:()=>void
-  onDelete:()=>void
-}) {
-
-  return(
+}: ProjectCardProps) {
+  return (
     <motion.div
       initial={{
-        opacity:0,
-        y:10
+        opacity: 0,
+        y: 10,
       }}
       animate={{
-        opacity:1,
-        y:0
+        opacity: 1,
+        y: 0,
       }}
       transition={{
-        delay:index*0.06
+        delay: index * 0.06,
       }}
       className="card p-5"
     >
-
       <div className="flex justify-between">
-
         <div>
-
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
             style={{
-              background:
-              project.color+'20'
+              background: `${project.color}20`,
             }}
           >
             {project.emoji}
@@ -369,57 +366,56 @@ function ProjectCard({
             {project.name}
           </h3>
 
-          {!!project.description && (
+          {project.description && (
             <p className="text-sm text-accent-subtle">
               {project.description}
             </p>
           )}
-
         </div>
 
         <div className="flex gap-2">
-
-          <button onClick={onEdit}>
-            <Pencil size={15}/>
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`Edit ${project.name}`}
+          >
+            <Pencil size={15} />
           </button>
 
-          <button onClick={onDelete}>
-            <Trash2 size={15}/>
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label={`Delete ${project.name}`}
+          >
+            <Trash2 size={15} />
           </button>
-
         </div>
-
       </div>
 
       <div className="mt-5 surface p-3 rounded-xl">
-
         <div className="flex items-center gap-2">
-
-          <Timer size={14}/>
+          <Timer size={14} />
 
           <span className="text-sm">
             {formatDuration(
-              project.totalFocusMinutes
+              project.totalFocusMinutes,
             )}
           </span>
-
         </div>
-
       </div>
-
     </motion.div>
   )
 }
 
+interface EmptyStateProps {
+  onAdd: () => void
+}
+
 function EmptyState({
-  onAdd
-}:{
-  onAdd:()=>void
-}) {
-
-  return(
+  onAdd,
+}: EmptyStateProps) {
+  return (
     <div className="flex flex-col items-center justify-center py-20">
-
       <div className="text-5xl mb-4">
         📁
       </div>
@@ -433,12 +429,12 @@ function EmptyState({
       </p>
 
       <button
+        type="button"
         onClick={onAdd}
         className="btn-primary"
       >
         Create Project
       </button>
-
     </div>
   )
 }
