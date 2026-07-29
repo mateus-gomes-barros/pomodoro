@@ -1,19 +1,21 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import { Layout } from './components/layout/Layout'
 
-import { DashboardPage } from './pages/DashboardPage'
-import { TimerPage } from './pages/TimerPage'
-import { ProjectsPage } from './pages/ProjectsPage'
-import { TasksPage } from './pages/TasksPage'
-import { StreaksPage } from './pages/StreaksPage'
-import { AnalyticsPage } from './pages/AnalyticsPage'
-import { SettingsPage } from './pages/SettingsPage'
-
 import { useTimer } from './hooks/useTimer'
+
+import { AnalyticsPage } from './pages/AnalyticsPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { LoginPage } from './pages/LoginPage'
+import { ProjectsPage } from './pages/ProjectsPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { StreaksPage } from './pages/StreaksPage'
+import { TasksPage } from './pages/TasksPage'
+import { TimerPage } from './pages/TimerPage'
 
 function TimerDriver() {
   useTimer()
+
   return null
 }
 
@@ -23,8 +25,12 @@ function App() {
       <TimerDriver />
 
       <Routes>
-        <Route element={<Layout />}>
+        <Route
+          path="login"
+          element={<LoginPage />}
+        />
 
+        <Route element={<Layout />}>
           <Route
             index
             element={<DashboardPage />}
@@ -59,7 +65,6 @@ function App() {
             path="settings"
             element={<SettingsPage />}
           />
-
         </Route>
       </Routes>
     </BrowserRouter>

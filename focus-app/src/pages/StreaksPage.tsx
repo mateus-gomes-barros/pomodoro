@@ -173,18 +173,13 @@ export function StreaksPage() {
 
         <div className="space-y-6 overflow-auto">
 
-          {months.map(month=>(
-            <MonthGrid
-              key={month.toISOString()}
-              month={month}
-              activeDates={
-                streak.activeDates
-              }
-              dailyStats={
-                dailyStats
-              }
-            />
-          ))}
+        {months.map((month) => (
+  <MonthGrid
+    key={month.toISOString()}
+    month={month}
+    dailyStats={dailyStats}
+  />
+))}
 
         </div>
 
@@ -254,11 +249,9 @@ export function StreaksPage() {
 
 function MonthGrid({
   month,
-  activeDates,
   dailyStats,
-}:{
+}: {
   month: Date
-  activeDates: string[]
   dailyStats: Record<string, any>
 }) {
 
