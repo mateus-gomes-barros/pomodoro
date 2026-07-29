@@ -13,6 +13,9 @@ export function ProtectedRoute({
   const { user, isLoading } = useAuth()
   const location = useLocation()
 
+  const isDemoMode =
+    localStorage.getItem('focus-demo-mode') === 'true'
+
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
@@ -23,7 +26,7 @@ export function ProtectedRoute({
     )
   }
 
-  if (!user) {
+  if (!user && !isDemoMode) {
     return (
       <Navigate
         to="/login"

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { signInWithGoogle } from '@/services/authService'
 
 export function LoginPage() {
+  const navigate = useNavigate()
   const { user, isLoading } = useAuth()
 
   const [isSigningIn, setIsSigningIn] = useState(false)
@@ -32,6 +33,11 @@ export function LoginPage() {
       setErrorMessage(message)
       setIsSigningIn(false)
     }
+  }
+
+  function handleDemoAccess() {
+    localStorage.setItem('focus-demo-mode', 'true')
+    navigate('/')
   }
 
   if (!isLoading && user) {
@@ -73,6 +79,29 @@ export function LoginPage() {
             ? 'Redirecionando...'
             : 'Continuar com Google'}
         </button>
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/10" />
+
+          <span className="text-xs uppercase tracking-wider text-accent-subtle">
+            ou
+          </span>
+
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleDemoAccess}
+          disabled={isSigningIn}
+          className="flex w-full items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 font-medium text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Testar sem criar conta
+        </button>
+
+        <p className="mt-3 text-center text-xs leading-5 text-accent-subtle">
+          Seus dados serão salvos somente neste navegador.
+        </p>
 
         {errorMessage && (
           <p className="mt-4 text-center text-sm text-red-400">
