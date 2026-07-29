@@ -10,11 +10,13 @@ type ProtectedRouteProps = {
 export function ProtectedRoute({
   children,
 }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth()
-  const location = useLocation()
+  const {
+    user,
+    isLoading,
+    isDemoMode,
+  } = useAuth()
 
-  const isDemoMode =
-    localStorage.getItem('focus-demo-mode') === 'true'
+  const location = useLocation()
 
   if (isLoading) {
     return (
