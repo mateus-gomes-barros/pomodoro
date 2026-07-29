@@ -253,7 +253,7 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="w-full min-w-0 space-y-8">
+      <div className="w-full min-w-0 space-y-8 pt-16 lg:pt-0">
         <div className="flex items-center justify-center py-24">
           <LoaderCircle
             size={30}
@@ -266,7 +266,7 @@ export function DashboardPage() {
 
   if (isError) {
     return (
-      <div className="w-full min-w-0 space-y-8">
+      <div className="w-full min-w-0 space-y-8 pt-16 lg:pt-0">
         <div className="card p-6">
           <p className="text-sm text-red-400">
             {error instanceof Error
@@ -279,7 +279,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-8">
+    <div className="w-full min-w-0 space-y-8 pt-16 lg:pt-0">
       {/* Greeting */}
 
       <motion.div
