@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { Layout } from './components/layout/Layout'
 
 import { useTimer } from './hooks/useTimer'
@@ -30,7 +31,13 @@ function App() {
           element={<LoginPage />}
         />
 
-        <Route element={<Layout />}>
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route
             index
             element={<DashboardPage />}

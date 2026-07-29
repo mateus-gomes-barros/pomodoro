@@ -1,15 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 
+import { useAuth } from '@/contexts/AuthContext'
 import { signInWithGoogle } from '@/services/authService'
 
 export function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false)
+  const { user, isLoading } = useAuth()
+
+  const [isSigningIn, setIsSigningIn] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isLoading) {
+      setIsSigningIn(false)
+    }
+  }, [isLoading])
 
   async function handleGoogleLogin() {
     try {
-      setIsLoading(true)
+      setIsSigningIn(true)
       setErrorMessage(null)
 
       await signInWithGoogle()
@@ -20,12 +30,21 @@ export function LoginPage() {
           : 'Não foi possível entrar com o Google.'
 
       setErrorMessage(message)
-      setIsLoading(false)
+      setIsSigningIn(false)
     }
   }
 
+  if (!isLoading && user) {
+    return (
+      <Navigate
+        to="/"
+        replace
+      />
+    )
+  }
+
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center px-5 py-10">
+    <main className="flex min-h-screen items-center justify-center bg-background px-5 py-10">
       <section className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-8 shadow-2xl">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -45,12 +64,12 @@ export function LoginPage() {
         <button
           type="button"
           onClick={handleGoogleLogin}
-          disabled={isLoading}
+          disabled={isSigningIn}
           className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white px-4 py-3 font-medium text-neutral-900 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <GoogleIcon />
 
-          {isLoading
+          {isSigningIn
             ? 'Redirecionando...'
             : 'Continuar com Google'}
         </button>
@@ -78,7 +97,7 @@ function GoogleIcon() {
       />
       <path
         fill="#34A853"
-        d="M12 22c2.7 0 4.964-.895 6.618-2.418l-3.232-2.509c-.895.6-2.041.955-3.386.955-2.605 0-4.809-1.759-5.6-4.127H3.059v2.591A9.999 9.999 0 0 0 12 22Z"
+        d="M12 22c2.7 0 4.964.895 6.618-2.418l-3.232-2.509c-.895.6-2.041.955-3.386.955-2.605 0-4.809-1.759-5.6-4.127H3.059v2.591A9.999 9.999 0 0 0 12 22Z"
       />
       <path
         fill="#FBBC05"
