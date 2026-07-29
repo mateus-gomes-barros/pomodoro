@@ -1,5 +1,11 @@
-import { useEffect, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import {
+  useEffect,
+  useState,
+} from 'react'
+import {
+  Navigate,
+  useNavigate,
+} from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -7,10 +13,22 @@ import { signInWithGoogle } from '@/services/authService'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { user, isLoading } = useAuth()
 
-  const [isSigningIn, setIsSigningIn] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const {
+    user,
+    isLoading,
+    enterDemoMode,
+  } = useAuth()
+
+  const [
+    isSigningIn,
+    setIsSigningIn,
+  ] = useState(false)
+
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoading) {
@@ -36,7 +54,7 @@ export function LoginPage() {
   }
 
   function handleDemoAccess() {
-    localStorage.setItem('focus-demo-mode', 'true')
+    enterDemoMode()
     navigate('/')
   }
 
