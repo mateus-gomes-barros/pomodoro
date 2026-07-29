@@ -22,6 +22,26 @@ export interface CreateProjectInput {
   emoji: string
 }
 
+export interface UpdateProjectInput {
+  name: string
+  description: string
+  color: string
+  emoji: string
+}
+
+const PROJECT_SELECT = `
+  id,
+  name,
+  description,
+  color,
+  emoji,
+  total_sessions,
+  completed_sessions,
+  total_focus_minutes,
+  created_at,
+  updated_at
+`
+
 function mapProjectRow(row: ProjectRow): Project {
   return {
     id: row.id,
@@ -40,18 +60,7 @@ function mapProjectRow(row: ProjectRow): Project {
 export async function getProjects(): Promise<Project[]> {
   const { data, error } = await supabase
     .from('projects')
-    .select(`
-      id,
-      name,
-      description,
-      color,
-      emoji,
-      total_sessions,
-      completed_sessions,
-      total_focus_minutes,
-      created_at,
-      updated_at
-    `)
+    .select(PROJECT_SELECT)
     .order('created_at', {
       ascending: true,
     })
@@ -67,9 +76,7 @@ export async function createProject(
   input: CreateProjectInput,
 ): Promise<Project> {
   const {
-    data: {
-      user,
-    },
+    data: { user },
     error: userError,
   } = await supabase.auth.getUser()
 
@@ -88,23 +95,11 @@ export async function createProject(
     .insert({
       user_id: user.id,
       name: input.name.trim(),
-      description:
-        input.description.trim() || null,
+      description: input.description.trim() || null,
       color: input.color,
       emoji: input.emoji,
     })
-    .select(`
-      id,
-      name,
-      description,
-      color,
-      emoji,
-      total_sessions,
-      completed_sessions,
-      total_focus_minutes,
-      created_at,
-      updated_at
-    `)
+    .select(PROJECT_SELECT)
     .single()
 
   if (error) {
@@ -112,4 +107,41 @@ export async function createProject(
   }
 
   return mapProjectRow(data as ProjectRow)
+}
+
+export async function updateProject(
+  projectId: string,
+  input: UpdateProjectInput,
+): Promise<Project> {
+  const { data, error } = await supabase
+    .from('projects')
+    .update({
+      name: input.name.trim(),
+      description: input.description.trim() || null,
+      color: input.color,
+      emoji: input.emoji,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', projectId)
+    .select(PROJECT_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapProjectRow(data as ProjectRow)
+}
+
+export async function deleteProject(
+  projectId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId)
+
+  if (error) {
+    throw error
+  }
 }
