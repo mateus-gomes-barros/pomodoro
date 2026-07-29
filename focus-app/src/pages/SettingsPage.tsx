@@ -1,18 +1,107 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/contexts/AuthContext'
+import {
+  signInWithGoogle,
+  signOut,
+} from '@/services/authService'
 
 import { usePomodoroStore } from '../store/pomodoroStore'
 import { PageHeader } from '../components/ui/PageHeader'
 
 export function SettingsPage() {
-  const { settings, updateSettings } =
-    usePomodoroStore()
+  const navigate = useNavigate()
 
   const {
     user,
     isDemoMode,
+    exitDemoMode,
   } = useAuth()
+
+  const {
+    settings,
+    updateSettings,
+  } = usePomodoroStore()
+
+  const [
+    isSigningIn,
+    setIsSigningIn,
+  ] = useState(false)
+
+  const [
+    isSigningOut,
+    setIsSigningOut,
+  ] = useState(false)
+
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState<string | null>(null)
+
+  async function handleGoogleLogin() {
+    try {
+      setIsSigningIn(true)
+      setErrorMessage(null)
+
+      await signInWithGoogle()
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not start Google login.'
+
+      console.error(
+        'Failed to sign in:',
+        error,
+      )
+
+      setErrorMessage(message)
+      setIsSigningIn(false)
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      setIsSigningOut(true)
+      setErrorMessage(null)
+
+      await signOut()
+
+      navigate(
+        '/login',
+        {
+          replace: true,
+        },
+      )
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not sign out.'
+
+      console.error(
+        'Failed to sign out:',
+        error,
+      )
+
+      setErrorMessage(message)
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
+
+  function handleExitDemoMode() {
+    exitDemoMode()
+
+    navigate(
+      '/login',
+      {
+        replace: true,
+      },
+    )
+  }
 
   return (
     <div className="p-6 lg:p-10 max-w-xl mx-auto">
@@ -40,29 +129,57 @@ export function SettingsPage() {
             Account
           </h3>
 
-          {isDemoMode ? (
+          {user ? (
+            <>
+              <p className="text-sm text-accent-white">
+                Connected Account
+              </p>
+
+              <p className="mt-2 text-sm text-accent-subtle break-all">
+                {user.email ??
+                  'Google account connected'}
+              </p>
+
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                className="mt-5 w-full rounded-xl border border-white/10 px-4 py-3 font-medium text-accent-subtle transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSigningOut
+                  ? 'Signing out...'
+                  : 'Sign Out'}
+              </button>
+            </>
+          ) : isDemoMode ? (
             <>
               <p className="text-sm text-accent-white">
                 Guest Mode
               </p>
 
               <p className="mt-2 text-sm text-accent-subtle">
-                You're using Focus without an account.
-                Your data is stored only on this
-                device.
+                You're using Focus without an
+                account. Your data is stored only
+                on this device.
               </p>
 
               <div className="mt-5 flex flex-col gap-3">
                 <button
                   type="button"
-                  className="rounded-xl bg-primary px-4 py-3 font-medium text-white opacity-60 cursor-not-allowed"
+                  onClick={handleGoogleLogin}
+                  disabled={isSigningIn}
+                  className="rounded-xl bg-accent-green px-4 py-3 font-medium text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Continue with Google
+                  {isSigningIn
+                    ? 'Redirecting...'
+                    : 'Continue with Google'}
                 </button>
 
                 <button
                   type="button"
-                  className="rounded-xl border border-white/10 px-4 py-3 font-medium text-accent-subtle opacity-60 cursor-not-allowed"
+                  onClick={handleExitDemoMode}
+                  disabled={isSigningIn}
+                  className="rounded-xl border border-white/10 px-4 py-3 font-medium text-accent-subtle transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Exit Guest Mode
                 </button>
@@ -71,20 +188,31 @@ export function SettingsPage() {
           ) : (
             <>
               <p className="text-sm text-accent-white">
-                Connected Account
+                No Account Connected
               </p>
 
-              <p className="mt-2 text-sm text-accent-subtle break-all">
-                {user?.email}
+              <p className="mt-2 text-sm text-accent-subtle">
+                Connect your Google account to
+                synchronize your Focus data.
               </p>
 
               <button
                 type="button"
-                className="mt-5 w-full rounded-xl border border-white/10 px-4 py-3 font-medium text-accent-subtle opacity-60 cursor-not-allowed"
+                onClick={handleGoogleLogin}
+                disabled={isSigningIn}
+                className="mt-5 w-full rounded-xl bg-accent-green px-4 py-3 font-medium text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Sign Out
+                {isSigningIn
+                  ? 'Redirecting...'
+                  : 'Continue with Google'}
               </button>
             </>
+          )}
+
+          {errorMessage && (
+            <p className="mt-4 text-sm text-red-400">
+              {errorMessage}
+            </p>
           )}
         </motion.div>
 
@@ -100,7 +228,7 @@ export function SettingsPage() {
             y: 0,
           }}
           transition={{
-            delay: 0,
+            delay: 0.05,
           }}
           className="card p-6"
         >
@@ -115,9 +243,9 @@ export function SettingsPage() {
               unit="min"
               min={5}
               max={90}
-              onChange={(v) =>
+              onChange={(value) =>
                 updateSettings({
-                  workDuration: v,
+                  workDuration: value,
                 })
               }
             />
@@ -130,9 +258,9 @@ export function SettingsPage() {
               unit="min"
               min={1}
               max={30}
-              onChange={(v) =>
+              onChange={(value) =>
                 updateSettings({
-                  shortBreakDuration: v,
+                  shortBreakDuration: value,
                 })
               }
             />
@@ -145,9 +273,9 @@ export function SettingsPage() {
               unit="min"
               min={5}
               max={60}
-              onChange={(v) =>
+              onChange={(value) =>
                 updateSettings({
-                  longBreakDuration: v,
+                  longBreakDuration: value,
                 })
               }
             />
@@ -160,9 +288,10 @@ export function SettingsPage() {
               unit=""
               min={2}
               max={8}
-              onChange={(v) =>
+              onChange={(value) =>
                 updateSettings({
-                  sessionsUntilLongBreak: v,
+                  sessionsUntilLongBreak:
+                    value,
                 })
               }
             />
@@ -192,12 +321,10 @@ export function SettingsPage() {
           <div className="space-y-4">
             <Toggle
               label="Sound notifications"
-              value={
-                settings.soundEnabled
-              }
-              onChange={(v) =>
+              value={settings.soundEnabled}
+              onChange={(value) =>
                 updateSettings({
-                  soundEnabled: v,
+                  soundEnabled: value,
                 })
               }
             />
@@ -207,21 +334,19 @@ export function SettingsPage() {
               value={
                 settings.autoStartBreaks
               }
-              onChange={(v) =>
+              onChange={(value) =>
                 updateSettings({
-                  autoStartBreaks: v,
+                  autoStartBreaks: value,
                 })
               }
             />
 
             <Toggle
               label="Auto-start work sessions"
-              value={
-                settings.autoStartWork
-              }
-              onChange={(v) =>
+              value={settings.autoStartWork}
+              onChange={(value) =>
                 updateSettings({
-                  autoStartWork: v,
+                  autoStartWork: value,
                 })
               }
             />
@@ -249,10 +374,9 @@ export function SettingsPage() {
           </h3>
 
           <p className="text-sm text-accent-subtle">
-            Focus v1.0 — A minimalist
-            Pomodoro and productivity app.
-            All data is stored locally on
-            your device.
+            Focus v1.0 — A minimalist Pomodoro
+            and productivity app. Guest data is
+            stored locally on your device.
           </p>
         </motion.div>
       </div>
@@ -271,7 +395,7 @@ function Setting({
   label: string
   value: number
   unit: string
-  onChange: (v: number) => void
+  onChange: (value: number) => void
   min: number
   max: number
 }) {
@@ -283,6 +407,7 @@ function Setting({
 
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={() =>
             onChange(
               Math.max(
@@ -292,6 +417,7 @@ function Setting({
             )
           }
           className="w-7 h-7 rounded-lg bg-bg-secondary flex items-center justify-center"
+          aria-label={`Decrease ${label}`}
         >
           −
         </button>
@@ -302,6 +428,7 @@ function Setting({
         </span>
 
         <button
+          type="button"
           onClick={() =>
             onChange(
               Math.min(
@@ -311,6 +438,7 @@ function Setting({
             )
           }
           className="w-7 h-7 rounded-lg bg-bg-secondary flex items-center justify-center"
+          aria-label={`Increase ${label}`}
         >
           +
         </button>
@@ -326,7 +454,7 @@ function Toggle({
 }: {
   label: string
   value: boolean
-  onChange: (v: boolean) => void
+  onChange: (value: boolean) => void
 }) {
   return (
     <div className="flex items-center justify-between">
@@ -335,6 +463,7 @@ function Toggle({
       </span>
 
       <button
+        type="button"
         onClick={() =>
           onChange(!value)
         }
@@ -343,6 +472,9 @@ function Toggle({
             ? 'bg-accent-green'
             : 'bg-bg-secondary border border-border-muted'
         }`}
+        role="switch"
+        aria-checked={value}
+        aria-label={label}
       >
         <span
           className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-300 ${
