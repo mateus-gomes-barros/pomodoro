@@ -1,8 +1,15 @@
-import { useMemo } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { motion } from 'framer-motion'
 import {
   Calendar,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Flame,
   LoaderCircle,
   Lock,
@@ -35,6 +42,8 @@ import type {
   PomodoroSession,
   StreakData,
 } from '@/types'
+
+const BADGES_PER_PAGE = 4
 
 const ACHIEVEMENTS = [
   {
@@ -143,9 +152,7 @@ function buildStreak(
       'yyyy-MM-dd',
     )
 
-    if (
-      !activeDateSet.has(dateString)
-    ) {
+    if (!activeDateSet.has(dateString)) {
       break
     }
 
@@ -207,7 +214,34 @@ function buildStreak(
   }
 }
 
+function chunkBadges() {
+  return Array.from(
+    {
+      length: Math.ceil(
+        STREAK_BADGES.length /
+          BADGES_PER_PAGE,
+      ),
+    },
+    (_, pageIndex) =>
+      STREAK_BADGES.slice(
+        pageIndex *
+          BADGES_PER_PAGE,
+        pageIndex *
+          BADGES_PER_PAGE +
+          BADGES_PER_PAGE,
+      ),
+  )
+}
+
 export function StreaksPage() {
+  const carouselRef =
+    useRef<HTMLDivElement>(null)
+
+  const [
+    activeBadgePage,
+    setActiveBadgePage,
+  ] = useState(0)
+
   const {
     totalFocusMinutes,
     isLoading: isAnalyticsLoading,
@@ -238,6 +272,11 @@ export function StreaksPage() {
 
     return buildStreak(activeDates)
   }, [sessions])
+
+  const badgePages = useMemo(
+    () => chunkBadges(),
+    [],
+  )
 
   const today = new Date()
 
@@ -278,6 +317,21 @@ export function StreaksPage() {
       ? 'day'
       : 'days'
 
+  const currentBadgeIndex =
+    STREAK_BADGES.findIndex(
+      (badge) =>
+        badge.minimumDays ===
+        currentBadge.minimumDays,
+    )
+
+  const currentBadgePage =
+    Math.floor(
+      Math.max(
+        currentBadgeIndex,
+        0,
+      ) / BADGES_PER_PAGE,
+    )
+
   const isLoading =
     isAnalyticsLoading ||
     sessionsQuery.isLoading
@@ -289,6 +343,86 @@ export function StreaksPage() {
   const error =
     analyticsError ??
     sessionsQuery.error
+
+  useEffect(() => {
+    const carousel =
+      carouselRef.current
+
+    if (!carousel || isLoading) {
+      return
+    }
+
+    setActiveBadgePage(
+      currentBadgePage,
+    )
+
+    carousel.scrollTo({
+      left:
+        currentBadgePage *
+        carousel.clientWidth,
+      behavior: 'auto',
+    })
+  }, [
+    currentBadgePage,
+    isLoading,
+  ])
+
+  function goToBadgePage(
+    pageIndex: number,
+  ) {
+    const carousel =
+      carouselRef.current
+
+    if (!carousel) {
+      return
+    }
+
+    const safePageIndex = Math.max(
+      0,
+      Math.min(
+        pageIndex,
+        badgePages.length - 1,
+      ),
+    )
+
+    carousel.scrollTo({
+      left:
+        safePageIndex *
+        carousel.clientWidth,
+      behavior: 'smooth',
+    })
+
+    setActiveBadgePage(
+      safePageIndex,
+    )
+  }
+
+  function handleCarouselScroll() {
+    const carousel =
+      carouselRef.current
+
+    if (
+      !carousel ||
+      carousel.clientWidth === 0
+    ) {
+      return
+    }
+
+    const nextPage = Math.round(
+      carousel.scrollLeft /
+        carousel.clientWidth,
+    )
+
+    setActiveBadgePage(
+      Math.max(
+        0,
+        Math.min(
+          nextPage,
+          badgePages.length - 1,
+        ),
+      ),
+    )
+  }
 
   if (isLoading) {
     return (
@@ -382,41 +516,14 @@ export function StreaksPage() {
           duration: 0.4,
           ease: 'easeOut',
         }}
-        className="
-          card
-          relative
-          mb-6
-          overflow-hidden
-          p-6
-          sm:p-8
-        "
+        className="card relative mb-6 overflow-hidden p-6 sm:p-8"
       >
         <div
-          className="
-            pointer-events-none
-            absolute
-            left-1/2
-            top-0
-            h-48
-            w-48
-            -translate-x-1/2
-            -translate-y-1/2
-            rounded-full
-            bg-white/[0.04]
-            blur-3xl
-          "
+          className="pointer-events-none absolute left-1/2 top-0 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.04] blur-3xl"
           aria-hidden="true"
         />
 
-        <div
-          className="
-            relative
-            flex
-            flex-col
-            items-center
-            text-center
-          "
-        >
+        <div className="relative flex flex-col items-center text-center">
           <motion.div
             key={currentBadge.name}
             initial={{
@@ -433,128 +540,40 @@ export function StreaksPage() {
               duration: 0.4,
               ease: 'easeOut',
             }}
-            className="
-              flex
-              h-24
-              w-24
-              items-center
-              justify-center
-              rounded-[2rem]
-              border
-              border-white/[0.08]
-              bg-white/[0.045]
-              text-6xl
-              shadow-[0_20px_60px_rgba(0,0,0,0.28)]
-            "
+            className="flex h-24 w-24 items-center justify-center rounded-[2rem] border border-white/[0.08] bg-white/[0.045] text-6xl shadow-[0_20px_60px_rgba(0,0,0,0.28)]"
             aria-hidden="true"
           >
             {currentBadge.icon}
           </motion.div>
 
-          <p
-            className="
-              mt-6
-              text-xs
-              font-semibold
-              uppercase
-              tracking-[0.2em]
-              text-white/30
-            "
-          >
+          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/30">
             Current badge
           </p>
 
-          <h2
-            className="
-              mt-2
-              text-2xl
-              font-bold
-              tracking-[-0.03em]
-              text-accent-white
-              sm:text-3xl
-            "
-          >
+          <h2 className="mt-2 text-2xl font-bold tracking-[-0.03em] text-accent-white sm:text-3xl">
             {currentBadge.name}
           </h2>
 
-          <p
-            className="
-              mt-2
-              max-w-md
-              text-sm
-              leading-6
-              text-accent-subtle
-            "
-          >
+          <p className="mt-2 max-w-md text-sm leading-6 text-accent-subtle">
             {currentBadge.description}
           </p>
 
           <div className="mt-6 flex items-end gap-2">
-            <span
-              className="
-                text-5xl
-                font-bold
-                tracking-[-0.05em]
-                text-accent-white
-              "
-            >
+            <span className="text-5xl font-bold tracking-[-0.05em] text-accent-white">
               {streak.currentStreak}
             </span>
 
-            <span
-              className="
-                pb-1
-                text-sm
-                font-medium
-                text-accent-subtle
-              "
-            >
+            <span className="pb-1 text-sm font-medium text-accent-subtle">
               {streakLabel} streak
             </span>
           </div>
 
           {nextBadge ? (
-            <div
-              className="
-                mt-8
-                w-full
-                max-w-xl
-                rounded-2xl
-                border
-                border-white/[0.06]
-                bg-white/[0.025]
-                p-4
-                text-left
-              "
-            >
-              <div
-                className="
-                  flex
-                  items-center
-                  justify-between
-                  gap-4
-                "
-              >
-                <div
-                  className="
-                    flex
-                    min-w-0
-                    items-center
-                    gap-3
-                  "
-                >
+            <div className="mt-8 w-full max-w-xl rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4 text-left">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
                   <div
-                    className="
-                      flex
-                      h-11
-                      w-11
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-2xl
-                      bg-white/[0.05]
-                      text-2xl
-                    "
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.05] text-2xl"
                     aria-hidden="true"
                   >
                     {nextBadge.icon}
@@ -565,14 +584,7 @@ export function StreaksPage() {
                       Next badge
                     </p>
 
-                    <p
-                      className="
-                        truncate
-                        text-sm
-                        font-semibold
-                        text-accent-white
-                      "
-                    >
+                    <p className="truncate text-sm font-semibold text-accent-white">
                       {nextBadge.name}
                     </p>
                   </div>
@@ -591,15 +603,7 @@ export function StreaksPage() {
                 </div>
               </div>
 
-              <div
-                className="
-                  mt-4
-                  h-2
-                  overflow-hidden
-                  rounded-full
-                  bg-white/[0.06]
-                "
-              >
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[0.06]">
                 <motion.div
                   initial={{
                     width: 0,
@@ -612,24 +616,11 @@ export function StreaksPage() {
                     delay: 0.2,
                     ease: 'easeOut',
                   }}
-                  className="
-                    h-full
-                    rounded-full
-                    bg-accent-green
-                  "
+                  className="h-full rounded-full bg-accent-green"
                 />
               </div>
 
-              <div
-                className="
-                  mt-2
-                  flex
-                  items-center
-                  justify-between
-                  text-[11px]
-                  text-white/30
-                "
-              >
+              <div className="mt-2 flex items-center justify-between text-[11px] text-white/30">
                 <span>
                   {currentBadge.minimumDays}{' '}
                   days
@@ -646,268 +637,9 @@ export function StreaksPage() {
               </div>
             </div>
           ) : (
-            <div
-              className="
-                mt-8
-                rounded-2xl
-                border
-                border-accent-green/20
-                bg-accent-green/10
-                px-5
-                py-4
-                text-sm
-                font-medium
-                text-accent-green
-              "
-            >
+            <div className="mt-8 rounded-2xl border border-accent-green/20 bg-accent-green/10 px-5 py-4 text-sm font-medium text-accent-green">
               You reached the highest streak level.
             </div>
-          )}
-        </div>
-      </motion.section>
-
-      <motion.section
-        initial={{
-          opacity: 0,
-          y: 12,
-        }}
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-        transition={{
-          delay: 0.08,
-          duration: 0.4,
-          ease: 'easeOut',
-        }}
-        className="card mb-6 p-6"
-      >
-        <div className="mb-6">
-          <h3 className="font-semibold text-accent-white">
-            Badge Journey
-          </h3>
-
-          <p className="mt-1 text-sm text-accent-subtle">
-            Build your streak and unlock every
-            level.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {STREAK_BADGES.map(
-            (badge, index) => {
-              const unlocked =
-                streak.currentStreak >=
-                badge.minimumDays
-
-              const isCurrent =
-                badge.minimumDays ===
-                currentBadge.minimumDays
-
-              const daysRemaining =
-                Math.max(
-                  badge.minimumDays -
-                    streak.currentStreak,
-                  0,
-                )
-
-              return (
-                <motion.div
-                  key={badge.minimumDays}
-                  initial={{
-                    opacity: 0,
-                    x: 8,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    x: 0,
-                  }}
-                  transition={{
-                    delay:
-                      0.12 +
-                      index * 0.025,
-                    duration: 0.3,
-                    ease: 'easeOut',
-                  }}
-                  className={cn(
-                    `
-                      relative
-                      flex
-                      items-center
-                      gap-4
-                      rounded-2xl
-                      border
-                      p-4
-                      transition
-                    `,
-                    isCurrent
-                      ? `
-                          border-accent-green/35
-                          bg-accent-green/[0.08]
-                        `
-                      : unlocked
-                        ? `
-                            border-white/[0.07]
-                            bg-white/[0.025]
-                          `
-                        : `
-                            border-white/[0.05]
-                            bg-white/[0.015]
-                          `,
-                  )}
-                >
-                  <div
-                    className={cn(
-                      `
-                        flex
-                        h-12
-                        w-12
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-2xl
-                        border
-                        text-2xl
-                      `,
-                      unlocked
-                        ? `
-                            border-white/[0.08]
-                            bg-white/[0.05]
-                          `
-                        : `
-                            border-white/[0.05]
-                            bg-white/[0.02]
-                            grayscale
-                            opacity-40
-                          `,
-                    )}
-                    aria-hidden="true"
-                  >
-                    {badge.icon}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div
-                      className="
-                        flex
-                        flex-wrap
-                        items-center
-                        gap-2
-                      "
-                    >
-                      <p
-                        className={cn(
-                          `
-                            truncate
-                            text-sm
-                            font-semibold
-                          `,
-                          unlocked
-                            ? 'text-accent-white'
-                            : 'text-white/45',
-                        )}
-                      >
-                        {badge.name}
-                      </p>
-
-                      {isCurrent && (
-                        <span
-                          className="
-                            rounded-full
-                            border
-                            border-accent-green/20
-                            bg-accent-green/10
-                            px-2
-                            py-0.5
-                            text-[10px]
-                            font-semibold
-                            uppercase
-                            tracking-[0.12em]
-                            text-accent-green
-                          "
-                        >
-                          Current
-                        </span>
-                      )}
-                    </div>
-
-                    <p
-                      className={cn(
-                        `
-                          mt-1
-                          text-xs
-                          leading-5
-                        `,
-                        unlocked
-                          ? 'text-accent-subtle'
-                          : 'text-white/25',
-                      )}
-                    >
-                      {badge.description}
-                    </p>
-                  </div>
-
-                  <div
-                    className="
-                      flex
-                      shrink-0
-                      flex-col
-                      items-end
-                      gap-1
-                      text-right
-                    "
-                  >
-                    <div
-                      className={cn(
-                        `
-                          flex
-                          h-7
-                          w-7
-                          items-center
-                          justify-center
-                          rounded-full
-                        `,
-                        unlocked
-                          ? `
-                              bg-accent-green/10
-                              text-accent-green
-                            `
-                          : `
-                              bg-white/[0.04]
-                              text-white/25
-                            `,
-                      )}
-                    >
-                      {unlocked ? (
-                        <Check size={14} />
-                      ) : (
-                        <Lock size={13} />
-                      )}
-                    </div>
-
-                    <p
-                      className={cn(
-                        `
-                          text-[11px]
-                          font-medium
-                        `,
-                        unlocked
-                          ? 'text-white/35'
-                          : 'text-white/25',
-                      )}
-                    >
-                      {unlocked
-                        ? `${badge.minimumDays} days`
-                        : `${daysRemaining} ${
-                            daysRemaining === 1
-                              ? 'day'
-                              : 'days'
-                          } left`}
-                    </p>
-                  </div>
-                </motion.div>
-              )
-            },
           )}
         </div>
       </motion.section>
@@ -941,7 +673,7 @@ export function StreaksPage() {
         </div>
       </motion.section>
 
-      <section className="card p-6">
+      <section className="card mb-6 p-6">
         <h3 className="mb-4 font-semibold text-accent-white">
           Achievements
         </h3>
@@ -992,6 +724,263 @@ export function StreaksPage() {
           )}
         </div>
       </section>
+
+      <motion.section
+        initial={{
+          opacity: 0,
+          y: 12,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.15,
+          duration: 0.4,
+          ease: 'easeOut',
+        }}
+        className="card overflow-hidden p-6"
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-accent-white">
+              Badge Journey
+            </h3>
+
+            <p className="mt-1 text-sm text-accent-subtle">
+              Swipe to explore every streak level.
+            </p>
+          </div>
+
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            <button
+              type="button"
+              onClick={() =>
+                goToBadgePage(
+                  activeBadgePage - 1,
+                )
+              }
+              disabled={
+                activeBadgePage === 0
+              }
+              aria-label="Previous badge page"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.03] text-white/50 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+            >
+              <ChevronLeft size={17} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                goToBadgePage(
+                  activeBadgePage + 1,
+                )
+              }
+              disabled={
+                activeBadgePage ===
+                badgePages.length - 1
+              }
+              aria-label="Next badge page"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.03] text-white/50 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+            >
+              <ChevronRight size={17} />
+            </button>
+          </div>
+        </div>
+
+        <div
+          ref={carouselRef}
+          onScroll={handleCarouselScroll}
+          className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {badgePages.map(
+            (badgePage, pageIndex) => (
+              <div
+                key={`badge-page-${pageIndex}`}
+                className="grid min-w-full snap-center grid-cols-2 gap-3 sm:grid-cols-4"
+              >
+                {badgePage.map(
+                  (badge) => {
+                    const unlocked =
+                      streak.currentStreak >=
+                      badge.minimumDays
+
+                    const isCurrent =
+                      badge.minimumDays ===
+                      currentBadge.minimumDays
+
+                    const daysRemaining =
+                      Math.max(
+                        badge.minimumDays -
+                          streak.currentStreak,
+                        0,
+                      )
+
+                    return (
+                      <div
+                        key={
+                          badge.minimumDays
+                        }
+                        className={cn(
+                          'relative flex min-h-48 flex-col items-center justify-between rounded-2xl border p-4 text-center transition',
+                          isCurrent
+                            ? 'border-accent-green/40 bg-accent-green/[0.08]'
+                            : unlocked
+                              ? 'border-white/[0.08] bg-white/[0.025]'
+                              : 'border-white/[0.05] bg-white/[0.015]',
+                        )}
+                      >
+                        {isCurrent && (
+                          <span className="absolute right-2.5 top-2.5 rounded-full border border-accent-green/20 bg-accent-green/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-accent-green">
+                            Current
+                          </span>
+                        )}
+
+                        <div
+                          className={cn(
+                            'mt-3 flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl',
+                            unlocked
+                              ? 'border-white/[0.08] bg-white/[0.05]'
+                              : 'border-white/[0.05] bg-white/[0.02] grayscale opacity-40',
+                          )}
+                          aria-hidden="true"
+                        >
+                          {badge.icon}
+                        </div>
+
+                        <div className="mt-4 min-w-0">
+                          <p
+                            className={cn(
+                              'truncate text-sm font-semibold',
+                              unlocked
+                                ? 'text-accent-white'
+                                : 'text-white/45',
+                            )}
+                          >
+                            {badge.name}
+                          </p>
+
+                          <p
+                            className={cn(
+                              'mt-1 line-clamp-2 text-[11px] leading-4',
+                              unlocked
+                                ? 'text-accent-subtle'
+                                : 'text-white/25',
+                            )}
+                          >
+                            {badge.description}
+                          </p>
+                        </div>
+
+                        <div className="mt-4 flex flex-col items-center gap-2">
+                          <div
+                            className={cn(
+                              'flex h-7 w-7 items-center justify-center rounded-full',
+                              unlocked
+                                ? 'bg-accent-green/10 text-accent-green'
+                                : 'bg-white/[0.04] text-white/25',
+                            )}
+                          >
+                            {unlocked ? (
+                              <Check size={14} />
+                            ) : (
+                              <Lock size={13} />
+                            )}
+                          </div>
+
+                          <p
+                            className={cn(
+                              'text-[11px] font-medium',
+                              unlocked
+                                ? 'text-white/35'
+                                : 'text-white/25',
+                            )}
+                          >
+                            {unlocked
+                              ? `${badge.minimumDays} days`
+                              : `${daysRemaining} ${
+                                  daysRemaining ===
+                                  1
+                                    ? 'day'
+                                    : 'days'
+                                } left`}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  },
+                )}
+              </div>
+            ),
+          )}
+        </div>
+
+        <div className="mt-5 flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={() =>
+              goToBadgePage(
+                activeBadgePage - 1,
+              )
+            }
+            disabled={
+              activeBadgePage === 0
+            }
+            aria-label="Previous badge page"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.03] text-white/50 transition disabled:cursor-not-allowed disabled:opacity-25 sm:hidden"
+          >
+            <ChevronLeft size={17} />
+          </button>
+
+          <div className="flex flex-1 items-center justify-center gap-2">
+            {badgePages.map(
+              (_, pageIndex) => (
+                <button
+                  key={`badge-dot-${pageIndex}`}
+                  type="button"
+                  onClick={() =>
+                    goToBadgePage(
+                      pageIndex,
+                    )
+                  }
+                  aria-label={`Go to badge page ${
+                    pageIndex + 1
+                  }`}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all duration-200',
+                    activeBadgePage ===
+                      pageIndex
+                      ? 'w-6 bg-accent-green'
+                      : 'w-1.5 bg-white/15 hover:bg-white/30',
+                  )}
+                />
+              ),
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              goToBadgePage(
+                activeBadgePage + 1,
+              )
+            }
+            disabled={
+              activeBadgePage ===
+              badgePages.length - 1
+            }
+            aria-label="Next badge page"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.03] text-white/50 transition disabled:cursor-not-allowed disabled:opacity-25 sm:hidden"
+          >
+            <ChevronRight size={17} />
+          </button>
+        </div>
+
+        <p className="mt-3 text-center text-[11px] font-medium text-white/25">
+          Page {activeBadgePage + 1} of{' '}
+          {badgePages.length}
+        </p>
+      </motion.section>
     </div>
   )
 }
