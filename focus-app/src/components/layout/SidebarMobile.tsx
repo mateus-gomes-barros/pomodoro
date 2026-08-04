@@ -132,7 +132,9 @@ export function SidebarMobile({
             }}
             className={cn(
               'lg:hidden fixed top-0 left-0 z-50',
-              'flex flex-col w-64 h-screen',
+              'flex flex-col w-64 h-[100dvh]',
+              'pt-[env(safe-area-inset-top)]',
+              'pb-[env(safe-area-inset-bottom)]',
               'bg-[#111111] border-r border-white/[0.07]',
               'touch-pan-y',
             )}

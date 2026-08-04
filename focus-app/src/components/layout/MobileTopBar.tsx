@@ -118,7 +118,8 @@ import {
           top-0
           z-30
           flex
-          h-[72px]
+          h-[calc(72px+env(safe-area-inset-top))]
+          pt-[env(safe-area-inset-top)]
           items-center
           justify-between
           border-b
