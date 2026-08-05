@@ -14,6 +14,9 @@ import {
   useGoalsWidgetSync,
 } from '@/hooks/goals/useGoalsWidgetSync'
 import {
+  useAnalyticsWidgetSync,
+} from '@/hooks/widgets/useAnalyticsWidgetSync'
+import {
   useMonthlyActivityWidgetSync,
 } from '@/hooks/widgets/useMonthlyActivityWidgetSync'
 import {
@@ -49,6 +52,7 @@ export function Layout() {
     enabled: goalsQuery.isSuccess,
   })
 
+  useAnalyticsWidgetSync()
   useMonthlyActivityWidgetSync()
   useWeeklyActivityWidgetSync()
 

@@ -25,5 +25,9 @@ class FocusBridgeViewController:
         bridge?.registerPluginInstance(
             WeeklyActivityWidgetPlugin()
         )
+
+        bridge?.registerPluginInstance(
+            AnalyticsWidgetPlugin()
+        )
     }
 }

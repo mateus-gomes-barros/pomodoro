@@ -339,8 +339,8 @@ function calculateChangePercentage(
   )
 }
 
-function buildAnalyticsTrends(
-  projects: Project[],
+export function buildAnalyticsTrends(
+    projects: Project[],
   workSessions: PomodoroSession[],
   range: TrendRange,
 ): AnalyticsTrends {
@@ -526,7 +526,7 @@ function buildAnalyticsTrends(
   }
 }
 
-function buildMonthlyFocusHistory(
+export function buildMonthlyFocusHistory(
   projects: Project[],
   workSessions: PomodoroSession[],
   amount = 6,
