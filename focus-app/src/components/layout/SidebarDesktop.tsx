@@ -15,6 +15,7 @@ import {
   LogIn,
   LogOut,
   Settings,
+  Target,
   Timer,
 } from 'lucide-react'
 import {
@@ -48,6 +49,11 @@ const navItems = [
     icon: CheckSquare,
     label: 'Tasks',
     path: '/tasks',
+  },
+  {
+    icon: Target,
+    label: 'Goals',
+    path: '/goals',
   },
   {
     icon: Flame,

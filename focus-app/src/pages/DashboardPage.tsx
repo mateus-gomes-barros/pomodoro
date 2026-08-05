@@ -6,6 +6,7 @@ import {
   Flame,
   LoaderCircle,
   Play,
+  Target,
   Timer,
   TrendingUp,
 } from 'lucide-react'
@@ -19,6 +20,7 @@ import { usePomodoroStore } from '@/store/pomodoroStore'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { useTasks } from '@/hooks/tasks/useTasks'
 import { useProjects } from '@/hooks/projects/useProjects'
+import { useGoals } from '@/hooks/goals/useGoals'
 
 import { StatCard } from '@/components/ui/Card'
 import { CircularProgress } from '@/components/ui/CircularProgress'
@@ -97,6 +99,11 @@ export function DashboardPage() {
 
   const tasksQuery = useTasks()
   const projectsQuery = useProjects()
+  const currentYear =
+  new Date().getFullYear()
+
+const goalsQuery =
+  useGoals(currentYear)
 
   const sessions =
     sessionsQuery.data ?? []
@@ -104,6 +111,14 @@ export function DashboardPage() {
   const tasks = tasksQuery.data ?? []
   const projects =
     projectsQuery.data ?? []
+  
+    const goals =
+  goalsQuery.data ?? []
+
+const completedGoalsThisYear =
+  goals.filter(
+    (goal) => goal.completed,
+  ).length
 
   const today = getTodayString()
 
@@ -236,20 +251,23 @@ export function DashboardPage() {
         ? 'afternoon'
         : 'evening'
 
-  const isLoading =
-    sessionsQuery.isLoading ||
-    tasksQuery.isLoading ||
-    projectsQuery.isLoading
+        const isLoading =
+        sessionsQuery.isLoading ||
+        tasksQuery.isLoading ||
+        projectsQuery.isLoading ||
+        goalsQuery.isLoading
 
-  const isError =
-    sessionsQuery.isError ||
-    tasksQuery.isError ||
-    projectsQuery.isError
+        const isError =
+        sessionsQuery.isError ||
+        tasksQuery.isError ||
+        projectsQuery.isError ||
+        goalsQuery.isError
 
-  const error =
-    sessionsQuery.error ??
-    tasksQuery.error ??
-    projectsQuery.error
+        const error =
+        sessionsQuery.error ??
+        tasksQuery.error ??
+        projectsQuery.error ??
+        goalsQuery.error
 
   if (isLoading) {
     return (
@@ -379,6 +397,87 @@ export function DashboardPage() {
           delay={0.15}
         />
       </div>
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: 8,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.18,
+          duration: 0.35,
+          ease: [
+            0.16,
+            1,
+            0.3,
+            1,
+          ],
+        }}
+      >
+        <Link
+          to="/goals"
+          className="
+            card
+            group
+            flex
+            items-center
+            justify-between
+            gap-5
+            px-5
+            py-4
+            transition-colors
+            hover:border-emerald-400/20
+          "
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="
+                flex
+                h-9
+                w-9
+                shrink-0
+                items-center
+                justify-center
+                rounded-xl
+                bg-emerald-400/10
+                text-accent-green
+              "
+            >
+              <Target size={17} />
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-white">
+                Goals done this year
+              </p>
+
+              <p className="mt-0.5 text-xs text-white/35">
+                View your {currentYear} goals
+              </p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-4">
+            <span className="text-2xl font-semibold text-white">
+              {completedGoalsThisYear}
+            </span>
+
+            <ArrowRight
+              size={16}
+              className="
+                text-white/25
+                transition-transform
+                group-hover:translate-x-1
+                group-hover:text-accent-green
+              "
+            />
+          </div>
+        </Link>
+      </motion.div>
 
       {/* Main content */}
 

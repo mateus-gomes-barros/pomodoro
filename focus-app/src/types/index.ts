@@ -34,6 +34,19 @@ export interface Task {
   order: number
 }
 
+// ─── Goal ───────────────────────────────────────────────────────────────────────
+
+export interface Goal {
+  id: string
+  title: string
+  year: number
+  completed: boolean
+  completedAt?: string
+  order: number
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Pomodoro Session ───────────────────────────────────────────────────────────
 
 export interface PomodoroSession {

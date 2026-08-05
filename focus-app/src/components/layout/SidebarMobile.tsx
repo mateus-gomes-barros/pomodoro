@@ -10,6 +10,7 @@ import {
   FolderOpen,
   LayoutDashboard,
   Settings,
+  Target,
   Timer,
   X,
 } from 'lucide-react'
@@ -36,6 +37,11 @@ const navItems = [
     icon: CheckSquare,
     label: 'Tasks',
     path: '/tasks',
+  },
+  {
+    icon: Target,
+    label: 'Goals',
+    path: '/goals',
   },
   {
     icon: Flame,
