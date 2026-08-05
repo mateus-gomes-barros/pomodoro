@@ -5,80 +5,234 @@
 //  Created by Mateus Gomes on 04/08/26.
 //
 
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
-struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
+struct StreakBadgeEntry: TimelineEntry {
+    let date: Date
+    let currentStreak: Int
+    let longestStreak: Int
+    let badgeName: String
+    let badgeIcon: String
+}
+
+struct StreakBadgeProvider: TimelineProvider {
+    private let sampleEntry = StreakBadgeEntry(
+        date: .now,
+        currentStreak: 4,
+        longestStreak: 12,
+        badgeName: "First Drop",
+        badgeIcon: "💧"
+    )
+
+    func placeholder(
+        in context: Context
+    ) -> StreakBadgeEntry {
+        sampleEntry
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
-        completion(entry)
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            StreakBadgeEntry
+        ) -> Void
+    ) {
+        completion(sampleEntry)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        var entries: [SimpleEntry] = []
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<StreakBadgeEntry>
+        ) -> Void
+    ) {
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ?? .now.addingTimeInterval(3600)
 
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, emoji: "😀")
-            entries.append(entry)
-        }
+        let timeline = Timeline(
+            entries: [sampleEntry],
+            policy: .after(nextUpdate)
+        )
 
-        let timeline = Timeline(entries: entries, policy: .atEnd)
         completion(timeline)
     }
-
-//    func relevances() async -> WidgetRelevances<Void> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
 }
 
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let emoji: String
-}
+struct StreakBadgeView: View {
+    let entry: StreakBadgeEntry
 
-struct FocusWidgetEntryView : View {
-    var entry: Provider.Entry
+    private var streakText: String {
+        entry.currentStreak == 1
+            ? "day streak"
+            : "days streak"
+    }
 
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
+        VStack(
+            alignment: .leading,
+            spacing: 0
+        ) {
+            HStack(
+                alignment: .top,
+                spacing: 10
+            ) {
+                ZStack {
+                    RoundedRectangle(
+                        cornerRadius: 14,
+                        style: .continuous
+                    )
+                    .fill(
+                        Color.white.opacity(0.07)
+                    )
 
-            Text("Emoji:")
-            Text(entry.emoji)
+                    RoundedRectangle(
+                        cornerRadius: 14,
+                        style: .continuous
+                    )
+                    .stroke(
+                        Color.white.opacity(0.08),
+                        lineWidth: 1
+                    )
+
+                    Text(entry.badgeIcon)
+                        .font(.system(size: 27))
+                }
+                .frame(
+                    width: 48,
+                    height: 48
+                )
+
+                Spacer(minLength: 4)
+
+                Text(
+                    "\(entry.currentStreak)"
+                )
+                .font(
+                    .system(
+                        size: 42,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color(
+                        red: 0.45,
+                        green: 0.95,
+                        blue: 0.64
+                    )
+                )
+                .minimumScaleFactor(0.75)
+            }
+
+            Spacer(minLength: 8)
+
+            Text(entry.badgeName)
+                .font(
+                    .system(
+                        size: 15,
+                        weight: .semibold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(.white)
+                .lineLimit(1)
+
+            Text(streakText)
+                .font(
+                    .system(
+                        size: 12,
+                        weight: .medium
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(0.5)
+                )
+
+            HStack(spacing: 5) {
+                Image(
+                    systemName: "trophy.fill"
+                )
+                .font(.system(size: 9))
+
+                Text(
+                    "Best \(entry.longestStreak)"
+                )
+                .font(
+                    .system(
+                        size: 10,
+                        weight: .semibold
+                    )
+                )
+            }
+            .foregroundStyle(
+                Color.white.opacity(0.35)
+            )
+            .padding(.top, 7)
         }
+        .padding(16)
     }
 }
 
 struct FocusWidget: Widget {
-    let kind: String = "FocusWidget"
+    let kind = "StreakBadgeWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+        StaticConfiguration(
+            kind: kind,
+            provider: StreakBadgeProvider()
+        ) { entry in
             if #available(iOS 17.0, *) {
-                FocusWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
+                StreakBadgeView(
+                    entry: entry
+                )
+                .containerBackground(
+                    for: .widget
+                ) {
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                }
             } else {
-                FocusWidgetEntryView(entry: entry)
-                    .padding()
-                    .background()
+                StreakBadgeView(
+                    entry: entry
+                )
+                .background(
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                )
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName(
+            "Streak Badge"
+        )
+        .description(
+            "Mostra sua ofensiva e sua insígnia atual."
+        )
+        .supportedFamilies([
+            .systemSmall
+        ])
     }
 }
 
-#Preview(as: .systemSmall) {
+#Preview(
+    as: .systemSmall
+) {
     FocusWidget()
 } timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
+    StreakBadgeEntry(
+        date: .now,
+        currentStreak: 4,
+        longestStreak: 12,
+        badgeName: "First Drop",
+        badgeIcon: "💧"
+    )
 }
