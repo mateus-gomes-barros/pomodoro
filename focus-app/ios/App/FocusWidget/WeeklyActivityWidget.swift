@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftUI
+import UIKit
 import WidgetKit
 
 struct WeeklyActivityDay:
@@ -282,6 +283,11 @@ struct WeeklyActivityView:
     let entry:
         WeeklyActivityEntry
 
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
     private let accentColor =
         Color(
             red: 0.45,
@@ -319,12 +325,12 @@ struct WeeklyActivityView:
             HStack {
                 VStack(
                     alignment: .leading,
-                    spacing: 3
+                    spacing: isPad ? 2 : 3
                 ) {
                     Text("YOUR WEEK")
                         .font(
                             .system(
-                                size: 10,
+                                size: isPad ? 8 : 10,
                                 weight: .bold,
                                 design: .rounded
                             )
@@ -341,7 +347,7 @@ struct WeeklyActivityView:
                     )
                     .font(
                         .system(
-                            size: 17,
+                            size: isPad ? 14 : 17,
                             weight: .semibold,
                             design: .rounded
                         )
@@ -353,7 +359,9 @@ struct WeeklyActivityView:
 
                 Spacer()
 
-                HStack(spacing: 5) {
+                HStack(
+                    spacing: isPad ? 4 : 5
+                ) {
                     Image(
                         systemName:
                             "flame.fill"
@@ -366,7 +374,7 @@ struct WeeklyActivityView:
                 }
                 .font(
                     .system(
-                        size: 13,
+                        size: isPad ? 11 : 13,
                         weight: .bold,
                         design: .rounded
                     )
@@ -376,11 +384,11 @@ struct WeeklyActivityView:
                 )
                 .padding(
                     .horizontal,
-                    10
+                    isPad ? 8 : 10
                 )
                 .padding(
                     .vertical,
-                    7
+                    isPad ? 4 : 7
                 )
                 .background(
                     accentColor.opacity(
@@ -391,18 +399,21 @@ struct WeeklyActivityView:
             }
 
             Spacer(
-                minLength: 12
+                minLength: isPad ? 5 : 12
             )
 
             HStack(spacing: 0) {
                 ForEach(
                     entry.days
                 ) { day in
-                    VStack(spacing: 7) {
+                    VStack(
+                        spacing: isPad ? 3 : 7
+                    ) {
                         Text(day.label)
                             .font(
                                 .system(
-                                    size: 10,
+                                    size:
+                                        isPad ? 8 : 10,
                                     weight:
                                         .semibold,
                                     design:
@@ -455,14 +466,16 @@ struct WeeklyActivityView:
                                         accentColor
                                     )
                                     .frame(
-                                        width: 10,
-                                        height: 10
+                                        width:
+                                            isPad ? 8 : 10,
+                                        height:
+                                            isPad ? 8 : 10
                                     )
                             }
                         }
                         .frame(
-                            width: 30,
-                            height: 30
+                            width: isPad ? 24 : 30,
+                            height: isPad ? 24 : 30
                         )
 
                         Text(
@@ -472,7 +485,7 @@ struct WeeklyActivityView:
                         )
                         .font(
                             .system(
-                                size: 9,
+                                size: isPad ? 8 : 9,
                                 weight: .medium,
                                 design: .rounded
                             )
@@ -499,7 +512,7 @@ struct WeeklyActivityView:
             }
 
             Spacer(
-                minLength: 12
+                minLength: isPad ? 5 : 12
             )
 
             HStack {
@@ -508,7 +521,7 @@ struct WeeklyActivityView:
                 )
                 .font(
                     .system(
-                        size: 13,
+                        size: isPad ? 11 : 13,
                         weight: .semibold,
                         design: .rounded
                     )
@@ -522,7 +535,7 @@ struct WeeklyActivityView:
                 )
                 .font(
                     .system(
-                        size: 11,
+                        size: isPad ? 9 : 11,
                         weight: .medium
                     )
                 )
@@ -540,7 +553,7 @@ struct WeeklyActivityView:
                 )
                 .font(
                     .system(
-                        size: 11
+                        size: isPad ? 9 : 11
                     )
                 )
                 .foregroundStyle(
@@ -550,7 +563,18 @@ struct WeeklyActivityView:
                 )
             }
         }
-        .padding(16)
+        .padding(
+            .horizontal,
+            isPad ? 14 : 16
+        )
+        .padding(
+            .top,
+            isPad ? 10 : 16
+        )
+        .padding(
+            .bottom,
+            isPad ? 8 : 16
+        )
     }
 }
 
