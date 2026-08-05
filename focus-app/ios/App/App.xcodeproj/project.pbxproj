@@ -66,6 +66,7 @@
 		1231C0B83022B4CF0095BAFC /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				FocusLiveActivityTest.swift,
 				Info.plist,
 			);
 			target = 1231C0A43022B4CD0095BAFC /* FocusWidgetExtension */;
@@ -74,6 +75,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				FocusActivityAttributes.swift,
+				FocusLiveActivityTest.swift,
 			);
 			target = 504EC3031FED79650016851F /* App */;
 		};
