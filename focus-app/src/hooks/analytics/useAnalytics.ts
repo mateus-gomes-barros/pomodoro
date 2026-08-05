@@ -55,6 +55,33 @@ export interface AnalyticsTrends {
   topProjects: ProjectTrend[]
 }
 
+export interface MonthlyProjectSummary {
+  id: string
+  name: string
+  emoji: string
+  color: string
+  focusMinutes: number
+}
+
+export interface MonthlyFocusHistoryItem {
+  key: string
+  label: string
+  fullLabel: string
+  focusMinutes: number
+  sessionsCompleted: number
+  activeDays: number
+  topProject: MonthlyProjectSummary | null
+}
+
+export interface MonthlyFocusHistory {
+  months: MonthlyFocusHistoryItem[]
+  totalFocusMinutes: number
+  averageMonthlyFocusMinutes: number
+  latestMonthChangePercentage: number | null
+  bestMonth: MonthlyFocusHistoryItem | null
+  topProject: MonthlyProjectSummary | null
+}
+
 interface TrendPeriod {
   currentStart: Date | null
   currentEnd: Date
@@ -437,7 +464,10 @@ function buildAnalyticsTrends(
           0,
       )
       .sort(
-        (firstProject, secondProject) =>
+        (
+          firstProject,
+          secondProject,
+        ) =>
           secondProject.currentFocusMinutes -
           firstProject.currentFocusMinutes,
       )
@@ -493,6 +523,261 @@ function buildAnalyticsTrends(
     ).size,
     mostProductiveWeekday,
     topProjects,
+  }
+}
+
+function buildMonthlyFocusHistory(
+  projects: Project[],
+  workSessions: PomodoroSession[],
+  amount = 6,
+): MonthlyFocusHistory {
+  const today = new Date()
+
+  const projectById = new Map(
+    projects.map((project) => [
+      project.id,
+      project,
+    ]),
+  )
+
+  const monthStarts = Array.from(
+    {
+      length: amount,
+    },
+    (_, index) =>
+      startOfMonth(
+        subMonths(
+          today,
+          amount - 1 - index,
+        ),
+      ),
+  )
+
+  const monthKeys = new Set(
+    monthStarts.map((monthStart) =>
+      format(
+        monthStart,
+        'yyyy-MM',
+      ),
+    ),
+  )
+
+  const historySessions =
+    workSessions.filter((session) =>
+      monthKeys.has(
+        session.date.slice(0, 7),
+      ),
+    )
+
+  const months =
+    monthStarts.map(
+      (
+        monthStart,
+      ): MonthlyFocusHistoryItem => {
+        const monthKey = format(
+          monthStart,
+          'yyyy-MM',
+        )
+
+        const monthSessions =
+          historySessions.filter(
+            (session) =>
+              session.date.startsWith(
+                monthKey,
+              ),
+          )
+
+        const projectMinutes =
+          new Map<string, number>()
+
+        monthSessions.forEach(
+          (session) => {
+            if (!session.projectId) {
+              return
+            }
+
+            projectMinutes.set(
+              session.projectId,
+              (projectMinutes.get(
+                session.projectId,
+              ) ?? 0) +
+                session.durationMinutes,
+            )
+          },
+        )
+
+        const topProjectEntry =
+          Array.from(
+            projectMinutes.entries(),
+          ).sort(
+            (
+              firstProject,
+              secondProject,
+            ) =>
+              secondProject[1] -
+              firstProject[1],
+          )[0]
+
+        const topProjectData =
+          topProjectEntry
+            ? projectById.get(
+                topProjectEntry[0],
+              )
+            : null
+
+        const topProject =
+          topProjectEntry &&
+          topProjectData
+            ? {
+                id: topProjectData.id,
+                name:
+                  topProjectData.name,
+                emoji:
+                  topProjectData.emoji,
+                color:
+                  topProjectData.color,
+                focusMinutes:
+                  topProjectEntry[1],
+              }
+            : null
+
+        return {
+          key: monthKey,
+          label: format(
+            monthStart,
+            'MMM',
+          ),
+          fullLabel: format(
+            monthStart,
+            'MMMM yyyy',
+          ),
+          focusMinutes:
+            monthSessions.reduce(
+              (
+                total,
+                session,
+              ) =>
+                total +
+                session.durationMinutes,
+              0,
+            ),
+          sessionsCompleted:
+            monthSessions.length,
+          activeDays: new Set(
+            monthSessions.map(
+              (session) =>
+                session.date,
+            ),
+          ).size,
+          topProject,
+        }
+      },
+    )
+
+  const totalFocusMinutes =
+    months.reduce(
+      (total, month) =>
+        total +
+        month.focusMinutes,
+      0,
+    )
+
+  const bestMonth =
+    [...months]
+      .filter(
+        (month) =>
+          month.focusMinutes > 0,
+      )
+      .sort(
+        (
+          firstMonth,
+          secondMonth,
+        ) =>
+          secondMonth.focusMinutes -
+          firstMonth.focusMinutes,
+      )[0] ?? null
+
+  const overallProjectMinutes =
+    new Map<string, number>()
+
+  historySessions.forEach(
+    (session) => {
+      if (!session.projectId) {
+        return
+      }
+
+      overallProjectMinutes.set(
+        session.projectId,
+        (overallProjectMinutes.get(
+          session.projectId,
+        ) ?? 0) +
+          session.durationMinutes,
+      )
+    },
+  )
+
+  const overallTopProjectEntry =
+    Array.from(
+      overallProjectMinutes.entries(),
+    ).sort(
+      (
+        firstProject,
+        secondProject,
+      ) =>
+        secondProject[1] -
+        firstProject[1],
+    )[0]
+
+  const overallTopProjectData =
+    overallTopProjectEntry
+      ? projectById.get(
+          overallTopProjectEntry[0],
+        )
+      : null
+
+  const topProject =
+    overallTopProjectEntry &&
+    overallTopProjectData
+      ? {
+          id:
+            overallTopProjectData.id,
+          name:
+            overallTopProjectData.name,
+          emoji:
+            overallTopProjectData.emoji,
+          color:
+            overallTopProjectData.color,
+          focusMinutes:
+            overallTopProjectEntry[1],
+        }
+      : null
+
+  const latestMonth =
+    months[months.length - 1]
+
+  const previousMonth =
+    months[months.length - 2]
+
+  return {
+    months,
+    totalFocusMinutes,
+    averageMonthlyFocusMinutes:
+      months.length > 0
+        ? Math.round(
+            totalFocusMinutes /
+              months.length,
+          )
+        : 0,
+    latestMonthChangePercentage:
+      latestMonth &&
+      previousMonth
+        ? calculateChangePercentage(
+            latestMonth.focusMinutes,
+            previousMonth.focusMinutes,
+          )
+        : null,
+    bestMonth,
+    topProject,
   }
 }
 
@@ -594,6 +879,12 @@ export function useAnalytics(
       trendRange,
     )
 
+  const monthlyHistory =
+    buildMonthlyFocusHistory(
+      projects,
+      workSessions,
+    )
+
   const isLoading =
     sessionsQuery.isLoading ||
     tasksQuery.isLoading ||
@@ -612,6 +903,7 @@ export function useAnalytics(
   return {
     weeklyData,
     monthlyData,
+    monthlyHistory,
     totalFocusMinutes,
     totalSessions,
     averageDailyFocusMinutes,

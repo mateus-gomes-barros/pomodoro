@@ -228,6 +228,7 @@ export function AnalyticsPage() {
   const {
     weeklyData,
     monthlyData,
+    monthlyHistory,
     totalFocusMinutes,
     totalSessions,
     averageDailyFocusMinutes,
@@ -286,6 +287,23 @@ export function AnalyticsPage() {
 
   const hasProjectTrendData =
     trends.topProjects.length > 0
+
+  const hasMonthlyHistoryData =
+    monthlyHistory.totalFocusMinutes > 0
+
+  const maximumMonthlyFocus =
+    Math.max(
+      ...monthlyHistory.months.map(
+        (month) =>
+          month.focusMinutes,
+      ),
+      1,
+    )
+
+  const latestMonth =
+    monthlyHistory.months[
+      monthlyHistory.months.length - 1
+    ]
 
   if (isLoading) {
     return (
@@ -627,6 +645,322 @@ export function AnalyticsPage() {
         </div>
       </motion.div>
 
+      {/* Monthly history */}
+
+      <motion.section
+        initial={{
+          opacity: 0,
+          y: 6,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.28,
+        }}
+        className="space-y-5"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[15px] font-semibold text-white">
+              Last 6 Months
+            </p>
+
+            <p className="mt-1 text-[12px] text-white/35">
+              Your monthly focus history
+            </p>
+          </div>
+
+          {hasMonthlyHistoryData && (
+            <div className="flex items-center gap-2">
+              {monthlyHistory.latestMonthChangePercentage ===
+              null ? (
+                <span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-[10px] font-medium text-white/35">
+                  No previous month data
+                </span>
+              ) : monthlyHistory.latestMonthChangePercentage >
+                0 ? (
+                <span className="flex items-center gap-1 rounded-full bg-emerald-400/10 px-3 py-1.5 text-[10px] font-semibold text-emerald-300">
+                  <ArrowUpRight
+                    size={12}
+                  />
+
+                  {
+                    monthlyHistory.latestMonthChangePercentage
+                  }
+                  % from last month
+                </span>
+              ) : monthlyHistory.latestMonthChangePercentage <
+                0 ? (
+                <span className="flex items-center gap-1 rounded-full bg-red-400/10 px-3 py-1.5 text-[10px] font-semibold text-red-300">
+                  <ArrowDownRight
+                    size={12}
+                  />
+
+                  {Math.abs(
+                    monthlyHistory.latestMonthChangePercentage,
+                  )}
+                  % from last month
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 rounded-full bg-white/[0.05] px-3 py-1.5 text-[10px] font-medium text-white/35">
+                  <Minus size={12} />
+
+                  Unchanged
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="card p-6">
+          {!hasMonthlyHistoryData ? (
+            <div className="flex min-h-[260px] items-center justify-center">
+              <div className="max-w-[270px] text-center">
+                <CalendarDays
+                  size={28}
+                  className="mx-auto text-white/20"
+                />
+
+                <p className="mt-4 text-[13px] font-medium text-white/45">
+                  No monthly focus history yet
+                </p>
+
+                <p className="mt-1.5 text-[11px] leading-relaxed text-white/25">
+                  Complete Pomodoro sessions to build
+                  your monthly progress history.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-7 xl:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.7fr)]">
+              <div className="min-w-0">
+                <div className="overflow-x-auto pb-2">
+                  <div className="grid min-w-[560px] grid-cols-6 gap-4">
+                    {monthlyHistory.months.map(
+                      (
+                        month,
+                        index,
+                      ) => {
+                        const barPercentage =
+                          month.focusMinutes > 0
+                            ? Math.max(
+                                (month.focusMinutes /
+                                  maximumMonthlyFocus) *
+                                  100,
+                                7,
+                              )
+                            : 0
+
+                        return (
+                          <motion.div
+                            key={month.key}
+                            initial={{
+                              opacity: 0,
+                              y: 8,
+                            }}
+                            animate={{
+                              opacity: 1,
+                              y: 0,
+                            }}
+                            transition={{
+                              delay:
+                                0.32 +
+                                index *
+                                  0.05,
+                            }}
+                            className="flex min-w-0 flex-col"
+                          >
+                            <div className="mb-3 text-center">
+                              <p className="font-mono text-[11px] font-semibold text-white/60">
+                                {formatDuration(
+                                  month.focusMinutes,
+                                )}
+                              </p>
+
+                              <p className="mt-0.5 text-[9px] text-white/25">
+                                {
+                                  month.sessionsCompleted
+                                }{' '}
+                                {month.sessionsCompleted ===
+                                1
+                                  ? 'session'
+                                  : 'sessions'}
+                              </p>
+                            </div>
+
+                            <div className="flex h-44 items-end justify-center rounded-2xl bg-white/[0.025] px-3 pt-3">
+                              <motion.div
+                                initial={{
+                                  height:
+                                    0,
+                                }}
+                                animate={{
+                                  height: `${barPercentage}%`,
+                                }}
+                                transition={{
+                                  duration:
+                                    0.75,
+                                  ease: 'easeOut',
+                                  delay:
+                                    0.35 +
+                                    index *
+                                      0.05,
+                                }}
+                                className="relative w-full max-w-12 rounded-t-xl bg-emerald-400/75"
+                              >
+                                {month.topProject && (
+                                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-lg">
+                                    {
+                                      month.topProject
+                                        .emoji
+                                    }
+                                  </span>
+                                )}
+                              </motion.div>
+                            </div>
+
+                            <div className="mt-3 text-center">
+                              <p className="text-[11px] font-semibold uppercase text-white/55">
+                                {
+                                  month.label
+                                }
+                              </p>
+
+                              <p className="mt-0.5 text-[9px] text-white/25">
+                                {
+                                  month.activeDays
+                                }{' '}
+                                {month.activeDays ===
+                                1
+                                  ? 'active day'
+                                  : 'active days'}
+                              </p>
+                            </div>
+                          </motion.div>
+                        )
+                      },
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                    Six-month total
+                  </p>
+
+                  <p className="mt-2 font-mono text-[22px] font-semibold text-white/85">
+                    {formatDuration(
+                      monthlyHistory.totalFocusMinutes,
+                    )}
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-white/30">
+                    Average of{' '}
+                    {formatDuration(
+                      monthlyHistory.averageMonthlyFocusMinutes,
+                    )}{' '}
+                    per month
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-amber-400/10">
+                      <Trophy
+                        size={17}
+                        className="text-amber-300"
+                      />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                        Best month
+                      </p>
+
+                      <p className="mt-1 truncate text-[13px] font-semibold text-white/75">
+                        {monthlyHistory.bestMonth
+                          ?.fullLabel ??
+                          'No data'}
+                      </p>
+
+                      <p className="mt-0.5 font-mono text-[10px] text-white/35">
+                        {monthlyHistory.bestMonth
+                          ? formatDuration(
+                              monthlyHistory.bestMonth
+                                .focusMinutes,
+                            )
+                          : '0m'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-lg"
+                      style={{
+                        backgroundColor:
+                          monthlyHistory.topProject
+                            ? `${monthlyHistory.topProject.color}18`
+                            : 'rgba(255,255,255,0.04)',
+                      }}
+                    >
+                      {monthlyHistory.topProject
+                        ?.emoji ?? '—'}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                        Top project
+                      </p>
+
+                      <p className="mt-1 truncate text-[13px] font-semibold text-white/75">
+                        {monthlyHistory.topProject
+                          ?.name ??
+                          'None yet'}
+                      </p>
+
+                      <p className="mt-0.5 font-mono text-[10px] text-white/35">
+                        {monthlyHistory.topProject
+                          ? formatDuration(
+                              monthlyHistory.topProject
+                                .focusMinutes,
+                            )
+                          : '0m'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                    Current month
+                  </p>
+
+                  <p className="mt-2 text-[13px] font-semibold text-white/75">
+                    {latestMonth?.fullLabel ??
+                      'Current month'}
+                  </p>
+
+                  <p className="mt-1 font-mono text-[10px] text-white/35">
+                    {latestMonth
+                      ? formatDuration(
+                          latestMonth.focusMinutes,
+                        )
+                      : '0m'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.section>
+
       {/* Trends */}
 
       <motion.section
@@ -739,8 +1073,6 @@ export function AnalyticsPage() {
               </div>
             ) : (
               <div className="space-y-7">
-                {/* Top 3 projects */}
-
                 <div>
                   <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/30">
                     Top 3 Projects
@@ -862,8 +1194,6 @@ export function AnalyticsPage() {
                     )}
                   </div>
                 </div>
-
-                {/* Other projects */}
 
                 {otherProjects.length >
                   0 && (
