@@ -65,10 +65,16 @@ struct StreakBadgeProvider: TimelineProvider {
 struct StreakBadgeView: View {
     let entry: StreakBadgeEntry
 
-    private var streakText: String {
+    private let accentColor = Color(
+        red: 0.45,
+        green: 0.95,
+        blue: 0.64
+    )
+
+    private var streakUnit: String {
         entry.currentStreak == 1
-            ? "day streak"
-            : "days streak"
+            ? "day"
+            : "days"
     }
 
     var body: some View {
@@ -76,56 +82,108 @@ struct StreakBadgeView: View {
             alignment: .leading,
             spacing: 0
         ) {
-            HStack(
-                alignment: .top,
-                spacing: 10
-            ) {
-                ZStack {
-                    RoundedRectangle(
-                        cornerRadius: 14,
-                        style: .continuous
+            HStack {
+                Text("STREAK")
+                    .font(
+                        .system(
+                            size: 10,
+                            weight: .bold,
+                            design: .rounded
+                        )
                     )
-                    .fill(
-                        Color.white.opacity(0.07)
-                    )
-
-                    RoundedRectangle(
-                        cornerRadius: 14,
-                        style: .continuous
-                    )
-                    .stroke(
-                        Color.white.opacity(0.08),
-                        lineWidth: 1
+                    .tracking(1.2)
+                    .foregroundStyle(
+                        Color.white.opacity(0.35)
                     )
 
-                    Text(entry.badgeIcon)
-                        .font(.system(size: 27))
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Image(
+                        systemName: "trophy.fill"
+                    )
+
+                    Text(
+                        "\(entry.longestStreak)"
+                    )
                 }
-                .frame(
-                    width: 48,
-                    height: 48
-                )
-
-                Spacer(minLength: 4)
-
-                Text(
-                    "\(entry.currentStreak)"
-                )
                 .font(
                     .system(
-                        size: 42,
-                        weight: .bold,
+                        size: 10,
+                        weight: .semibold,
                         design: .rounded
                     )
                 )
                 .foregroundStyle(
-                    Color(
-                        red: 0.45,
-                        green: 0.95,
-                        blue: 0.64
-                    )
+                    Color.white.opacity(0.4)
                 )
-                .minimumScaleFactor(0.75)
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(
+                alignment: .center,
+                spacing: 12
+            ) {
+                ZStack {
+                    RoundedRectangle(
+                        cornerRadius: 16,
+                        style: .continuous
+                    )
+                    .fill(
+                        accentColor.opacity(0.1)
+                    )
+
+                    RoundedRectangle(
+                        cornerRadius: 16,
+                        style: .continuous
+                    )
+                    .stroke(
+                        accentColor.opacity(0.18),
+                        lineWidth: 1
+                    )
+
+                    Text(entry.badgeIcon)
+                        .font(
+                            .system(size: 29)
+                        )
+                }
+                .frame(
+                    width: 54,
+                    height: 54
+                )
+
+                VStack(
+                    alignment: .leading,
+                    spacing: -2
+                ) {
+                    Text(
+                        "\(entry.currentStreak)"
+                    )
+                    .font(
+                        .system(
+                            size: 40,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        accentColor
+                    )
+                    .minimumScaleFactor(0.7)
+
+                    Text(streakUnit)
+                        .font(
+                            .system(
+                                size: 11,
+                                weight: .semibold,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundStyle(
+                            Color.white.opacity(0.45)
+                        )
+                }
             }
 
             Spacer(minLength: 8)
@@ -133,7 +191,7 @@ struct StreakBadgeView: View {
             Text(entry.badgeName)
                 .font(
                     .system(
-                        size: 15,
+                        size: 14,
                         weight: .semibold,
                         design: .rounded
                     )
@@ -141,39 +199,19 @@ struct StreakBadgeView: View {
                 .foregroundStyle(.white)
                 .lineLimit(1)
 
-            Text(streakText)
+            Text("Current badge")
                 .font(
                     .system(
-                        size: 12,
+                        size: 10,
                         weight: .medium
                     )
                 )
                 .foregroundStyle(
-                    Color.white.opacity(0.5)
+                    Color.white.opacity(0.3)
                 )
-
-            HStack(spacing: 5) {
-                Image(
-                    systemName: "trophy.fill"
-                )
-                .font(.system(size: 9))
-
-                Text(
-                    "Best \(entry.longestStreak)"
-                )
-                .font(
-                    .system(
-                        size: 10,
-                        weight: .semibold
-                    )
-                )
-            }
-            .foregroundStyle(
-                Color.white.opacity(0.35)
-            )
-            .padding(.top, 7)
+                .padding(.top, 2)
         }
-        .padding(16)
+        .padding(15)
     }
 }
 
