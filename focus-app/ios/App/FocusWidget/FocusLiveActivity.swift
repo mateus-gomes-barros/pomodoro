@@ -116,50 +116,147 @@ private struct FocusActivityTimerText: View {
     }
 }
 
-private struct FocusActivityDetailsText: View {
+private struct FocusLockScreenDetailsView: View {
     let state: FocusActivityAttributes.ContentState
 
-    private var details: String {
-        var values: [String] = []
-
-        if let projectName = state.projectName,
-           !projectName.isEmpty {
-            values.append(projectName)
+    private var hasProject: Bool {
+        guard let projectName =
+            state.projectName
+        else {
+            return false
         }
 
-        if let taskName = state.taskName,
-           !taskName.isEmpty {
-            values.append(taskName)
+        return !projectName.isEmpty
+    }
+
+    private var hasTask: Bool {
+        guard let taskName =
+            state.taskName
+        else {
+            return false
         }
 
-        return values.joined(
-            separator: "  •  "
-        )
+        return !taskName.isEmpty
     }
 
     var body: some View {
-        if !details.isEmpty {
-            Text(details)
-                .font(
-                    .system(
-                        size: 12,
-                        weight: .semibold,
-                        design: .rounded
-                    )
-                )
-                .foregroundStyle(
-                    Color.white.opacity(0.8)
-                )
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
-                .truncationMode(.tail)
+        if hasProject || hasTask {
+            VStack(spacing: 4) {
+                if
+                    let projectName =
+                        state.projectName,
+                    !projectName.isEmpty
+                {
+                    Text(projectName)
+                        .font(
+                            .system(
+                                size: 15,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                        .truncationMode(.tail)
+                }
+
+                if
+                    let taskName =
+                        state.taskName,
+                    !taskName.isEmpty
+                {
+                    Text(taskName)
+                        .font(
+                            .system(
+                                size: 11,
+                                weight: .medium,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundStyle(
+                            Color.white.opacity(
+                                0.55
+                            )
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                        .truncationMode(.tail)
+                }
+            }
+            .frame(
+                maxWidth: .infinity,
+                alignment: .center
+            )
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 16)
         }
+    }
+}
+
+private struct FocusExpandedDetailsView: View {
+    let state: FocusActivityAttributes.ContentState
+
+    var body: some View {
+        VStack(spacing: 2) {
+            if
+                let projectName =
+                    state.projectName,
+                !projectName.isEmpty
+            {
+                Text(projectName)
+                    .font(
+                        .system(
+                            size: 12,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .truncationMode(.tail)
+            }
+
+            if
+                let taskName =
+                    state.taskName,
+                !taskName.isEmpty
+            {
+                Text(taskName)
+                    .font(
+                        .system(
+                            size: 10,
+                            weight: .medium,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.55
+                        )
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .truncationMode(.tail)
+            }
+        }
+        .frame(
+            maxWidth: .infinity,
+            alignment: .center
+        )
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 38)
+        .padding(.top, 1)
+        .padding(.bottom, 2)
     }
 }
 
 private struct FocusLockScreenActivityView: View {
     let context:
-        ActivityViewContext<FocusActivityAttributes>
+        ActivityViewContext<
+            FocusActivityAttributes
+        >
 
     private var state:
         FocusActivityAttributes.ContentState
@@ -168,88 +265,77 @@ private struct FocusLockScreenActivityView: View {
     }
 
     var body: some View {
-        VStack(
-            alignment: .leading,
-            spacing: 12
-        ) {
-            HStack {
-                HStack(spacing: 9) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                focusAccentColor.opacity(
-                                    0.14
-                                )
-                            )
-
-                        Image(
-                            systemName:
-                                state.sessionType
-                                    .compactIcon
-                        )
-                        .font(
-                            .system(
-                                size: 14,
-                                weight: .semibold
-                            )
-                        )
-                        .foregroundStyle(
-                            focusAccentColor
-                        )
-                    }
-                    .frame(
-                        width: 34,
-                        height: 34
-                    )
-
-                    VStack(
-                        alignment: .leading,
-                        spacing: 2
-                    ) {
-                        Text(
-                            state.sessionType.title
-                        )
-                        .font(
-                            .system(
-                                size: 11,
-                                weight: .bold,
-                                design: .rounded
-                            )
-                        )
-                        .tracking(1)
-                        .foregroundStyle(
-                            focusAccentColor
-                        )
-
-                        Text(state.status.title)
-                            .font(
-                                .system(
-                                    size: 11,
-                                    weight: .medium
-                                )
-                            )
-                            .foregroundStyle(
-                                Color.white.opacity(
-                                    0.45
-                                )
-                            )
-                    }
-                }
-
-                Spacer()
-
-                FocusActivityTimerText(
-                    state: state,
-                    fontSize: 28
+        VStack(spacing: 10) {
+            HStack(spacing: 6) {
+                Image(
+                    systemName:
+                        state.sessionType
+                            .compactIcon
                 )
-                .foregroundStyle(.white)
-            }
+                .font(
+                    .system(
+                        size: 13,
+                        weight: .semibold
+                    )
+                )
 
-            FocusActivityDetailsText(
+                Text(
+                    state.sessionType.title
+                )
+                .font(
+                    .system(
+                        size: 12,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .tracking(1.3)
+            }
+            .foregroundStyle(
+                focusAccentColor
+            )
+            .lineLimit(1)
+
+            FocusActivityTimerText(
+                state: state,
+                fontSize: 38
+            )
+            .foregroundStyle(.white)
+            .frame(
+                maxWidth: .infinity,
+                alignment: .center
+            )
+
+            Text(state.status.title)
+                .font(
+                    .system(
+                        size: 11,
+                        weight: .medium,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(0.45)
+                )
+
+            Rectangle()
+                .fill(
+                    Color.white.opacity(0.08)
+                )
+                .frame(height: 1)
+                .padding(.horizontal, 2)
+
+            FocusLockScreenDetailsView(
                 state: state
             )
         }
-        .padding(16)
+        .frame(
+            maxWidth: .infinity,
+            alignment: .center
+        )
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .activityBackgroundTint(
             Color(
                 red: 0.035,
@@ -282,47 +368,55 @@ struct FocusLiveActivity: Widget {
                 DynamicIslandExpandedRegion(
                     .leading
                 ) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                focusAccentColor.opacity(
-                                    0.14
+                    HStack {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    focusAccentColor
+                                        .opacity(0.14)
+                                )
+
+                            Image(
+                                systemName:
+                                    context
+                                        .state
+                                        .sessionType
+                                        .compactIcon
+                            )
+                            .font(
+                                .system(
+                                    size: 14,
+                                    weight: .semibold
                                 )
                             )
-
-                        Image(
-                            systemName:
-                                context.state
-                                    .sessionType
-                                    .compactIcon
-                        )
-                        .font(
-                            .system(
-                                size: 14,
-                                weight: .semibold
+                            .foregroundStyle(
+                                focusAccentColor
                             )
-                        )
-                        .foregroundStyle(
-                            focusAccentColor
+                        }
+                        .frame(
+                            width: 36,
+                            height: 36
                         )
                     }
                     .frame(
-                        width: 34,
-                        height: 34
+                        width: 72,
+                        alignment: .center
                     )
                 }
 
                 DynamicIslandExpandedRegion(
                     .trailing
                 ) {
-                    FocusActivityTimerText(
-                        state: context.state,
-                        fontSize: 18
-                    )
-                    .foregroundStyle(.white)
+                    HStack {
+                        FocusActivityTimerText(
+                            state: context.state,
+                            fontSize: 18
+                        )
+                        .foregroundStyle(.white)
+                    }
                     .frame(
-                        maxWidth: 76,
-                        alignment: .trailing
+                        width: 72,
+                        alignment: .center
                     )
                 }
 
@@ -330,7 +424,8 @@ struct FocusLiveActivity: Widget {
                     .center
                 ) {
                     Text(
-                        context.state
+                        context
+                            .state
                             .sessionType
                             .title
                     )
@@ -346,53 +441,24 @@ struct FocusLiveActivity: Widget {
                         focusAccentColor
                     )
                     .lineLimit(1)
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .center
+                    )
                 }
 
                 DynamicIslandExpandedRegion(
                     .bottom
                 ) {
-                    HStack(spacing: 8) {
-                        FocusActivityDetailsText(
-                            state: context.state
-                        )
-
-                        Spacer(minLength: 4)
-
-                        if
-                            context.state.status ==
-                                .paused
-                        {
-                            HStack(spacing: 4) {
-                                Image(
-                                    systemName:
-                                        "pause.fill"
-                                )
-
-                                Text("Paused")
-                            }
-                            .font(
-                                .system(
-                                    size: 10,
-                                    weight: .semibold,
-                                    design: .rounded
-                                )
-                            )
-                            .foregroundStyle(
-                                focusAccentColor
-                            )
-                        }
-                    }
-                    .frame(
-                        maxWidth: .infinity,
-                        alignment: .leading
+                    FocusExpandedDetailsView(
+                        state: context.state
                     )
-                    .padding(.top, 2)
-                    .padding(.bottom, 2)
                 }
             } compactLeading: {
                 Image(
                     systemName:
-                        context.state
+                        context
+                            .state
                             .sessionType
                             .compactIcon
                 )
@@ -413,11 +479,15 @@ struct FocusLiveActivity: Widget {
                 .foregroundStyle(
                     focusAccentColor
                 )
-                .frame(maxWidth: 54)
+                .frame(
+                    width: 54,
+                    alignment: .center
+                )
             } minimal: {
                 Image(
                     systemName:
-                        context.state
+                        context
+                            .state
                             .sessionType
                             .compactIcon
                 )
@@ -437,7 +507,9 @@ struct FocusLiveActivity: Widget {
                         "com.mateusgomes.focusapp://timer"
                 )
             )
-            .keylineTint(focusAccentColor)
+            .keylineTint(
+                focusAccentColor
+            )
         }
     }
 }

@@ -9,6 +9,10 @@ import {
   useIncrementTaskPomodoro,
   useTasks,
 } from '@/hooks/tasks/useTasks'
+import {
+  endFocusLiveActivity,
+  startFocusLiveActivity,
+} from '@/services/focusLiveActivityService'
 import { usePomodoroStore } from '@/store/pomodoroStore'
 
 import type {
@@ -32,11 +36,29 @@ function getSessionDuration(
   }
 }
 
+function getLiveActivityRemainingSeconds(
+  endsAt: number | null,
+  secondsLeft: number,
+): number {
+  if (endsAt === null) {
+    return secondsLeft
+  }
+
+  return Math.max(
+    0,
+    Math.ceil(
+      (endsAt - Date.now()) / 1000,
+    ),
+  )
+}
+
 export function useTimer() {
   const {
     status,
     sessionType,
     settings,
+    secondsLeft,
+    endsAt,
     tick,
     activeTaskId,
     activeProjectId,
@@ -67,6 +89,12 @@ export function useTimer() {
 
   const previousSettingsRef =
     useRef(settings)
+
+  const liveActivityStateRef =
+    useRef<string | null>(null)
+
+  const hasSyncedLiveActivityRef =
+    useRef(false)
 
   useEffect(() => {
     const previousStatus =
@@ -179,6 +207,105 @@ export function useTimer() {
     createPomodoroSessionMutation,
     incrementTaskPomodoroMutation,
     incrementProjectSessionMutation,
+  ])
+
+  useEffect(() => {
+    if (
+      status !== 'running' &&
+      status !== 'paused'
+    ) {
+      const needsToEndActivity =
+        !hasSyncedLiveActivityRef.current ||
+        liveActivityStateRef.current !==
+          null
+
+      if (needsToEndActivity) {
+        hasSyncedLiveActivityRef.current =
+          true
+
+        liveActivityStateRef.current =
+          null
+
+        void endFocusLiveActivity()
+      }
+
+      return
+    }
+
+    const activeTask =
+      tasksQuery.data?.find(
+        (task) =>
+          task.id === activeTaskId,
+      )
+
+    const resolvedProjectId =
+      activeProjectId ??
+      activeTask?.projectId ??
+      null
+
+    const activeProject =
+      projectsQuery.data?.find(
+        (project) =>
+          project.id ===
+          resolvedProjectId,
+      )
+
+    const remainingSeconds =
+      getLiveActivityRemainingSeconds(
+        status === 'running'
+          ? endsAt
+          : null,
+        secondsLeft,
+      )
+
+    const activityStateSignature = [
+      status,
+      sessionType,
+      endsAt ?? 'no-end-date',
+      status === 'paused'
+        ? remainingSeconds
+        : 'countdown',
+      activeProject?.name ?? '',
+      activeTask?.title ?? '',
+    ].join('|')
+
+    const stateHasNotChanged =
+      hasSyncedLiveActivityRef.current &&
+      liveActivityStateRef.current ===
+        activityStateSignature
+
+    if (stateHasNotChanged) {
+      return
+    }
+
+    hasSyncedLiveActivityRef.current =
+      true
+
+    liveActivityStateRef.current =
+      activityStateSignature
+
+    void startFocusLiveActivity({
+      sessionType,
+      status,
+      endDate:
+        status === 'running'
+          ? endsAt
+          : null,
+      remainingSeconds,
+      projectName:
+        activeProject?.name,
+      taskName:
+        activeTask?.title,
+    })
+  }, [
+    status,
+    sessionType,
+    secondsLeft,
+    endsAt,
+    activeTaskId,
+    activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
   ])
 
   useEffect(() => {
