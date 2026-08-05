@@ -181,7 +181,7 @@ export function Layout() {
         className="
           flex-1
           min-w-0
-          overflow-x-hidden
+          overflow-x-clip
         "
       >
         <MobileTopBar

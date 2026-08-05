@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   signInWithGoogle,
   signOut,
+  updateDisplayName,
 } from '@/services/authService'
 
 import { usePomodoroStore } from '../store/pomodoroStore'
@@ -36,6 +37,31 @@ export function SettingsPage() {
   ] = useState(false)
 
   const [
+    displayName,
+    setDisplayName,
+  ] = useState(() => {
+    const metadataName =
+      user?.user_metadata?.display_name ??
+      user?.user_metadata?.full_name ??
+      user?.user_metadata?.name
+
+    return typeof metadataName ===
+      'string'
+      ? metadataName
+      : ''
+  })
+
+  const [
+    isSavingDisplayName,
+    setIsSavingDisplayName,
+  ] = useState(false)
+
+  const [
+    displayNameMessage,
+    setDisplayNameMessage,
+  ] = useState<string | null>(null)
+
+  const [
     errorMessage,
     setErrorMessage,
   ] = useState<string | null>(null)
@@ -59,6 +85,48 @@ export function SettingsPage() {
 
       setErrorMessage(message)
       setIsSigningIn(false)
+    }
+  }
+
+  async function handleSaveDisplayName() {
+    try {
+      setIsSavingDisplayName(true)
+      setErrorMessage(null)
+      setDisplayNameMessage(null)
+
+      const updatedUser =
+        await updateDisplayName(
+          displayName,
+        )
+
+      const savedName =
+        updatedUser.user_metadata
+          ?.display_name
+
+      if (
+        typeof savedName ===
+        'string'
+      ) {
+        setDisplayName(savedName)
+      }
+
+      setDisplayNameMessage(
+        'Display name saved.',
+      )
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not save your display name.'
+
+      console.error(
+        'Failed to update display name:',
+        error,
+      )
+
+      setErrorMessage(message)
+    } finally {
+      setIsSavingDisplayName(false)
     }
   }
 
@@ -139,6 +207,97 @@ export function SettingsPage() {
                 {user.email ??
                   'Google account connected'}
               </p>
+
+              <div className="mt-6">
+                <label
+                  htmlFor="display-name"
+                  className="text-sm font-medium text-accent-white"
+                >
+                  Display name
+                </label>
+
+                <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
+                  This name will appear in your
+                  Dashboard greeting.
+                </p>
+
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                  <input
+                    id="display-name"
+                    type="text"
+                    value={displayName}
+                    onChange={(event) => {
+                      setDisplayName(
+                        event.target.value,
+                      )
+                      setDisplayNameMessage(
+                        null,
+                      )
+                    }}
+                    maxLength={40}
+                    autoComplete="name"
+                    placeholder="Your name"
+                    className="
+                      min-w-0
+                      flex-1
+                      rounded-xl
+                      border
+                      border-white/10
+                      bg-white/[0.035]
+                      px-4
+                      py-3
+                      text-sm
+                      text-white
+                      outline-none
+                      transition
+                      placeholder:text-white/25
+                      focus:border-accent-green/50
+                      focus:ring-2
+                      focus:ring-accent-green/10
+                    "
+                  />
+
+<button
+  type="button"
+  onClick={handleSaveDisplayName}
+  disabled={
+    isSavingDisplayName ||
+    !displayName.trim()
+  }
+  className="
+    w-full
+    rounded-xl
+    border
+    border-accent-green
+    bg-accent-green
+    px-5
+    py-3
+    text-sm
+    font-semibold
+   text-white
+    shadow-[0_8px_24px_rgba(52,211,153,0.12)]
+    transition
+    duration-200
+    hover:brightness-110
+    active:scale-[0.98]
+    disabled:cursor-not-allowed
+    disabled:opacity-40
+    sm:w-auto
+    sm:min-w-[130px]
+  "
+>
+  {isSavingDisplayName
+    ? 'Saving...'
+    : 'Save name'}
+</button>
+                </div>
+
+                {displayNameMessage && (
+                  <p className="mt-3 text-sm text-accent-green">
+                    {displayNameMessage}
+                  </p>
+                )}
+              </div>
 
               <button
                 type="button"

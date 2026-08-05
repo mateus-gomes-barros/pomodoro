@@ -16,6 +16,7 @@ import {
   subDays,
 } from 'date-fns'
 
+import { useAuth } from '@/contexts/AuthContext'
 import { usePomodoroStore } from '@/store/pomodoroStore'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { useTasks } from '@/hooks/tasks/useTasks'
@@ -86,6 +87,10 @@ function calculateCurrentStreak(
 }
 
 export function DashboardPage() {
+  const {
+    user,
+  } = useAuth()
+
   const {
     status,
     sessionType,
@@ -251,6 +256,19 @@ const completedGoalsThisYear =
         ? 'afternoon'
         : 'evening'
 
+  const metadataName =
+    user?.user_metadata
+      ?.display_name ??
+    user?.user_metadata
+      ?.full_name ??
+    user?.user_metadata
+      ?.name
+
+  const displayName =
+    typeof metadataName === 'string'
+      ? metadataName.trim()
+      : ''
+
         const isLoading =
         sessionsQuery.isLoading ||
         tasksQuery.isLoading ||
@@ -328,6 +346,9 @@ const completedGoalsThisYear =
 
         <h1 className="text-3xl font-bold tracking-tight text-white">
           Good {greeting}
+          {displayName
+            ? `, ${displayName}`
+            : ''}
         </h1>
 
         <p className="mt-2 text-sm leading-relaxed text-white/45">
