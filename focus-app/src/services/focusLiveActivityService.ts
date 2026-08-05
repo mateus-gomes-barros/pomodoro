@@ -19,6 +19,7 @@ import {
     remainingSeconds: number
     projectName?: string
     taskName?: string
+    badgeIcon?: string
   }
   
   interface StartResult {

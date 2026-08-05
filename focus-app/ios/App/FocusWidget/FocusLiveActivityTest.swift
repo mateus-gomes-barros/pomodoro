@@ -10,7 +10,8 @@ enum FocusLiveActivityTest {
     @available(iOS 16.2, *)
     static func start() {
         guard ActivityAuthorizationInfo()
-            .areActivitiesEnabled else {
+            .areActivitiesEnabled
+        else {
             print(
                 "Live Activities are disabled."
             )
@@ -19,7 +20,8 @@ enum FocusLiveActivityTest {
 
         guard Activity<
             FocusActivityAttributes
-        >.activities.isEmpty else {
+        >.activities.isEmpty
+        else {
             print(
                 "A Focus Live Activity is already running."
             )
@@ -27,6 +29,7 @@ enum FocusLiveActivityTest {
         }
 
         let duration: TimeInterval = 120
+
         let endDate = Date()
             .addingTimeInterval(duration)
 
@@ -46,13 +49,16 @@ enum FocusLiveActivityTest {
                     ),
                     projectName: "Focus App",
                     taskName:
-                        "Testing Dynamic Island"
+                        "Testing Dynamic Island",
+                    badgeIcon: "🔥"
                 )
 
         let content = ActivityContent(
             state: state,
             staleDate:
-                endDate.addingTimeInterval(30)
+                endDate.addingTimeInterval(
+                    30
+                )
         )
 
         do {

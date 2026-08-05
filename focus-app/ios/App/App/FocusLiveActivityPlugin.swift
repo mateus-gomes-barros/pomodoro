@@ -335,6 +335,12 @@ public class FocusLiveActivityPlugin:
                         call.getString(
                             "taskName"
                         )
+                    ),
+                badgeIcon:
+                    normalizedText(
+                        call.getString(
+                            "badgeIcon"
+                        )
                     )
             )
     }

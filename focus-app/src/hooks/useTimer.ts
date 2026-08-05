@@ -1,6 +1,17 @@
-import { useEffect, useRef } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react'
+import {
+  format,
+  subDays,
+} from 'date-fns'
 
-import { useCreatePomodoroSession } from '@/hooks/pomodoro/usePomodoroSessions'
+import {
+  useCreatePomodoroSession,
+  usePomodoroSessions,
+} from '@/hooks/pomodoro/usePomodoroSessions'
 import {
   useIncrementProjectSession,
   useProjects,
@@ -9,6 +20,7 @@ import {
   useIncrementTaskPomodoro,
   useTasks,
 } from '@/hooks/tasks/useTasks'
+import { getStreakBadge } from '@/lib/streakBadges'
 import {
   endFocusLiveActivity,
   startFocusLiveActivity,
@@ -52,6 +64,62 @@ function getLiveActivityRemainingSeconds(
   )
 }
 
+function calculateCurrentStreak(
+  activeDates: string[],
+): number {
+  const uniqueDates = new Set(
+    activeDates,
+  )
+
+  const today = new Date()
+
+  const todayString = format(
+    today,
+    'yyyy-MM-dd',
+  )
+
+  const yesterday = subDays(
+    today,
+    1,
+  )
+
+  const yesterdayString = format(
+    yesterday,
+    'yyyy-MM-dd',
+  )
+
+  let currentDate: Date | null =
+    uniqueDates.has(todayString)
+      ? today
+      : uniqueDates.has(
+            yesterdayString,
+          )
+        ? yesterday
+        : null
+
+  let currentStreak = 0
+
+  while (currentDate) {
+    const dateString = format(
+      currentDate,
+      'yyyy-MM-dd',
+    )
+
+    if (!uniqueDates.has(dateString)) {
+      break
+    }
+
+    currentStreak += 1
+
+    currentDate = subDays(
+      currentDate,
+      1,
+    )
+  }
+
+  return currentStreak
+}
+
 export function useTimer() {
   const {
     status,
@@ -66,6 +134,8 @@ export function useTimer() {
 
   const tasksQuery = useTasks()
   const projectsQuery = useProjects()
+  const sessionsQuery =
+    usePomodoroSessions()
 
   const createPomodoroSessionMutation =
     useCreatePomodoroSession()
@@ -75,6 +145,27 @@ export function useTimer() {
 
   const incrementProjectSessionMutation =
     useIncrementProjectSession()
+
+  const currentBadge = useMemo(() => {
+    const workSessionDates =
+      (sessionsQuery.data ?? [])
+        .filter(
+          (session) =>
+            session.type === 'work',
+        )
+        .map(
+          (session) => session.date,
+        )
+
+    const currentStreak =
+      calculateCurrentStreak(
+        workSessionDates,
+      )
+
+    return getStreakBadge(
+      currentStreak,
+    )
+  }, [sessionsQuery.data])
 
   const intervalRef =
     useRef<ReturnType<
@@ -267,6 +358,7 @@ export function useTimer() {
         : 'countdown',
       activeProject?.name ?? '',
       activeTask?.title ?? '',
+      currentBadge.icon,
     ].join('|')
 
     const stateHasNotChanged =
@@ -296,6 +388,8 @@ export function useTimer() {
         activeProject?.name,
       taskName:
         activeTask?.title,
+      badgeIcon:
+        currentBadge.icon,
     })
   }, [
     status,
@@ -306,6 +400,7 @@ export function useTimer() {
     activeProjectId,
     tasksQuery.data,
     projectsQuery.data,
+    currentBadge.icon,
   ])
 
   useEffect(() => {

@@ -116,6 +116,52 @@ private struct FocusActivityTimerText: View {
     }
 }
 
+private struct FocusProjectTitleView: View {
+    let state: FocusActivityAttributes.ContentState
+    let fontSize: CGFloat
+
+    var body: some View {
+        if
+            let projectName = state.projectName,
+            !projectName.isEmpty
+        {
+            HStack(spacing: 6) {
+                if
+                    let badgeIcon = state.badgeIcon,
+                    !badgeIcon.isEmpty
+                {
+                    Text(badgeIcon)
+                        .font(
+                            .system(
+                                size: fontSize + 1
+                            )
+                        )
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+
+                Text(projectName)
+                    .font(
+                        .system(
+                            size: fontSize,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .truncationMode(.tail)
+            }
+            .frame(
+                maxWidth: .infinity,
+                alignment: .center
+            )
+            .multilineTextAlignment(.center)
+        }
+    }
+}
+
 private struct FocusLockScreenDetailsView: View {
     let state: FocusActivityAttributes.ContentState
 
@@ -142,24 +188,10 @@ private struct FocusLockScreenDetailsView: View {
     var body: some View {
         if hasProject || hasTask {
             VStack(spacing: 4) {
-                if
-                    let projectName =
-                        state.projectName,
-                    !projectName.isEmpty
-                {
-                    Text(projectName)
-                        .font(
-                            .system(
-                                size: 15,
-                                weight: .bold,
-                                design: .rounded
-                            )
-                        )
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.65)
-                        .truncationMode(.tail)
-                }
+                FocusProjectTitleView(
+                    state: state,
+                    fontSize: 15
+                )
 
                 if
                     let taskName =
@@ -199,24 +231,10 @@ private struct FocusExpandedDetailsView: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            if
-                let projectName =
-                    state.projectName,
-                !projectName.isEmpty
-            {
-                Text(projectName)
-                    .font(
-                        .system(
-                            size: 12,
-                            weight: .bold,
-                            design: .rounded
-                        )
-                    )
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .truncationMode(.tail)
-            }
+            FocusProjectTitleView(
+                state: state,
+                fontSize: 12
+            )
 
             if
                 let taskName =
