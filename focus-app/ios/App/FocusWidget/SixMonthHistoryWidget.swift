@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftUI
+import UIKit
 import WidgetKit
 
 private struct SixMonthWidgetSnapshot:
@@ -318,6 +319,11 @@ private struct SixMonthHistoryView:
 {
     let entry: SixMonthHistoryEntry
 
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
     private var history:
         SixMonthHistorySnapshot
     {
@@ -399,12 +405,20 @@ private struct SixMonthHistoryView:
             header
 
             monthChart
-                .padding(.top, 18)
+                .padding(
+                    .top,
+                    isPad ? 10 : 18
+                )
 
             summaryCards
-                .padding(.top, 16)
+                .padding(
+                    .top,
+                    isPad ? 10 : 16
+                )
         }
-        .padding(17)
+        .padding(
+            isPad ? 12 : 17
+        )
     }
 
     private var header: some View {
@@ -572,7 +586,7 @@ private struct SixMonthHistoryView:
     private var monthChart: some View {
         HStack(
             alignment: .bottom,
-            spacing: 8
+            spacing: isPad ? 5 : 8
         ) {
             ForEach(
                 Array(
@@ -602,7 +616,9 @@ private struct SixMonthHistoryView:
                 "#7EE081"
         )
 
-        return VStack(spacing: 6) {
+        return VStack(
+            spacing: isPad ? 4 : 6
+        ) {
             Text(
                 formatCompactDuration(
                     month.focusMinutes
@@ -711,7 +727,9 @@ private struct SixMonthHistoryView:
                     maxHeight: .infinity
                 )
             }
-            .frame(height: 125)
+            .frame(
+                height: isPad ? 104 : 125
+            )
 
             Text(
                 month.label.uppercased()
@@ -754,7 +772,9 @@ private struct SixMonthHistoryView:
     }
 
     private var summaryCards: some View {
-        HStack(spacing: 10) {
+        HStack(
+            spacing: isPad ? 6 : 10
+        ) {
             bestMonthCard
 
             topProjectCard
@@ -762,7 +782,9 @@ private struct SixMonthHistoryView:
     }
 
     private var bestMonthCard: some View {
-        HStack(spacing: 10) {
+        HStack(
+            spacing: isPad ? 6 : 10
+        ) {
             ZStack {
                 RoundedRectangle(
                     cornerRadius: 11,
@@ -793,8 +815,8 @@ private struct SixMonthHistoryView:
                 )
             }
             .frame(
-                width: 34,
-                height: 34
+                width: isPad ? 28 : 34,
+                height: isPad ? 28 : 34
             )
 
             VStack(
@@ -815,6 +837,11 @@ private struct SixMonthHistoryView:
                             0.24
                         )
                     )
+                    .lineLimit(1)
+                    .minimumScaleFactor(
+                        isPad ? 0.7 : 1
+                    )
+                    .allowsTightening(true)
 
                 Text(
                     history.bestMonth?.fullLabel ??
@@ -856,7 +883,9 @@ private struct SixMonthHistoryView:
 
             Spacer(minLength: 0)
         }
-        .padding(11)
+        .padding(
+            isPad ? 8 : 11
+        )
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(
@@ -884,7 +913,9 @@ private struct SixMonthHistoryView:
     }
 
     private var topProjectCard: some View {
-        HStack(spacing: 10) {
+        HStack(
+            spacing: isPad ? 6 : 10
+        ) {
             ZStack {
                 RoundedRectangle(
                     cornerRadius: 11,
@@ -904,8 +935,8 @@ private struct SixMonthHistoryView:
                 )
             }
             .frame(
-                width: 34,
-                height: 34
+                width: isPad ? 28 : 34,
+                height: isPad ? 28 : 34
             )
 
             VStack(
@@ -926,6 +957,11 @@ private struct SixMonthHistoryView:
                             0.24
                         )
                     )
+                    .lineLimit(1)
+                    .minimumScaleFactor(
+                        isPad ? 0.7 : 1
+                    )
+                    .allowsTightening(true)
 
                 Text(
                     history.topProject?.name ??
@@ -967,7 +1003,9 @@ private struct SixMonthHistoryView:
 
             Spacer(minLength: 0)
         }
-        .padding(11)
+        .padding(
+            isPad ? 8 : 11
+        )
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(
