@@ -21,5 +21,9 @@ class FocusBridgeViewController:
         bridge?.registerPluginInstance(
             MonthlyActivityWidgetPlugin()
         )
+
+        bridge?.registerPluginInstance(
+            WeeklyActivityWidgetPlugin()
+        )
     }
 }

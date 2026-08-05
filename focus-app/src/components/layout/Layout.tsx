@@ -16,6 +16,9 @@ import {
 import {
   useMonthlyActivityWidgetSync,
 } from '@/hooks/widgets/useMonthlyActivityWidgetSync'
+import {
+  useWeeklyActivityWidgetSync,
+} from '@/hooks/widgets/useWeeklyActivityWidgetSync'
 
 import {
   MobileTopBar,
@@ -45,6 +48,7 @@ export function Layout() {
   })
 
   useMonthlyActivityWidgetSync()
+  useWeeklyActivityWidgetSync()
 
   const [
     mobileOpen,
