@@ -5,13 +5,14 @@
 //  Created by Mateus Gomes on 04/08/26.
 //
 
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
 @main
 struct FocusWidgetBundle: WidgetBundle {
     var body: some Widget {
         FocusWidget()
+        WeeklyActivityWidget()
         FocusWidgetControl()
     }
 }
