@@ -20,6 +20,9 @@ struct FocusWidgetBundle: WidgetBundle {
         MonthlyActivityWidget()
         GoalsWidget()
         FocusLiveActivity()
-        FocusWidgetControl()
+
+        if #available(iOS 18.0, *) {
+            FocusWidgetControl()
+        }
     }
 }

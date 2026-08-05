@@ -9,10 +9,16 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-struct FocusWidgetControl: ControlWidget {
-    var body: some ControlWidgetConfiguration {
+@available(iOS 18.0, *)
+struct FocusWidgetControl:
+    ControlWidget
+{
+    var body:
+        some ControlWidgetConfiguration
+    {
         StaticControlConfiguration(
-            kind: "com.mateusgomes.focusapp.FocusWidget",
+            kind:
+                "com.mateusgomes.focusapp.FocusWidget",
             provider: Provider()
         ) { value in
             ControlWidgetToggle(
@@ -20,35 +26,57 @@ struct FocusWidgetControl: ControlWidget {
                 isOn: value,
                 action: StartTimerIntent()
             ) { isRunning in
-                Label(isRunning ? "On" : "Off", systemImage: "timer")
+                Label(
+                    isRunning
+                        ? "On"
+                        : "Off",
+                    systemImage: "timer"
+                )
             }
         }
         .displayName("Timer")
-        .description("A an example control that runs a timer.")
+        .description(
+            "A control that runs a timer."
+        )
     }
 }
 
+@available(iOS 18.0, *)
 extension FocusWidgetControl {
-    struct Provider: ControlValueProvider {
+    struct Provider:
+        ControlValueProvider
+    {
         var previewValue: Bool {
             false
         }
 
-        func currentValue() async throws -> Bool {
-            let isRunning = true // Check if the timer is running
+        func currentValue()
+            async throws -> Bool
+        {
+            let isRunning = true
+
             return isRunning
         }
     }
 }
 
-struct StartTimerIntent: SetValueIntent {
-    static let title: LocalizedStringResource = "Start a timer"
+@available(iOS 18.0, *)
+struct StartTimerIntent:
+    SetValueIntent
+{
+    static let title:
+        LocalizedStringResource =
+            "Start a timer"
 
-    @Parameter(title: "Timer is running")
+    @Parameter(
+        title: "Timer is running"
+    )
     var value: Bool
 
-    func perform() async throws -> some IntentResult {
-        // Start / stop the timer based on `value`.
+    func perform()
+        async throws ->
+        some IntentResult
+    {
         return .result()
     }
 }
