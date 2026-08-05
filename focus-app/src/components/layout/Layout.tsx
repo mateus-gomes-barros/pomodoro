@@ -13,6 +13,9 @@ import {
 import {
   useGoalsWidgetSync,
 } from '@/hooks/goals/useGoalsWidgetSync'
+import {
+  useMonthlyActivityWidgetSync,
+} from '@/hooks/widgets/useMonthlyActivityWidgetSync'
 
 import {
   MobileTopBar,
@@ -40,6 +43,8 @@ export function Layout() {
     year: currentYear,
     enabled: goalsQuery.isSuccess,
   })
+
+  useMonthlyActivityWidgetSync()
 
   const [
     mobileOpen,

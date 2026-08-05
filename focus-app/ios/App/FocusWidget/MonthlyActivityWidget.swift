@@ -3,100 +3,237 @@
 //  FocusWidget
 //
 
+import Foundation
 import SwiftUI
 import WidgetKit
 
-struct MonthlyActivityDay: Identifiable {
+struct MonthlyActivityDay:
+    Identifiable
+{
     let id: Int
     let dayNumber: Int?
     let focusMinutes: Int
     let isToday: Bool
 
     var isActive: Bool {
-        dayNumber != nil && focusMinutes > 0
+        dayNumber != nil &&
+        focusMinutes > 0
     }
 }
 
-struct MonthlyActivityEntry: TimelineEntry {
+private struct MonthlyActivityDaySnapshot:
+    Codable
+{
+    let date: String
+    let focusMinutes: Int
+}
+
+private struct MonthlyActivityWidgetSnapshot:
+    Codable
+{
+    let year: Int
+    let month: Int
+    let monthTitle: String
+    let longestStreak: Int
+    let days: [
+        MonthlyActivityDaySnapshot
+    ]
+}
+
+struct MonthlyActivityEntry:
+    TimelineEntry
+{
     let date: Date
     let monthTitle: String
     let longestStreak: Int
-    let days: [MonthlyActivityDay]
+    let days: [
+        MonthlyActivityDay
+    ]
 }
 
-private func makeMonthlySampleDays() -> [MonthlyActivityDay] {
-    let focusMinutesByDay: [Int: Int] = [
-        1: 0,
-        2: 25,
-        3: 50,
-        4: 35,
-        5: 0,
-        6: 70,
-        7: 25,
-        8: 40,
-        9: 0,
-        10: 25,
-        11: 80,
-        12: 45,
-        13: 0,
-        14: 30,
-        15: 55,
-        16: 0,
-        17: 25,
-        18: 40,
-        19: 65,
-        20: 0,
-        21: 90,
-        22: 30,
-        23: 0,
-        24: 50,
-        25: 25,
-        26: 75,
-        27: 0,
-        28: 40,
-        29: 60,
-        30: 25,
-        31: 0
+private func makeCalendarDays(
+    year: Int,
+    month: Int,
+    focusMinutesByDate: [
+        String: Int
     ]
+) -> [MonthlyActivityDay] {
+    var calendar =
+        Calendar(
+            identifier: .gregorian
+        )
 
-    var calendarDays: [MonthlyActivityDay] = []
+    calendar.firstWeekday = 2
 
-    for index in 0..<42 {
-        let calculatedDay = index - 4
-
-        if calculatedDay >= 1 && calculatedDay <= 31 {
-            calendarDays.append(
-                MonthlyActivityDay(
-                    id: index,
-                    dayNumber: calculatedDay,
-                    focusMinutes:
-                        focusMinutesByDay[calculatedDay] ?? 0,
-                    isToday: calculatedDay == 4
+    guard
+        let firstDay =
+            calendar.date(
+                from: DateComponents(
+                    year: year,
+                    month: month,
+                    day: 1
                 )
+            ),
+        let dayRange =
+            calendar.range(
+                of: .day,
+                in: .month,
+                for: firstDay
             )
-        } else {
-            calendarDays.append(
-                MonthlyActivityDay(
-                    id: index,
-                    dayNumber: nil,
-                    focusMinutes: 0,
-                    isToday: false
-                )
-            )
-        }
+    else {
+        return []
     }
 
-    return calendarDays
+    let firstWeekday =
+        calendar.component(
+            .weekday,
+            from: firstDay
+        )
+
+    let leadingEmptyDays =
+        (firstWeekday + 5) % 7
+
+    let todayComponents =
+        calendar.dateComponents(
+            [
+                .year,
+                .month,
+                .day
+            ],
+            from: .now
+        )
+
+    return (0..<42).map {
+        index in
+
+        let dayNumber =
+            index -
+            leadingEmptyDays +
+            1
+
+        guard
+            dayRange.contains(
+                dayNumber
+            )
+        else {
+            return MonthlyActivityDay(
+                id: index,
+                dayNumber: nil,
+                focusMinutes: 0,
+                isToday: false
+            )
+        }
+
+        let dateKey =
+            String(
+                format:
+                    "%04d-%02d-%02d",
+                year,
+                month,
+                dayNumber
+            )
+
+        let isToday =
+            todayComponents.year ==
+                year &&
+            todayComponents.month ==
+                month &&
+            todayComponents.day ==
+                dayNumber
+
+        return MonthlyActivityDay(
+            id: index,
+            dayNumber: dayNumber,
+            focusMinutes:
+                focusMinutesByDate[
+                    dateKey
+                ] ?? 0,
+            isToday: isToday
+        )
+    }
 }
 
-private let monthlySampleEntry = MonthlyActivityEntry(
-    date: .now,
-    monthTitle: "August 2026",
-    longestStreak: 7,
-    days: makeMonthlySampleDays()
-)
+private func makeMonthTitle(
+    year: Int,
+    month: Int
+) -> String {
+    let formatter =
+        DateFormatter()
 
-struct MonthlyActivityProvider: TimelineProvider {
+    formatter.locale =
+        Locale(
+            identifier: "en_US"
+        )
+
+    formatter.dateFormat =
+        "MMMM yyyy"
+
+    let calendar =
+        Calendar(
+            identifier: .gregorian
+        )
+
+    guard
+        let date =
+            calendar.date(
+                from: DateComponents(
+                    year: year,
+                    month: month,
+                    day: 1
+                )
+            )
+    else {
+        return "\(month)/\(year)"
+    }
+
+    return formatter.string(
+        from: date
+    )
+}
+
+private let monthlySampleEntry =
+    MonthlyActivityEntry(
+        date: .now,
+        monthTitle:
+            "August 2026",
+        longestStreak: 7,
+        days: makeCalendarDays(
+            year: 2026,
+            month: 8,
+            focusMinutesByDate: [
+                "2026-08-01": 25,
+                "2026-08-02": 50,
+                "2026-08-03": 35,
+                "2026-08-05": 70,
+                "2026-08-06": 25,
+                "2026-08-08": 40,
+                "2026-08-10": 80,
+                "2026-08-11": 45,
+                "2026-08-14": 30,
+                "2026-08-15": 55,
+                "2026-08-18": 40,
+                "2026-08-19": 65,
+                "2026-08-21": 90,
+                "2026-08-22": 30,
+                "2026-08-24": 50,
+                "2026-08-25": 25,
+                "2026-08-26": 75,
+                "2026-08-28": 40,
+                "2026-08-29": 60,
+                "2026-08-30": 25
+            ]
+        )
+    )
+
+struct MonthlyActivityProvider:
+    TimelineProvider
+{
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "monthly_activity_widget_snapshot"
+
     func placeholder(
         in context: Context
     ) -> MonthlyActivityEntry {
@@ -109,39 +246,152 @@ struct MonthlyActivityProvider: TimelineProvider {
             MonthlyActivityEntry
         ) -> Void
     ) {
-        completion(monthlySampleEntry)
+        if context.isPreview {
+            completion(
+                monthlySampleEntry
+            )
+
+            return
+        }
+
+        completion(
+            loadEntry()
+        )
     }
 
     func getTimeline(
         in context: Context,
         completion: @escaping (
-            Timeline<MonthlyActivityEntry>
+            Timeline<
+                MonthlyActivityEntry
+            >
         ) -> Void
     ) {
+        let entry =
+            loadEntry()
+
         let nextUpdate =
             Calendar.current.date(
                 byAdding: .hour,
                 value: 1,
                 to: .now
-            ) ?? .now.addingTimeInterval(3600)
+            ) ??
+            .now.addingTimeInterval(
+                3600
+            )
 
-        let timeline = Timeline(
-            entries: [monthlySampleEntry],
-            policy: .after(nextUpdate)
+        completion(
+            Timeline(
+                entries: [entry],
+                policy: .after(
+                    nextUpdate
+                )
+            )
         )
+    }
 
-        completion(timeline)
+    private func loadEntry()
+        -> MonthlyActivityEntry
+    {
+        guard
+            let sharedDefaults =
+                UserDefaults(
+                    suiteName:
+                        appGroupIdentifier
+                ),
+            let payload =
+                sharedDefaults.string(
+                    forKey:
+                        snapshotKey
+                ),
+            let data =
+                payload.data(
+                    using: .utf8
+                ),
+            let snapshot =
+                try? JSONDecoder()
+                    .decode(
+                        MonthlyActivityWidgetSnapshot
+                            .self,
+                        from: data
+                    )
+        else {
+            return makeEmptyEntry()
+        }
+
+        let focusMinutesByDate =
+            Dictionary(
+                uniqueKeysWithValues:
+                    snapshot.days.map {
+                        (
+                            $0.date,
+                            $0.focusMinutes
+                        )
+                    }
+            )
+
+        return MonthlyActivityEntry(
+            date: .now,
+            monthTitle:
+                snapshot.monthTitle,
+            longestStreak:
+                snapshot.longestStreak,
+            days: makeCalendarDays(
+                year: snapshot.year,
+                month: snapshot.month,
+                focusMinutesByDate:
+                    focusMinutesByDate
+            )
+        )
+    }
+
+    private func makeEmptyEntry()
+        -> MonthlyActivityEntry
+    {
+        let calendar =
+            Calendar.current
+
+        let year =
+            calendar.component(
+                .year,
+                from: .now
+            )
+
+        let month =
+            calendar.component(
+                .month,
+                from: .now
+            )
+
+        return MonthlyActivityEntry(
+            date: .now,
+            monthTitle:
+                makeMonthTitle(
+                    year: year,
+                    month: month
+                ),
+            longestStreak: 0,
+            days: makeCalendarDays(
+                year: year,
+                month: month,
+                focusMinutesByDate: [:]
+            )
+        )
     }
 }
 
-struct MonthlyActivityView: View {
-    let entry: MonthlyActivityEntry
+struct MonthlyActivityView:
+    View
+{
+    let entry:
+        MonthlyActivityEntry
 
-    private let accentColor = Color(
-        red: 0.45,
-        green: 0.95,
-        blue: 0.64
-    )
+    private let accentColor =
+        Color(
+            red: 0.45,
+            green: 0.95,
+            blue: 0.64
+        )
 
     private let weekdayLabels = [
         "M",
@@ -153,27 +403,39 @@ struct MonthlyActivityView: View {
         "S"
     ]
 
-    private let columns = Array(
-        repeating: GridItem(
-            .flexible(),
-            spacing: 6
-        ),
-        count: 7
-    )
+    private let columns =
+        Array(
+            repeating:
+                GridItem(
+                    .flexible(),
+                    spacing: 6
+                ),
+            count: 7
+        )
 
     private var activeDays: Int {
-        entry.days.filter(\.isActive).count
+        entry.days.filter(
+            \.isActive
+        ).count
     }
 
-    private var totalFocusMinutes: Int {
+    private var totalFocusMinutes:
+        Int
+    {
         entry.days.reduce(0) {
-            $0 + $1.focusMinutes
+            $0 +
+            $1.focusMinutes
         }
     }
 
-    private var formattedFocusTime: String {
-        let hours = totalFocusMinutes / 60
-        let minutes = totalFocusMinutes % 60
+    private var formattedFocusTime:
+        String
+    {
+        let hours =
+            totalFocusMinutes / 60
+
+        let minutes =
+            totalFocusMinutes % 60
 
         if hours == 0 {
             return "\(minutes)m"
@@ -187,19 +449,23 @@ struct MonthlyActivityView: View {
     ) -> Color {
         switch minutes {
         case 1...25:
-            return accentColor.opacity(0.22)
+            return accentColor
+                .opacity(0.22)
 
         case 26...50:
-            return accentColor.opacity(0.42)
+            return accentColor
+                .opacity(0.42)
 
         case 51...75:
-            return accentColor.opacity(0.68)
+            return accentColor
+                .opacity(0.68)
 
         case 76...:
             return accentColor
 
         default:
-            return Color.white.opacity(0.045)
+            return Color.white
+                .opacity(0.045)
         }
     }
 
@@ -209,21 +475,26 @@ struct MonthlyActivityView: View {
             spacing: 0
         ) {
             HStack {
-                Text(entry.monthTitle)
-                    .font(
-                        .system(
-                            size: 21,
-                            weight: .bold,
-                            design: .rounded
-                        )
+                Text(
+                    entry.monthTitle
+                )
+                .font(
+                    .system(
+                        size: 21,
+                        weight: .bold,
+                        design: .rounded
                     )
-                    .foregroundStyle(.white)
+                )
+                .foregroundStyle(
+                    .white
+                )
 
                 Spacer()
 
                 HStack(spacing: 5) {
                     Image(
-                        systemName: "flame.fill"
+                        systemName:
+                            "flame.fill"
                     )
 
                     Text(
@@ -238,11 +509,20 @@ struct MonthlyActivityView: View {
                         design: .rounded
                     )
                 )
-                .foregroundStyle(accentColor)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 7)
+                .foregroundStyle(
+                    accentColor
+                )
+                .padding(
+                    .horizontal,
+                    11
+                )
+                .padding(
+                    .vertical,
+                    7
+                )
                 .background(
-                    accentColor.opacity(0.1),
+                    accentColor
+                        .opacity(0.1),
                     in: Capsule()
                 )
             }
@@ -250,22 +530,34 @@ struct MonthlyActivityView: View {
             HStack(spacing: 0) {
                 ForEach(
                     Array(
-                        weekdayLabels.enumerated()
+                        weekdayLabels
+                            .enumerated()
                     ),
                     id: \.offset
-                ) { _, weekday in
+                ) {
+                    _,
+                    weekday in
+
                     Text(weekday)
                         .font(
                             .system(
                                 size: 10,
-                                weight: .semibold,
-                                design: .rounded
+                                weight:
+                                    .semibold,
+                                design:
+                                    .rounded
                             )
                         )
                         .foregroundStyle(
-                            Color.white.opacity(0.3)
+                            Color.white
+                                .opacity(
+                                    0.3
+                                )
                         )
-                        .frame(maxWidth: .infinity)
+                        .frame(
+                            maxWidth:
+                                .infinity
+                        )
                 }
             }
             .padding(.top, 14)
@@ -275,33 +567,50 @@ struct MonthlyActivityView: View {
                 columns: columns,
                 spacing: 6
             ) {
-                ForEach(entry.days) { day in
+                ForEach(
+                    entry.days
+                ) { day in
                     ZStack {
-                        if day.dayNumber != nil {
+                        if
+                            day.dayNumber !=
+                                nil
+                        {
                             RoundedRectangle(
                                 cornerRadius: 7,
-                                style: .continuous
+                                style:
+                                    .continuous
                             )
                             .fill(
                                 activityColor(
-                                    for: day.focusMinutes
+                                    for:
+                                        day.focusMinutes
                                 )
                             )
 
                             RoundedRectangle(
                                 cornerRadius: 7,
-                                style: .continuous
+                                style:
+                                    .continuous
                             )
                             .stroke(
                                 day.isToday
                                     ? accentColor
-                                    : Color.white.opacity(0.06),
+                                    : Color
+                                        .white
+                                        .opacity(
+                                            0.06
+                                        ),
                                 lineWidth:
-                                    day.isToday ? 2 : 1
+                                    day.isToday
+                                        ? 2
+                                        : 1
                             )
                         }
 
-                        if let dayNumber = day.dayNumber {
+                        if
+                            let dayNumber =
+                                day.dayNumber
+                        {
                             Text(
                                 "\(dayNumber)"
                             )
@@ -312,15 +621,29 @@ struct MonthlyActivityView: View {
                                         day.isToday
                                             ? .bold
                                             : .medium,
-                                    design: .rounded
+                                    design:
+                                        .rounded
                                 )
                             )
                             .foregroundStyle(
-                                day.focusMinutes >= 76
-                                    ? Color.black.opacity(0.75)
+                                day.focusMinutes >=
+                                    76
+                                    ? Color
+                                        .black
+                                        .opacity(
+                                            0.75
+                                        )
                                     : day.isActive
-                                        ? Color.white.opacity(0.9)
-                                        : Color.white.opacity(0.3)
+                                        ? Color
+                                            .white
+                                            .opacity(
+                                                0.9
+                                            )
+                                        : Color
+                                            .white
+                                            .opacity(
+                                                0.3
+                                            )
                             )
                         }
                     }
@@ -328,33 +651,49 @@ struct MonthlyActivityView: View {
                 }
             }
 
-            Spacer(minLength: 12)
+            Spacer(
+                minLength: 12
+            )
 
             HStack(spacing: 24) {
                 HStack(spacing: 7) {
                     Image(
-                        systemName: "calendar"
+                        systemName:
+                            "calendar"
                     )
                     .foregroundStyle(
-                        accentColor.opacity(0.75)
+                        accentColor
+                            .opacity(
+                                0.75
+                            )
                     )
 
                     Text(
                         "\(activeDays) active days"
                     )
-                    .foregroundStyle(.white)
+                    .foregroundStyle(
+                        .white
+                    )
                 }
 
                 HStack(spacing: 7) {
                     Image(
-                        systemName: "timer"
+                        systemName:
+                            "timer"
                     )
                     .foregroundStyle(
-                        accentColor.opacity(0.75)
+                        accentColor
+                            .opacity(
+                                0.75
+                            )
                     )
 
-                    Text(formattedFocusTime)
-                        .foregroundStyle(.white)
+                    Text(
+                        formattedFocusTime
+                    )
+                    .foregroundStyle(
+                        .white
+                    )
                 }
 
                 Spacer()
@@ -371,13 +710,19 @@ struct MonthlyActivityView: View {
     }
 }
 
-struct MonthlyActivityWidget: Widget {
-    let kind = "MonthlyActivityWidget"
+struct MonthlyActivityWidget:
+    Widget
+{
+    let kind =
+        "MonthlyActivityWidget"
 
-    var body: some WidgetConfiguration {
+    var body:
+        some WidgetConfiguration
+    {
         StaticConfiguration(
             kind: kind,
-            provider: MonthlyActivityProvider()
+            provider:
+                MonthlyActivityProvider()
         ) { entry in
             MonthlyActivityView(
                 entry: entry
