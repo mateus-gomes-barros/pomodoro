@@ -14,6 +14,7 @@ struct FocusWidgetBundle: WidgetBundle {
         FocusWidget()
         TopProjectWeekWidget()
         TopProjectMonthWidget()
+        TopProjectsWeekWidget()
         WeeklyActivityWidget()
         MonthlyActivityWidget()
         GoalsWidget()
