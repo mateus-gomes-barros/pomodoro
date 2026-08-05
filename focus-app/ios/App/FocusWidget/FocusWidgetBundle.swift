@@ -12,6 +12,7 @@ import WidgetKit
 struct FocusWidgetBundle: WidgetBundle {
     var body: some Widget {
         FocusWidget()
+        TopProjectWeekWidget()
         WeeklyActivityWidget()
         MonthlyActivityWidget()
         GoalsWidget()
