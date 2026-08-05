@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -70,10 +70,17 @@
 			);
 			target = 1231C0A43022B4CD0095BAFC /* FocusWidgetExtension */;
 		};
+		1231C0C43022C33D0095BAFC /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				FocusActivityAttributes.swift,
+			);
+			target = 504EC3031FED79650016851F /* App */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		1231C0AB3022B4CE0095BAFC /* FocusWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (1231C0B83022B4CF0095BAFC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = FocusWidget; sourceTree = "<group>"; };
+		1231C0AB3022B4CE0095BAFC /* FocusWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (1231C0C43022C33D0095BAFC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 1231C0B83022B4CF0095BAFC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = FocusWidget; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
