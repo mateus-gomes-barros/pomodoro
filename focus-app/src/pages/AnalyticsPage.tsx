@@ -220,6 +220,11 @@ export function AnalyticsPage() {
     'week',
   )
 
+  const [
+    showAllProjects,
+    setShowAllProjects,
+  ] = useState(false)
+
   const {
     weeklyData,
     monthlyData,
@@ -260,13 +265,27 @@ export function AnalyticsPage() {
   const topTrendProject =
     trends.topProjects[0]
 
+  const topThreeProjects =
+    trends.topProjects.slice(0, 3)
+
+  const otherProjects =
+    trends.topProjects.slice(3)
+
+  const visibleOtherProjects =
+    showAllProjects
+      ? otherProjects
+      : otherProjects.slice(0, 3)
+
   const previousPeriodLabel =
     getPreviousPeriodLabel(
       trendRange,
     )
 
-  const hasTrendData =
+  const hasFocusData =
     trends.totalFocusMinutes > 0
+
+  const hasProjectTrendData =
+    trends.topProjects.length > 0
 
   if (isLoading) {
     return (
@@ -642,11 +661,15 @@ export function AnalyticsPage() {
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
                     setTrendRange(
                       option.value,
                     )
-                  }
+
+                    setShowAllProjects(
+                      false,
+                    )
+                  }}
                   className={cn(
                     'segment-item whitespace-nowrap',
                     trendRange ===
@@ -699,12 +722,12 @@ export function AnalyticsPage() {
               </div>
             </div>
 
-            {!hasTrendData ? (
+            {!hasProjectTrendData ? (
               <div className="flex min-h-[220px] items-center justify-center">
                 <div className="max-w-[260px] text-center">
                   <p className="text-[13px] font-medium text-white/45">
-                    No focus sessions in
-                    this period
+                    No project focus data
+                    in this period
                   </p>
 
                   <p className="mt-1.5 text-[11px] leading-relaxed text-white/25">
@@ -715,106 +738,278 @@ export function AnalyticsPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-5">
-                {trends.topProjects
-                  .slice(0, 5)
-                  .map(
-                    (
-                      project,
-                      index,
-                    ) => (
-                      <motion.div
-                        key={project.id}
-                        initial={{
-                          opacity: 0,
-                          x: -6,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          x: 0,
-                        }}
-                        transition={{
-                          delay:
-                            0.35 +
-                            index *
-                              0.05,
-                        }}
-                      >
-                        <div className="mb-2 flex items-center gap-3">
-                          <span className="w-5 flex-shrink-0 text-center font-mono text-[11px] text-white/25">
-                            {index + 1}
-                          </span>
+              <div className="space-y-7">
+                {/* Top 3 projects */}
 
-                          <span className="flex-shrink-0 text-base">
-                            {project.emoji}
-                          </span>
+                <div>
+                  <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/30">
+                    Top 3 Projects
+                  </p>
 
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[13px] font-medium text-white/80">
+                  <div className="space-y-3">
+                    {topThreeProjects.map(
+                      (
+                        project,
+                        index,
+                      ) => (
+                        <motion.div
+                          key={
+                            project.id
+                          }
+                          initial={{
+                            opacity: 0,
+                            x: -6,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            x: 0,
+                          }}
+                          transition={{
+                            delay:
+                              0.35 +
+                              index *
+                                0.05,
+                          }}
+                          className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4"
+                          style={{
+                            boxShadow: `inset 3px 0 0 ${project.color}`,
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 flex-shrink-0 text-center text-base">
                               {
-                                project.name
+                                [
+                                  '🥇',
+                                  '🥈',
+                                  '🥉',
+                                ][index]
                               }
-                            </p>
-
-                            <p className="mt-0.5 text-[10px] text-white/30">
-                              {
-                                project.sharePercentage
-                              }
-                              % of your
-                              focus time
-                            </p>
-                          </div>
-
-                          <div className="flex flex-shrink-0 items-center gap-2.5">
-                            <ProjectChangeBadge
-                              range={
-                                trendRange
-                              }
-                              changePercentage={
-                                project.changePercentage
-                              }
-                              isNew={
-                                project.isNew
-                              }
-                            />
-
-                            <span className="min-w-[54px] text-right font-mono text-[11px] text-white/45">
-                              {formatDuration(
-                                project.currentFocusMinutes,
-                              )}
                             </span>
-                          </div>
-                        </div>
 
-                        <div className="ml-8 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                            <span className="flex-shrink-0 text-xl">
+                              {
+                                project.emoji
+                              }
+                            </span>
+
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[13px] font-semibold text-white/85">
+                                {
+                                  project.name
+                                }
+                              </p>
+
+                              <p className="mt-0.5 text-[10px] text-white/30">
+                                {
+                                  project.sharePercentage
+                                }
+                                % of your
+                                focus time
+                              </p>
+                            </div>
+
+                            <div className="flex flex-shrink-0 items-center gap-2.5">
+                              <ProjectChangeBadge
+                                range={
+                                  trendRange
+                                }
+                                changePercentage={
+                                  project.changePercentage
+                                }
+                                isNew={
+                                  project.isNew
+                                }
+                              />
+
+                              <span className="min-w-[54px] text-right font-mono text-[11px] text-white/50">
+                                {formatDuration(
+                                  project.currentFocusMinutes,
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                            <motion.div
+                              initial={{
+                                width:
+                                  0,
+                              }}
+                              animate={{
+                                width: `${Math.min(
+                                  project.sharePercentage,
+                                  100,
+                                )}%`,
+                              }}
+                              transition={{
+                                duration:
+                                  0.75,
+                                ease: 'easeOut',
+                                delay:
+                                  0.4 +
+                                  index *
+                                    0.05,
+                              }}
+                              className="h-full rounded-full"
+                              style={{
+                                backgroundColor:
+                                  project.color,
+                              }}
+                            />
+                          </div>
+                        </motion.div>
+                      ),
+                    )}
+                  </div>
+                </div>
+
+                {/* Other projects */}
+
+                {otherProjects.length >
+                  0 && (
+                  <div className="border-t border-white/[0.06] pt-6">
+                    <div className="mb-4 flex items-center justify-between gap-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/30">
+                        Other Projects
+                      </p>
+
+                      <span className="text-[10px] text-white/25">
+                        {
+                          otherProjects.length
+                        }{' '}
+                        {otherProjects.length ===
+                        1
+                          ? 'project'
+                          : 'projects'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {visibleOtherProjects.map(
+                        (
+                          project,
+                          index,
+                        ) => (
                           <motion.div
+                            key={
+                              project.id
+                            }
                             initial={{
-                              width: 0,
+                              opacity:
+                                0,
+                              y: 5,
                             }}
                             animate={{
-                              width: `${Math.min(
-                                project.sharePercentage,
-                                100,
-                              )}%`,
+                              opacity:
+                                1,
+                              y: 0,
                             }}
                             transition={{
-                              duration: 0.75,
-                              ease: 'easeOut',
                               delay:
-                                0.4 +
+                                0.42 +
                                 index *
-                                  0.05,
+                                  0.04,
                             }}
-                            className="h-full rounded-full"
-                            style={{
-                              backgroundColor:
-                                project.color,
-                            }}
-                          />
-                        </div>
-                      </motion.div>
-                    ),
-                  )}
+                            className="rounded-xl border border-white/[0.05] bg-white/[0.018] px-3.5 py-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="w-5 flex-shrink-0 text-center font-mono text-[10px] text-white/20">
+                                {index +
+                                  4}
+                              </span>
+
+                              <span className="flex-shrink-0 text-base">
+                                {
+                                  project.emoji
+                                }
+                              </span>
+
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-[12px] font-medium text-white/65">
+                                  {
+                                    project.name
+                                  }
+                                </p>
+
+                                <p className="mt-0.5 text-[9px] text-white/25">
+                                  {
+                                    project.sharePercentage
+                                  }
+                                  % of
+                                  focus
+                                  time
+                                </p>
+                              </div>
+
+                              <ProjectChangeBadge
+                                range={
+                                  trendRange
+                                }
+                                changePercentage={
+                                  project.changePercentage
+                                }
+                                isNew={
+                                  project.isNew
+                                }
+                              />
+
+                              <span className="min-w-[54px] text-right font-mono text-[10px] text-white/35">
+                                {formatDuration(
+                                  project.currentFocusMinutes,
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="ml-8 mt-2 h-1 overflow-hidden rounded-full bg-white/[0.05]">
+                              <motion.div
+                                initial={{
+                                  width:
+                                    0,
+                                }}
+                                animate={{
+                                  width: `${Math.min(
+                                    project.sharePercentage,
+                                    100,
+                                  )}%`,
+                                }}
+                                transition={{
+                                  duration:
+                                    0.65,
+                                  ease: 'easeOut',
+                                }}
+                                className="h-full rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    project.color,
+                                }}
+                              />
+                            </div>
+                          </motion.div>
+                        ),
+                      )}
+                    </div>
+
+                    {otherProjects.length >
+                      3 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowAllProjects(
+                            (
+                              currentValue,
+                            ) =>
+                              !currentValue,
+                          )
+                        }
+                        className="mt-4 flex w-full items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.025] px-4 py-2.5 text-[11px] font-medium text-white/45 transition-colors hover:bg-white/[0.05] hover:text-white/70"
+                      >
+                        {showAllProjects
+                          ? 'Show less'
+                          : `Show all ${otherProjects.length} projects`}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -840,17 +1035,19 @@ export function AnalyticsPage() {
               </div>
             </div>
 
-            {!hasTrendData ? (
+            {!hasFocusData ? (
               <div className="flex min-h-[220px] items-center justify-center">
                 <p className="max-w-[230px] text-center text-[12px] leading-relaxed text-white/30">
-                  Your insights will appear
-                  after you complete focus
+                  Your insights will
+                  appear after you
+                  complete focus
                   sessions.
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {trendRange !== 'all' && (
+                {trendRange !==
+                  'all' && (
                   <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
                     <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/10">
                       {trends.totalChangePercentage ===
@@ -944,10 +1141,12 @@ export function AnalyticsPage() {
                   </p>
 
                   <p className="mt-1 text-[11px] leading-relaxed text-white/35">
-                    You recorded focus time
-                    on{' '}
+                    You recorded focus
+                    time on{' '}
                     <span className="font-semibold text-white/65">
-                      {trends.activeDays}
+                      {
+                        trends.activeDays
+                      }
                     </span>{' '}
                     {trends.activeDays ===
                     1
