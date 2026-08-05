@@ -6,6 +6,7 @@
 import AppIntents
 import Foundation
 import SwiftUI
+import UIKit
 import WidgetKit
 
 struct GoalsWidgetGoal:
@@ -196,6 +197,11 @@ struct GoalsWidgetProvider:
 struct GoalsWidgetView: View {
     let entry: GoalsWidgetEntry
 
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
     private let accentColor = Color(
         red: 0.45,
         green: 0.95,
@@ -237,22 +243,39 @@ struct GoalsWidgetView: View {
         ) {
             header
 
-            Spacer(minLength: 11)
+            Spacer(
+                minLength: isPad ? 4 : 11
+            )
 
             goalsContent
 
-            Spacer(minLength: 11)
+            Spacer(
+                minLength: isPad ? 4 : 11
+            )
 
             progressContent
         }
-        .padding(16)
+        .padding(
+            .horizontal,
+            isPad ? 8 : 16
+        )
+        .padding(
+            .top,
+            isPad ? 8 : 16
+        )
+        .padding(
+            .bottom,
+            isPad ? 8 : 16
+        )
     }
 
     private var header: some View {
         HStack(
             alignment: .center
         ) {
-            HStack(spacing: 9) {
+            HStack(
+                spacing: isPad ? 8 : 9
+            ) {
                 ZStack {
                     RoundedRectangle(
                         cornerRadius: 10,
@@ -269,7 +292,7 @@ struct GoalsWidgetView: View {
                     )
                     .font(
                         .system(
-                            size: 14,
+                            size: isPad ? 13 : 14,
                             weight: .bold
                         )
                     )
@@ -278,8 +301,8 @@ struct GoalsWidgetView: View {
                     )
                 }
                 .frame(
-                    width: 34,
-                    height: 34
+                    width: isPad ? 30 : 34,
+                    height: isPad ? 30 : 34
                 )
 
                 VStack(
@@ -291,12 +314,14 @@ struct GoalsWidgetView: View {
                     )
                     .font(
                         .system(
-                            size: 10,
+                            size: isPad ? 9 : 10,
                             weight: .bold,
                             design: .rounded
                         )
                     )
-                    .tracking(1.1)
+                    .tracking(
+                        isPad ? 1.0 : 1.1
+                    )
                     .foregroundStyle(
                         Color.white.opacity(
                             0.35
@@ -310,7 +335,7 @@ struct GoalsWidgetView: View {
                     )
                     .font(
                         .system(
-                            size: 16,
+                            size: isPad ? 15 : 16,
                             weight: .semibold,
                             design: .rounded
                         )
@@ -330,7 +355,7 @@ struct GoalsWidgetView: View {
             )
             .font(
                 .system(
-                    size: 13,
+                    size: isPad ? 13 : 13,
                     weight: .bold,
                     design: .rounded
                 )
@@ -340,11 +365,11 @@ struct GoalsWidgetView: View {
             )
             .padding(
                 .horizontal,
-                10
+                isPad ? 9 : 10
             )
             .padding(
                 .vertical,
-                7
+                isPad ? 4 : 7
             )
             .background(
                 accentColor.opacity(
@@ -435,7 +460,7 @@ struct GoalsWidgetView: View {
         } else {
             VStack(
                 alignment: .leading,
-                spacing: 8
+                spacing: isPad ? 5 : 8
             ) {
                 ForEach(
                     entry.goals.prefix(3)
@@ -449,13 +474,15 @@ struct GoalsWidgetView: View {
     private func goalRow(
         for goal: GoalsWidgetGoal
     ) -> some View {
-        HStack(spacing: 9) {
+        HStack(
+            spacing: isPad ? 8 : 9
+        ) {
             goalControl(for: goal)
 
             Text(goal.title)
                 .font(
                     .system(
-                        size: 12,
+                        size: isPad ? 14 : 12,
                         weight: .medium,
                         design: .rounded
                     )
@@ -483,6 +510,9 @@ struct GoalsWidgetView: View {
                 minLength: 0
             )
         }
+        .frame(
+            minHeight: isPad ? 20 : nil
+        )
     }
 
     @ViewBuilder
@@ -540,7 +570,9 @@ struct GoalsWidgetView: View {
                     .fill(
                         accentColor
                     )
-                    .padding(3)
+                    .padding(
+                        isPad ? 3 : 3
+                    )
 
                 Image(
                     systemName:
@@ -548,7 +580,7 @@ struct GoalsWidgetView: View {
                 )
                 .font(
                     .system(
-                        size: 6,
+                        size: isPad ? 6 : 6,
                         weight: .bold
                     )
                 )
@@ -558,8 +590,8 @@ struct GoalsWidgetView: View {
             }
         }
         .frame(
-            width: 18,
-            height: 18
+            width: isPad ? 19 : 18,
+            height: isPad ? 19 : 18
         )
         .contentShape(
             Circle()
@@ -567,7 +599,9 @@ struct GoalsWidgetView: View {
     }
 
     private var progressContent: some View {
-        VStack(spacing: 7) {
+        VStack(
+            spacing: isPad ? 4 : 7
+        ) {
             GeometryReader { geometry in
                 ZStack(
                     alignment: .leading
@@ -593,7 +627,9 @@ struct GoalsWidgetView: View {
                         )
                 }
             }
-            .frame(height: 5)
+            .frame(
+                height: isPad ? 5 : 5
+            )
 
             HStack {
                 Text(
@@ -601,7 +637,7 @@ struct GoalsWidgetView: View {
                 )
                 .font(
                     .system(
-                        size: 10,
+                        size: isPad ? 9 : 10,
                         weight: .semibold,
                         design: .rounded
                     )
@@ -620,7 +656,7 @@ struct GoalsWidgetView: View {
                 )
                 .font(
                     .system(
-                        size: 10
+                        size: isPad ? 9 : 10
                     )
                 )
                 .foregroundStyle(
