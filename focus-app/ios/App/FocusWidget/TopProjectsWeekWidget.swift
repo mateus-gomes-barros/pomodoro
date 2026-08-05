@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftUI
+import UIKit
 import WidgetKit
 
 private struct TopProjectsWeekSnapshot:
@@ -191,6 +192,11 @@ private struct TopProjectsWeekView:
 {
     let entry: TopProjectsWeekEntry
 
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
     private var accentColor: Color {
         guard let topProject =
             entry.projects.first
@@ -255,14 +261,25 @@ private struct TopProjectsWeekView:
                     projectList
                 }
             }
-            .padding(16)
+            .padding(
+                .horizontal,
+                isPad ? 13 : 16
+            )
+            .padding(
+                .top,
+                isPad ? 10 : 16
+            )
+            .padding(
+                .bottom,
+                isPad ? 7 : 16
+            )
         }
     }
 
     private var header: some View {
         HStack(
             alignment: .top,
-            spacing: 12
+            spacing: isPad ? 6 : 12
         ) {
             VStack(
                 alignment: .leading,
@@ -295,7 +312,7 @@ private struct TopProjectsWeekView:
                 Text("Top Projects")
                     .font(
                         .system(
-                            size: 15,
+                            size: isPad ? 12 : 15,
                             weight: .semibold,
                             design: .rounded
                         )
@@ -347,8 +364,12 @@ private struct TopProjectsWeekView:
     }
 
     private var projectList: some View {
-        VStack(spacing: 9) {
-            Spacer(minLength: 8)
+        VStack(
+            spacing: isPad ? 2 : 9
+        ) {
+            Spacer(
+                minLength: isPad ? 0 : 8
+            )
 
             ForEach(
                 Array(
@@ -374,7 +395,9 @@ private struct TopProjectsWeekView:
                 project.color
         )
 
-        return HStack(spacing: 9) {
+        return HStack(
+            spacing: isPad ? 5 : 9
+        ) {
             ZStack {
                 Circle()
                     .fill(
@@ -401,28 +424,30 @@ private struct TopProjectsWeekView:
                     )
             }
             .frame(
-                width: 22,
-                height: 22
+                width: isPad ? 17 : 22,
+                height: isPad ? 17 : 22
             )
 
             Text(project.emoji)
                 .font(
-                    .system(size: 19)
+                    .system(
+                        size: isPad ? 14 : 19
+                    )
                 )
                 .frame(
-                    width: 24,
+                    width: isPad ? 18 : 24,
                     alignment: .center
                 )
 
             VStack(
                 alignment: .leading,
-                spacing: 4
+                spacing: isPad ? 2 : 4
             ) {
                 HStack(spacing: 8) {
                     Text(project.name)
                         .font(
                             .system(
-                                size: 11,
+                                size: isPad ? 10 : 11,
                                 weight: .semibold,
                                 design: .rounded
                             )
@@ -444,7 +469,7 @@ private struct TopProjectsWeekView:
                     )
                     .font(
                         .system(
-                            size: 9,
+                            size: isPad ? 8 : 9,
                             weight: .semibold,
                             design: .monospaced
                         )
@@ -460,7 +485,7 @@ private struct TopProjectsWeekView:
                     )
                     .font(
                         .system(
-                            size: 9,
+                            size: isPad ? 8 : 9,
                             weight: .bold,
                             design: .rounded
                         )
@@ -505,7 +530,9 @@ private struct TopProjectsWeekView:
                             )
                     }
                 }
-                .frame(height: 3)
+                .frame(
+                    height: isPad ? 2 : 3
+                )
             }
         }
     }
