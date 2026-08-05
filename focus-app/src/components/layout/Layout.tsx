@@ -8,20 +8,39 @@ import {
 } from 'react-router-dom'
 
 import {
+  useGoals,
+} from '@/hooks/goals/useGoals'
+import {
+  useGoalsWidgetSync,
+} from '@/hooks/goals/useGoalsWidgetSync'
+
+import {
+  MobileTopBar,
+} from './MobileTopBar'
+import {
   SidebarDesktop,
 } from './SidebarDesktop'
 import {
   SidebarMobile,
 } from './SidebarMobile'
-import {
-  MobileTopBar,
-} from './MobileTopBar'
 
 const EDGE_WIDTH = 30
 const SWIPE_DISTANCE = 60
 const VERTICAL_TOLERANCE = 80
 
 export function Layout() {
+  const currentYear =
+    new Date().getFullYear()
+
+  const goalsQuery =
+    useGoals(currentYear)
+
+  useGoalsWidgetSync({
+    goals: goalsQuery.data ?? [],
+    year: currentYear,
+    enabled: goalsQuery.isSuccess,
+  })
+
   const [
     mobileOpen,
     setMobileOpen,
@@ -58,6 +77,7 @@ export function Layout() {
     if (!startedFromEdge) {
       touchStartXRef.current = null
       touchStartYRef.current = null
+
       return
     }
 
@@ -78,6 +98,7 @@ export function Layout() {
       touchStartYRef.current === null
     ) {
       resetSwipe()
+
       return
     }
 
@@ -86,6 +107,7 @@ export function Layout() {
 
     if (!touch) {
       resetSwipe()
+
       return
     }
 

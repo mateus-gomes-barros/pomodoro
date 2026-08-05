@@ -13,5 +13,9 @@ class FocusBridgeViewController:
         bridge?.registerPluginInstance(
             FocusLiveActivityPlugin()
         )
+
+        bridge?.registerPluginInstance(
+            GoalsWidgetPlugin()
+        )
     }
 }

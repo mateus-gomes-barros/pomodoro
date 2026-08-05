@@ -12,6 +12,7 @@
 		1231C0B73022B4CF0095BAFC /* FocusWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1231C0A53022B4CD0095BAFC /* FocusWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1231C0CB3022CDB40095BAFC /* FocusLiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1231C0CA3022CDB10095BAFC /* FocusLiveActivityPlugin.swift */; };
 		1231C0CD3022CE2B0095BAFC /* FocusBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1231C0CC3022CE290095BAFC /* FocusBridgeViewController.swift */; };
+		1231C0D33022E99A0095BAFC /* GoalsWidgetPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1231C0D23022E9980095BAFC /* GoalsWidgetPlugin.swift */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
@@ -53,6 +54,9 @@
 		1231C0A93022B4CD0095BAFC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		1231C0CA3022CDB10095BAFC /* FocusLiveActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusLiveActivityPlugin.swift; sourceTree = "<group>"; };
 		1231C0CC3022CE290095BAFC /* FocusBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusBridgeViewController.swift; sourceTree = "<group>"; };
+		1231C0D03022E8600095BAFC /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		1231C0D13022E90F0095BAFC /* FocusWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusWidgetExtension.entitlements; sourceTree = "<group>"; };
+		1231C0D23022E9980095BAFC /* GoalsWidgetPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsWidgetPlugin.swift; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -78,6 +82,7 @@
 		1231C0C43022C33D0095BAFC /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CompleteGoalIntent.swift,
 				FocusActivityAttributes.swift,
 				FocusLiveActivityTest.swift,
 			);
@@ -122,6 +127,7 @@
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				1231C0D13022E90F0095BAFC /* FocusWidgetExtension.entitlements */,
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				1231C0AB3022B4CE0095BAFC /* FocusWidget */,
@@ -142,6 +148,8 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				1231C0D03022E8600095BAFC /* App.entitlements */,
+				1231C0D23022E9980095BAFC /* GoalsWidgetPlugin.swift */,
 				1231C0CC3022CE290095BAFC /* FocusBridgeViewController.swift */,
 				1231C0CA3022CDB10095BAFC /* FocusLiveActivityPlugin.swift */,
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
@@ -284,6 +292,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				1231C0CB3022CDB40095BAFC /* FocusLiveActivityPlugin.swift in Sources */,
+				1231C0D33022E99A0095BAFC /* GoalsWidgetPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,6 +337,7 @@
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = FocusWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5TB37S4MM2;
@@ -371,6 +381,7 @@
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = FocusWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5TB37S4MM2;
@@ -515,6 +526,7 @@
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5TB37S4MM2;
@@ -538,6 +550,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5TB37S4MM2;
