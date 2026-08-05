@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import {
+  AnimatePresence,
+  motion,
+} from 'framer-motion'
 import {
   LoaderCircle,
+  Palette,
   Pencil,
   Plus,
   Timer,
@@ -15,8 +19,12 @@ import {
   useUpdateProject,
 } from '@/hooks/projects/useProjects'
 
-import { Modal } from '../components/ui/Modal'
-import { PageHeader } from '../components/ui/PageHeader'
+import {
+  Modal,
+} from '../components/ui/Modal'
+import {
+  PageHeader,
+} from '../components/ui/PageHeader'
 
 import {
   cn,
@@ -25,7 +33,9 @@ import {
   PROJECT_EMOJIS,
 } from '../utils'
 
-import type { Project } from '../types'
+import type {
+  Project,
+} from '../types'
 
 interface ProjectForm {
   name: string
@@ -58,17 +68,31 @@ export function ProjectsPage() {
   const deleteProjectMutation =
     useDeleteProject()
 
-  const [modalOpen, setModalOpen] =
-    useState(false)
+  const [
+    modalOpen,
+    setModalOpen,
+  ] = useState(false)
 
-  const [editingId, setEditingId] =
-    useState<string | null>(null)
+  const [
+    editingId,
+    setEditingId,
+  ] = useState<string | null>(
+    null,
+  )
 
-  const [deleteConfirmId, setDeleteConfirmId] =
-    useState<string | null>(null)
+  const [
+    deleteConfirmId,
+    setDeleteConfirmId,
+  ] = useState<string | null>(
+    null,
+  )
 
-  const [form, setForm] =
-    useState<ProjectForm>(EMPTY_FORM)
+  const [
+    form,
+    setForm,
+  ] = useState<ProjectForm>(
+    EMPTY_FORM,
+  )
 
   const isSaving =
     createProjectMutation.isPending ||
@@ -77,18 +101,28 @@ export function ProjectsPage() {
   const isDeleting =
     deleteProjectMutation.isPending
 
+  const isCustomColor =
+    !PROJECT_COLORS.some(
+      (presetColor) =>
+        presetColor.toLowerCase() ===
+        form.color.toLowerCase(),
+    )
+
   function openCreate() {
     setEditingId(null)
     setForm(EMPTY_FORM)
     setModalOpen(true)
   }
 
-  function openEdit(project: Project) {
+  function openEdit(
+    project: Project,
+  ) {
     setEditingId(project.id)
 
     setForm({
       name: project.name,
-      description: project.description || '',
+      description:
+        project.description || '',
       color: project.color,
       emoji: project.emoji,
     })
@@ -107,16 +141,21 @@ export function ProjectsPage() {
   }
 
   async function handleSubmit() {
-    if (!form.name.trim() || isSaving) {
+    if (
+      !form.name.trim() ||
+      isSaving
+    ) {
       return
     }
 
     try {
       if (editingId) {
-        await updateProjectMutation.mutateAsync({
-          projectId: editingId,
-          input: form,
-        })
+        await updateProjectMutation.mutateAsync(
+          {
+            projectId: editingId,
+            input: form,
+          },
+        )
       } else {
         await createProjectMutation.mutateAsync(
           form,
@@ -135,7 +174,10 @@ export function ProjectsPage() {
   }
 
   async function handleDelete() {
-    if (!deleteConfirmId || isDeleting) {
+    if (
+      !deleteConfirmId ||
+      isDeleting
+    ) {
       return
     }
 
@@ -213,12 +255,17 @@ export function ProjectsPage() {
       />
 
       {projects.length === 0 ? (
-        <EmptyState onAdd={openCreate} />
+        <EmptyState
+          onAdd={openCreate}
+        />
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence>
             {projects.map(
-              (project, index) => (
+              (
+                project,
+                index,
+              ) => (
                 <ProjectCard
                   key={project.id}
                   project={project}
@@ -240,7 +287,9 @@ export function ProjectsPage() {
 
       <Modal
         isOpen={modalOpen}
-        onClose={closeProjectModal}
+        onClose={
+          closeProjectModal
+        }
         title={
           editingId
             ? 'Edit Project'
@@ -249,7 +298,7 @@ export function ProjectsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="label block mb-2">
+            <label className="label mb-2 block">
               Icon
             </label>
 
@@ -261,18 +310,24 @@ export function ProjectsPage() {
                     type="button"
                     onClick={() =>
                       setForm(
-                        (currentForm) => ({
+                        (
+                          currentForm,
+                        ) => ({
                           ...currentForm,
                           emoji,
                         }),
                       )
                     }
-                    disabled={isSaving}
+                    disabled={
+                      isSaving
+                    }
+                    aria-label={`Select ${emoji} icon`}
                     className={cn(
-                      'w-10 h-10 rounded-xl transition-all',
+                      'flex h-10 w-10 items-center justify-center rounded-xl text-lg transition-all',
                       'bg-bg-secondary',
-                      form.emoji === emoji &&
-                        'bg-bg-elevated border border-border-muted',
+                      form.emoji ===
+                        emoji &&
+                        'border border-border-muted bg-bg-elevated scale-105',
                       isSaving &&
                         'cursor-not-allowed opacity-50',
                     )}
@@ -285,7 +340,7 @@ export function ProjectsPage() {
           </div>
 
           <div>
-            <label className="label block mb-2">
+            <label className="label mb-2 block">
               Name
             </label>
 
@@ -296,9 +351,13 @@ export function ProjectsPage() {
               disabled={isSaving}
               onChange={(event) =>
                 setForm(
-                  (currentForm) => ({
+                  (
+                    currentForm,
+                  ) => ({
                     ...currentForm,
-                    name: event.target.value,
+                    name:
+                      event.target
+                        .value,
                   }),
                 )
               }
@@ -306,21 +365,26 @@ export function ProjectsPage() {
           </div>
 
           <div>
-            <label className="label block mb-2">
+            <label className="label mb-2 block">
               Description
             </label>
 
             <input
               className="input"
               placeholder="Optional description"
-              value={form.description}
+              value={
+                form.description
+              }
               disabled={isSaving}
               onChange={(event) =>
                 setForm(
-                  (currentForm) => ({
+                  (
+                    currentForm,
+                  ) => ({
                     ...currentForm,
                     description:
-                      event.target.value,
+                      event.target
+                        .value,
                   }),
                 )
               }
@@ -328,11 +392,11 @@ export function ProjectsPage() {
           </div>
 
           <div>
-            <label className="label block mb-2">
+            <label className="label mb-2 block">
               Color
             </label>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {PROJECT_COLORS.map(
                 (color) => (
                   <button
@@ -340,34 +404,102 @@ export function ProjectsPage() {
                     type="button"
                     onClick={() =>
                       setForm(
-                        (currentForm) => ({
+                        (
+                          currentForm,
+                        ) => ({
                           ...currentForm,
                           color,
                         }),
                       )
                     }
-                    disabled={isSaving}
+                    disabled={
+                      isSaving
+                    }
+                    aria-label={`Select project color ${color}`}
                     style={{
-                      backgroundColor: color,
+                      backgroundColor:
+                        color,
                     }}
                     className={cn(
-                      'w-8 h-8 rounded-full transition-all',
-                      form.color === color &&
-                        'ring-2 ring-white scale-110',
+                      'h-8 w-8 rounded-full transition-all',
+                      form.color.toLowerCase() ===
+                        color.toLowerCase() &&
+                        'scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#111111]',
                       isSaving &&
                         'cursor-not-allowed opacity-50',
                     )}
                   />
                 ),
               )}
+
+              <label
+                className={cn(
+                  'relative flex h-8 cursor-pointer items-center gap-2 overflow-hidden rounded-full',
+                  'border border-white/[0.1] bg-white/[0.04] px-3',
+                  'text-[11px] font-medium text-white/55 transition-all',
+                  'hover:border-white/20 hover:bg-white/[0.07] hover:text-white/80',
+                  isCustomColor &&
+                    'scale-[1.03] border-white/35 bg-white/[0.08] text-white ring-2 ring-white/60',
+                  isSaving &&
+                    'pointer-events-none cursor-not-allowed opacity-50',
+                )}
+              >
+                <span
+                  className="h-4 w-4 flex-shrink-0 rounded-full border border-white/25"
+                  style={{
+                    backgroundColor:
+                      form.color,
+                  }}
+                />
+
+                <Palette size={13} />
+
+                <span>
+                  Custom
+                </span>
+
+                <input
+                  type="color"
+                  value={
+                    form.color
+                  }
+                  disabled={isSaving}
+                  aria-label="Choose a custom project color"
+                  onChange={(
+                    event,
+                  ) =>
+                    setForm(
+                      (
+                        currentForm,
+                      ) => ({
+                        ...currentForm,
+                        color:
+                          event.target
+                            .value,
+                      }),
+                    )
+                  }
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </label>
+
+              <span className="ml-1 font-mono text-[11px] uppercase text-white/35">
+                {form.color}
+              </span>
             </div>
+
+            <p className="mt-2 text-[10px] text-white/25">
+              Choose a preset or
+              create your own color.
+            </p>
           </div>
 
           {(createProjectMutation.isError ||
             updateProjectMutation.isError) && (
             <p className="text-sm text-red-400">
-              Unable to save the project. Please
-              try again.
+              Unable to save the
+              project. Please try
+              again.
             </p>
           )}
 
@@ -377,9 +509,10 @@ export function ProjectsPage() {
               void handleSubmit()
             }}
             disabled={
-              !form.name.trim() || isSaving
+              !form.name.trim() ||
+              isSaving
             }
-            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40"
+            className="btn-primary flex w-full items-center justify-center gap-2 disabled:opacity-40"
           >
             {isSaving && (
               <LoaderCircle
@@ -398,23 +531,29 @@ export function ProjectsPage() {
       </Modal>
 
       <Modal
-        isOpen={Boolean(deleteConfirmId)}
+        isOpen={Boolean(
+          deleteConfirmId,
+        )}
         onClose={() => {
           if (!isDeleting) {
-            setDeleteConfirmId(null)
+            setDeleteConfirmId(
+              null,
+            )
           }
         }}
         title="Delete Project"
       >
         <div className="space-y-4">
           <p className="text-sm text-accent-subtle">
-            Delete this project permanently?
+            Delete this project
+            permanently?
           </p>
 
           {deleteProjectMutation.isError && (
             <p className="text-sm text-red-400">
-              Unable to delete the project. Please
-              try again.
+              Unable to delete the
+              project. Please try
+              again.
             </p>
           )}
 
@@ -422,10 +561,14 @@ export function ProjectsPage() {
             <button
               type="button"
               onClick={() =>
-                setDeleteConfirmId(null)
+                setDeleteConfirmId(
+                  null,
+                )
               }
-              disabled={isDeleting}
-              className="flex-1 btn-ghost disabled:opacity-40"
+              disabled={
+                isDeleting
+              }
+              className="btn-ghost flex-1 disabled:opacity-40"
             >
               Cancel
             </button>
@@ -435,8 +578,10 @@ export function ProjectsPage() {
               onClick={() => {
                 void handleDelete()
               }}
-              disabled={isDeleting}
-              className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-40"
+              disabled={
+                isDeleting
+              }
+              className="btn-primary flex flex-1 items-center justify-center gap-2 disabled:opacity-40"
             >
               {isDeleting && (
                 <LoaderCircle
@@ -491,7 +636,7 @@ function ProjectCard({
       <div className="flex justify-between">
         <div>
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+            className="flex h-12 w-12 items-center justify-center rounded-2xl text-2xl"
             style={{
               background: `${project.color}20`,
             }}
@@ -505,7 +650,9 @@ function ProjectCard({
 
           {project.description && (
             <p className="text-sm text-accent-subtle">
-              {project.description}
+              {
+                project.description
+              }
             </p>
           )}
         </div>
@@ -529,7 +676,7 @@ function ProjectCard({
         </div>
       </div>
 
-      <div className="mt-5 surface p-3 rounded-xl">
+      <div className="surface mt-5 rounded-xl p-3">
         <div className="flex items-center gap-2">
           <Timer size={14} />
 
@@ -553,15 +700,15 @@ function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-20">
-      <div className="text-5xl mb-4">
+      <div className="mb-4 text-5xl">
         📁
       </div>
 
-      <h2 className="text-xl font-semibold mb-2">
+      <h2 className="mb-2 text-xl font-semibold">
         No projects yet
       </h2>
 
-      <p className="text-accent-subtle mb-6">
+      <p className="mb-6 text-accent-subtle">
         Create your first project
       </p>
 

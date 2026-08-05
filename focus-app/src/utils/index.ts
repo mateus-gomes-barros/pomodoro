@@ -15,7 +15,7 @@ export function getLast30Days() {
     date.setDate(date.getDate() - i)
 
     dates.push(
-      date.toISOString().split('T')[0]
+      date.toISOString().split('T')[0],
     )
   }
 
@@ -26,10 +26,15 @@ export function formatTime(seconds: number) {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
 
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  return `${String(mins).padStart(
+    2,
+    '0',
+  )}:${String(secs).padStart(2, '0')}`
 }
 
-export function formatDuration(minutes: number) {
+export function formatDuration(
+  minutes: number,
+) {
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
 
@@ -45,11 +50,13 @@ export function formatDuration(minutes: number) {
 }
 
 export function cn(
-  ...classes: (string | undefined | false)[]
+  ...classes: (
+    | string
+    | undefined
+    | false
+  )[]
 ) {
-  return classes
-    .filter(Boolean)
-    .join(' ')
+  return classes.filter(Boolean).join(' ')
 }
 
 export const PROJECT_COLORS = [
@@ -61,9 +68,18 @@ export const PROJECT_COLORS = [
 ]
 
 export const PROJECT_EMOJIS = [
-  '💻',
+  '⌨️',
   '📚',
   '🎨',
   '🚀',
   '⚡',
+  '🏋️',
+  '🛒',
+  '📱',
+  '🎵',
+  '👟',
+  '✏️',
+  '🧹',
+  '🎮',
+  '🎧',
 ]
