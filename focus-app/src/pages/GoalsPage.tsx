@@ -168,7 +168,7 @@ export function GoalsPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl p-6 pt-20 lg:p-10 lg:pt-10">
+      <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
           title="Goals"
           subtitle={`Loading ${currentYear} goals`}
@@ -186,7 +186,7 @@ export function GoalsPage() {
 
   if (isError) {
     return (
-      <div className="mx-auto max-w-4xl p-6 pt-20 lg:p-10 lg:pt-10">
+      <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
           title="Goals"
           subtitle="Unable to load goals"
@@ -204,7 +204,7 @@ export function GoalsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-6 pt-20 lg:p-10 lg:pt-10">
+    <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
       <PageHeader
         title="Goals"
         subtitle={`${currentYear} yearly goals`}

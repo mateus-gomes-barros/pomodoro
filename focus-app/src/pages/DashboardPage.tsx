@@ -271,7 +271,7 @@ const completedGoalsThisYear =
 
   if (isLoading) {
     return (
-      <div className="w-full min-w-0 space-y-8 pt-16 lg:pt-0">
+      <div className="w-full min-w-0 space-y-8">
         <div className="flex items-center justify-center py-24">
           <LoaderCircle
             size={30}
@@ -284,7 +284,7 @@ const completedGoalsThisYear =
 
   if (isError) {
     return (
-      <div className="w-full min-w-0 space-y-8 pt-16 lg:pt-0">
+      <div className="w-full min-w-0 space-y-8">
         <div className="card p-6">
           <p className="text-sm text-red-400">
             {error instanceof Error
@@ -297,7 +297,7 @@ const completedGoalsThisYear =
   }
 
   return (
-    <div className="w-full min-w-0 space-y-8 pt-16 lg:pt-0">
+    <div className="w-full min-w-0 space-y-8">
       {/* Greeting */}
 
       <motion.div

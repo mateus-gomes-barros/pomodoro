@@ -155,7 +155,7 @@ export function ProjectsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+      <div className="mx-auto max-w-5xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
           title="Projects"
           subtitle="Loading projects"
@@ -173,7 +173,7 @@ export function ProjectsPage() {
 
   if (isError) {
     return (
-      <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+      <div className="mx-auto max-w-5xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
           title="Projects"
           subtitle="Unable to load projects"
@@ -191,7 +191,7 @@ export function ProjectsPage() {
   }
 
   return (
-    <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl px-6 pb-6 lg:px-10 lg:pb-10">
       <PageHeader
         title="Projects"
         subtitle={`${projects.length} active ${

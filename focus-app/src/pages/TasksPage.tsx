@@ -116,7 +116,7 @@ export function TasksPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 lg:p-10 max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
           title="Tasks"
           subtitle="Loading tasks"
@@ -134,7 +134,7 @@ export function TasksPage() {
 
   if (isError) {
     return (
-      <div className="p-6 lg:p-10 max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
           title="Tasks"
           subtitle="Unable to load tasks"
@@ -152,7 +152,7 @@ export function TasksPage() {
   }
 
   return (
-    <div className="p-6 lg:p-10 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-6 pb-6 lg:px-10 lg:pb-10">
       <PageHeader
         title="Tasks"
         subtitle={`${tasks.length} task${

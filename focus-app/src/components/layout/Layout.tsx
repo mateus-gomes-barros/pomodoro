@@ -195,7 +195,9 @@ export function Layout() {
             md:px-8
             lg:px-10
             xl:px-12
-            py-8
+            pt-4
+            pb-8
+            lg:py-8
           "
         >
           <Outlet />

@@ -426,7 +426,7 @@ export function StreaksPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl p-6 lg:p-10">
+      <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
           title="Streaks"
           subtitle="Loading your activity"
@@ -444,7 +444,7 @@ export function StreaksPage() {
 
   if (isError) {
     return (
-      <div className="mx-auto max-w-4xl p-6 lg:p-10">
+      <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
           title="Streaks"
           subtitle="Unable to load your activity"
@@ -462,7 +462,7 @@ export function StreaksPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-6 lg:p-10">
+    <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
       <PageHeader
         title="Streaks"
         subtitle="Keep your momentum going"
