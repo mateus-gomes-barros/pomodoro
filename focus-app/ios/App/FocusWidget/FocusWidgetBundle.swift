@@ -13,6 +13,7 @@ struct FocusWidgetBundle: WidgetBundle {
     var body: some Widget {
         FocusWidget()
         WeeklyActivityWidget()
+        MonthlyActivityWidget()
         FocusWidgetControl()
     }
 }
