@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftUI
+import UIKit
 import WidgetKit
 
 struct MonthlyActivityDay:
@@ -386,6 +387,11 @@ struct MonthlyActivityView:
     let entry:
         MonthlyActivityEntry
 
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
     private let accentColor =
         Color(
             red: 0.45,
@@ -403,15 +409,16 @@ struct MonthlyActivityView:
         "S"
     ]
 
-    private let columns =
+    private var columns: [GridItem] {
         Array(
             repeating:
                 GridItem(
                     .flexible(),
-                    spacing: 6
+                    spacing: isPad ? 4 : 6
                 ),
             count: 7
         )
+    }
 
     private var activeDays: Int {
         entry.days.filter(
@@ -480,7 +487,7 @@ struct MonthlyActivityView:
                 )
                 .font(
                     .system(
-                        size: 21,
+                        size: isPad ? 18 : 21,
                         weight: .bold,
                         design: .rounded
                     )
@@ -514,11 +521,11 @@ struct MonthlyActivityView:
                 )
                 .padding(
                     .horizontal,
-                    11
+                    isPad ? 9 : 11
                 )
                 .padding(
                     .vertical,
-                    7
+                    isPad ? 5 : 7
                 )
                 .background(
                     accentColor
@@ -560,12 +567,18 @@ struct MonthlyActivityView:
                         )
                 }
             }
-            .padding(.top, 14)
-            .padding(.bottom, 7)
+            .padding(
+                .top,
+                isPad ? 8 : 14
+            )
+            .padding(
+                .bottom,
+                isPad ? 5 : 7
+            )
 
             LazyVGrid(
                 columns: columns,
-                spacing: 6
+                spacing: isPad ? 4 : 6
             ) {
                 ForEach(
                     entry.days
@@ -647,15 +660,19 @@ struct MonthlyActivityView:
                             )
                         }
                     }
-                    .frame(height: 34)
+                    .frame(
+                        height: isPad ? 28 : 34
+                    )
                 }
             }
 
             Spacer(
-                minLength: 12
+                minLength: isPad ? 6 : 12
             )
 
-            HStack(spacing: 24) {
+            HStack(
+                spacing: isPad ? 14 : 24
+            ) {
                 HStack(spacing: 7) {
                     Image(
                         systemName:
@@ -700,13 +717,15 @@ struct MonthlyActivityView:
             }
             .font(
                 .system(
-                    size: 12,
+                    size: isPad ? 10 : 12,
                     weight: .semibold,
                     design: .rounded
                 )
             )
         }
-        .padding(16)
+        .padding(
+            isPad ? 12 : 16
+        )
     }
 }
 
