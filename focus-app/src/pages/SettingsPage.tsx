@@ -533,7 +533,7 @@ export function SettingsPage() {
           </h3>
 
           <p className="text-sm text-accent-subtle">
-            Focus v1.0 — A minimalist Pomodoro
+            Focus v2.0 — A minimalist Pomodoro
             and productivity app. Guest data is
             stored locally on your device.
           </p>

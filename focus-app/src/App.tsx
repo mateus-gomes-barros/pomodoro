@@ -21,7 +21,6 @@ import { TimerPage } from './pages/TimerPage'
 
 function TimerDriver() {
   useTimer()
-
   return null
 }
 
@@ -29,59 +28,21 @@ function App() {
   return (
     <BrowserRouter>
       <TimerDriver />
-
       <Routes>
-        <Route
-          path="login"
-          element={<LoginPage />}
-        />
-
-        <Route
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route
-            index
-            element={<DashboardPage />}
-          />
-
-          <Route
-            path="timer"
-            element={<TimerPage />}
-          />
-
-          <Route
-            path="projects"
-            element={<ProjectsPage />}
-          />
-
-          <Route
-            path="tasks"
-            element={<TasksPage />}
-          />
-
-          <Route
-            path="goals"
-            element={<GoalsPage />}
-          />
-
-          <Route
-            path="streaks"
-            element={<StreaksPage />}
-          />
-
-          <Route
-            path="analytics"
-            element={<AnalyticsPage />}
-          />
-
-          <Route
-            path="settings"
-            element={<SettingsPage />}
-          />
+        <Route path="/login" element={<LoginPage />} />
+        
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/timer" element={<TimerPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/streaks" element={<StreaksPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

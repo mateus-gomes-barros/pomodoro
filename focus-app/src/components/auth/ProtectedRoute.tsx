@@ -2,9 +2,10 @@ import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
 import { useAuth } from '@/contexts/AuthContext'
+import { Outlet } from 'react-router-dom';
 
 type ProtectedRouteProps = {
-  children: ReactNode
+  children?: ReactNode
 }
 
 export function ProtectedRoute({
@@ -40,5 +41,5 @@ export function ProtectedRoute({
     )
   }
 
-  return children
+  return children ? <>{children}</> : <Outlet />;
 }
