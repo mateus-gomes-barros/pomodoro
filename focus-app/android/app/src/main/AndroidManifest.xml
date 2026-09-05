@@ -39,6 +39,132 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Timer" />
         </service>
 
+
+        <receiver
+            android:name=".GoalsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_goals_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/goals_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".MonthlyAnalyticsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_monthly_analytics_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/monthly_analytics_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".AnalyticsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_weekly_analytics_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/analytics_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".MonthlyActivityWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_monthly_activity_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/monthly_activity_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".MediumTimerWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_medium_timer_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/medium_timer_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".SmallTodayFocusWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_today_focus_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/small_today_focus_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".SmallStreakWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_small_streak_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/small_streak_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".WeeklyActivityWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_weekly_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/weekly_activity_widget_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -48,6 +174,51 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
-    </application>
+    
+        <receiver
+            android:name=".MediumWeekWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_medium_week_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/medium_week_widget_info" />
+
+        </receiver>
+
+        <receiver
+            android:name=".MediumGoalsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_medium_goals_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/medium_goals_widget_info" />
+
+        </receiver>
+
+        <receiver
+            android:name=".SmallTopProjectWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_small_top_project_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/small_top_project_widget_info" />
+
+        </receiver>
+</application>
     <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

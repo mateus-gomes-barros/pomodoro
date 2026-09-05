@@ -4,4 +4,26 @@
     <string name="title_activity_main">Focus</string>
     <string name="package_name">com.mateusgomes.focusapp</string>
     <string name="custom_url_scheme">com.mateusgomes.focusapp</string>
+    <string name="widget_weekly_name">Weekly Focus</string>
+    <string name="widget_weekly_description">Weekly focus time and current streak</string>
+    <string name="widget_monthly_activity_name">Monthly Activity</string>
+    <string name="widget_monthly_activity_description">Monthly focus activity and best streak</string>
+    <string name="widget_weekly_analytics_name">Weekly Analytics</string>
+    <string name="widget_weekly_analytics_description">Weekly focus analytics and top projects</string>
+    <string name="widget_monthly_analytics_name">Monthly Analytics</string>
+    <string name="widget_monthly_analytics_description">Monthly focus analytics and top projects</string>
+    <string name="widget_goals_name">Goals</string>
+    <string name="widget_goals_description">Track your goals and completion progress</string>
+    <string name="widget_small_streak_name">Streak</string>
+    <string name="widget_small_streak_description">Your current focus streak</string>
+    <string name="widget_today_focus_name">Today Focus</string>
+    <string name="widget_today_focus_description">Focus time completed today</string>
+    <string name="widget_medium_timer_name">Focus Timer</string>
+    <string name="widget_medium_timer_description">Current Focus timer and active project</string>
+    <string name="widget_medium_week_name">Week Summary</string>
+    <string name="widget_medium_week_description">Weekly focus summary</string>
+    <string name="widget_medium_goals_name">Goals Compact</string>
+    <string name="widget_medium_goals_description">Compact goals progress</string>
+    <string name="widget_small_top_project_name">Top Project</string>
+    <string name="widget_small_top_project_description">Your top focus project this week</string>
 </resources>

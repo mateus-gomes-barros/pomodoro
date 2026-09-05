@@ -218,27 +218,20 @@ export const usePomodoroStore =
             activeTaskId,
           } = get()
 
-          const session: PomodoroSession =
-            {
-              id: generateId(),
-              type: sessionType,
-              projectId:
-                activeProjectId ??
-                undefined,
-              taskId:
-                activeTaskId ??
-                undefined,
-              durationMinutes:
-                sessionType === 'work'
-                  ? settings.workDuration
-                  : sessionType ===
-                      'short_break'
-                    ? settings.shortBreakDuration
-                    : settings.longBreakDuration,
-              completedAt:
-                new Date().toISOString(),
-              date: getTodayString(),
-            }
+          const session: PomodoroSession = {
+            id: generateId(),
+            type: sessionType,
+            projectId: activeProjectId ?? undefined,
+            taskId: activeTaskId ?? undefined,
+            durationMinutes:
+              sessionType === 'work'
+                ? settings.workDuration
+                : sessionType === 'short_break'
+                  ? settings.shortBreakDuration
+                  : settings.longBreakDuration,
+            completedAt: new Date().toISOString(),
+            date: getTodayString(),
+          }
 
           const newCount =
             sessionType === 'work'
@@ -261,20 +254,33 @@ export const usePomodoroStore =
             nextType = 'work'
           }
 
+          const shouldAutoStart =
+            sessionType === 'work'
+              ? settings.autoStartBreaks
+              : settings.autoStartWork
+
+          const nextSeconds =
+            getDuration(
+              nextType,
+              settings,
+            )
+
           set((state) => ({
             sessions: [
               ...state.sessions,
               session,
             ],
-            status: 'completed',
-            endsAt: null,
+            status: shouldAutoStart
+              ? 'running'
+              : 'completed',
+            endsAt: shouldAutoStart
+              ? Date.now() +
+                nextSeconds * 1000
+              : null,
             currentSessionCount:
               newCount,
             sessionType: nextType,
-            secondsLeft: getDuration(
-              nextType,
-              settings,
-            ),
+            secondsLeft: nextSeconds,
           }))
         },
 

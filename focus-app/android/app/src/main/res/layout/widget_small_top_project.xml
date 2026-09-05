@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/small_top_project_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="12dp"
+    android:background="@drawable/widget_focus_background">
+
+    <TextView
+        android:id="@+id/small_top_project_emoji"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="💻"
+        android:textSize="30sp" />
+
+    <TextView
+        android:id="@+id/small_top_project_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Project"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/small_top_project_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="0m"
+        android:textColor="#34D399"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

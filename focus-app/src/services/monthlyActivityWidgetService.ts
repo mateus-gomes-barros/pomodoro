@@ -39,7 +39,10 @@ import {
   function isAvailable(): boolean {
     return (
       Capacitor.isNativePlatform() &&
-      Capacitor.getPlatform() === 'ios'
+      (
+        Capacitor.getPlatform() === 'ios' ||
+        Capacitor.getPlatform() === 'android'
+      )
     )
   }
   

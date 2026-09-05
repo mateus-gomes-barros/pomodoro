@@ -8,6 +8,10 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Agora sim, registramos o plugin sem medo da tela preta
         registerPlugin(PomodoroServicePlugin.class);
+        registerPlugin(WeeklyActivityWidgetPlugin.class);
+        registerPlugin(MonthlyActivityWidgetPlugin.class);
+        registerPlugin(AnalyticsWidgetPlugin.class);
+        registerPlugin(GoalsWidgetPlugin.class);
         super.onCreate(savedInstanceState); 
     }
 }

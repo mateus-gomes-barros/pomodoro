@@ -51,6 +51,23 @@ public class PomodoroServicePlugin extends Plugin {
         long endTime = call.getLong("endTime", 0L);
         String badgeIcon = call.getString("badgeIcon", "");
 
+        getContext()
+            .getSharedPreferences(
+                "focus_widgets",
+                android.content.Context.MODE_PRIVATE
+            )
+            .edit()
+            .putString("timer_widget_title", title)
+            .putString("timer_widget_body", body)
+            .putString("timer_widget_badge", badgeIcon)
+            .putLong("timer_widget_end_time", endTime)
+            .putBoolean("timer_widget_running", endTime > System.currentTimeMillis())
+            .apply();
+
+        MediumTimerWidgetProvider.updateAll(
+            getContext()
+        );
+
         Log.d(TAG, "endTime=" + endTime);
         Log.d(TAG, "badgeIcon=" + badgeIcon);
 
@@ -119,6 +136,20 @@ public class PomodoroServicePlugin extends Plugin {
                 );
 
         getContext().stopService(intent);
+
+        getContext()
+            .getSharedPreferences(
+                "focus_widgets",
+                android.content.Context.MODE_PRIVATE
+            )
+            .edit()
+            .putLong("timer_widget_end_time", 0L)
+            .putBoolean("timer_widget_running", false)
+            .apply();
+
+        MediumTimerWidgetProvider.updateAll(
+            getContext()
+        );
 
         call.resolve();
     }

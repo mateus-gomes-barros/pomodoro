@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+
+import { setAppLanguage } from '@/i18n'
 
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -14,6 +17,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 
 export function SettingsPage() {
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
 
   const {
     user,
@@ -111,7 +115,7 @@ export function SettingsPage() {
       }
 
       setDisplayNameMessage(
-        'Display name saved.',
+        t('settings.account.saved'),
       )
     } catch (error) {
       const message =
@@ -174,8 +178,8 @@ export function SettingsPage() {
   return (
     <div className="p-6 lg:p-10 max-w-xl mx-auto">
       <PageHeader
-        title="Settings"
-        subtitle="Customize your focus experience"
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
       />
 
       <div className="space-y-4">
@@ -205,7 +209,7 @@ export function SettingsPage() {
 
               <p className="mt-2 text-sm text-accent-subtle break-all">
                 {user.email ??
-                  'Google account connected'}
+                  t('settings.account.googleConnected')}
               </p>
 
               <div className="mt-6">
@@ -217,8 +221,7 @@ export function SettingsPage() {
                 </label>
 
                 <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
-                  This name will appear in your
-                  Dashboard greeting.
+                  {t('settings.account.displayNameDescription')}
                 </p>
 
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row">
@@ -236,7 +239,7 @@ export function SettingsPage() {
                     }}
                     maxLength={40}
                     autoComplete="name"
-                    placeholder="Your name"
+                    placeholder={t('settings.account.placeholder')}
                     className="
                       min-w-0
                       flex-1
@@ -287,8 +290,8 @@ export function SettingsPage() {
   "
 >
   {isSavingDisplayName
-    ? 'Saving...'
-    : 'Save name'}
+    ? t('settings.account.saving')
+    : t('settings.account.save')}
 </button>
                 </div>
 
@@ -306,8 +309,8 @@ export function SettingsPage() {
                 className="mt-5 w-full rounded-xl border border-white/10 px-4 py-3 font-medium text-accent-subtle transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSigningOut
-                  ? 'Signing out...'
-                  : 'Sign Out'}
+                  ? t('settings.account.signingOut')
+                  : t('settings.account.signOut')}
               </button>
             </>
           ) : isDemoMode ? (
@@ -317,9 +320,7 @@ export function SettingsPage() {
               </p>
 
               <p className="mt-2 text-sm text-accent-subtle">
-                You're using Focus without an
-                account. Your data is stored only
-                on this device.
+                {t('settings.account.guestDescription')}
               </p>
 
               <div className="mt-5 flex flex-col gap-3">
@@ -330,8 +331,8 @@ export function SettingsPage() {
                   className="rounded-xl bg-accent-green px-4 py-3 font-medium text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSigningIn
-                    ? 'Redirecting...'
-                    : 'Continue with Google'}
+                    ? t('settings.account.redirecting')
+                    : t('settings.account.continueGoogle')}
                 </button>
 
                 <button
@@ -351,8 +352,7 @@ export function SettingsPage() {
               </p>
 
               <p className="mt-2 text-sm text-accent-subtle">
-                Connect your Google account to
-                synchronize your Focus data.
+                {t('settings.account.noAccountDescription')}
               </p>
 
               <button
@@ -362,8 +362,8 @@ export function SettingsPage() {
                 className="mt-5 w-full rounded-xl bg-accent-green px-4 py-3 font-medium text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSigningIn
-                  ? 'Redirecting...'
-                  : 'Continue with Google'}
+                  ? t('settings.account.redirecting')
+                  : t('settings.account.continueGoogle')}
               </button>
             </>
           )}
@@ -373,6 +373,77 @@ export function SettingsPage() {
               {errorMessage}
             </p>
           )}
+        </motion.div>
+
+        {/* LANGUAGE */}
+
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.025,
+          }}
+          className="card p-6"
+        >
+          <h3 className="text-sm font-semibold text-accent-white mb-2">
+            {t('settings.language.title')}
+          </h3>
+
+          <p className="text-xs leading-relaxed text-accent-subtle">
+            {t(
+              'settings.language.description',
+            )}
+          </p>
+
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() =>
+                void setAppLanguage('en')
+              }
+              className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
+                i18n.language === 'en'
+                  ? 'border-accent-green bg-accent-green/10 text-accent-green'
+                  : 'border-white/10 bg-white/[0.025] text-accent-subtle hover:border-white/20'
+              }`}
+            >
+              <span className="font-medium">
+                English
+              </span>
+
+              <span className="mt-1 block text-xs opacity-60">
+                English
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                void setAppLanguage(
+                  'pt-BR',
+                )
+              }
+              className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
+                i18n.language === 'pt-BR'
+                  ? 'border-accent-green bg-accent-green/10 text-accent-green'
+                  : 'border-white/10 bg-white/[0.025] text-accent-subtle hover:border-white/20'
+              }`}
+            >
+              <span className="font-medium">
+                Português
+              </span>
+
+              <span className="mt-1 block text-xs opacity-60">
+                Brasil
+              </span>
+            </button>
+          </div>
         </motion.div>
 
         {/* TIMER */}
@@ -397,7 +468,7 @@ export function SettingsPage() {
 
           <div className="space-y-4">
             <Setting
-              label="Focus session"
+              label={t('settings.timer.focus')}
               value={settings.workDuration}
               unit="min"
               min={5}
@@ -410,7 +481,7 @@ export function SettingsPage() {
             />
 
             <Setting
-              label="Short break"
+              label={t('settings.timer.shortBreak')}
               value={
                 settings.shortBreakDuration
               }
@@ -425,7 +496,7 @@ export function SettingsPage() {
             />
 
             <Setting
-              label="Long break"
+              label={t('settings.timer.longBreak')}
               value={
                 settings.longBreakDuration
               }
@@ -440,7 +511,7 @@ export function SettingsPage() {
             />
 
             <Setting
-              label="Sessions until long break"
+              label={t('settings.timer.sessionsUntilLongBreak')}
               value={
                 settings.sessionsUntilLongBreak
               }
@@ -479,7 +550,7 @@ export function SettingsPage() {
 
           <div className="space-y-4">
             <Toggle
-              label="Sound notifications"
+              label={t('settings.preferences.sound')}
               value={settings.soundEnabled}
               onChange={(value) =>
                 updateSettings({
@@ -489,7 +560,7 @@ export function SettingsPage() {
             />
 
             <Toggle
-              label="Auto-start breaks"
+              label={t('settings.preferences.autoBreak')}
               value={
                 settings.autoStartBreaks
               }
@@ -501,7 +572,7 @@ export function SettingsPage() {
             />
 
             <Toggle
-              label="Auto-start work sessions"
+              label={t('settings.preferences.autoWork')}
               value={settings.autoStartWork}
               onChange={(value) =>
                 updateSettings({
@@ -533,9 +604,7 @@ export function SettingsPage() {
           </h3>
 
           <p className="text-sm text-accent-subtle">
-            Focus v2.0 — A minimalist Pomodoro
-            and productivity app. Guest data is
-            stored locally on your device.
+            {t('settings.about.description')}
           </p>
         </motion.div>
       </div>
