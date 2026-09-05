@@ -12,7 +12,7 @@
         android:id="@+id/month_widget_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Monthly Activity"
+        android:text="Atividade mensal"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:textStyle="bold" />
@@ -22,7 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="🔥 0 day best streak"
+        android:text="🔥 0 dias de melhor ofensiva"
         android:textColor="#34D399"
         android:textSize="12sp" />
 

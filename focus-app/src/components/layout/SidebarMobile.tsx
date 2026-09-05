@@ -11,43 +11,44 @@ import {
   X,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/utils'
 
 const navItems = [
   {
     icon: LayoutDashboard,
-    label: 'Dashboard',
+    labelKey: 'navigation.dashboard',
     path: '/',
   },
   {
     icon: Timer,
-    label: 'Timer',
+    labelKey: 'navigation.timer',
     path: '/timer',
   },
   {
     icon: FolderOpen,
-    label: 'Projects',
+    labelKey: 'navigation.projects',
     path: '/projects',
   },
   {
     icon: CheckSquare,
-    label: 'Tasks',
+    labelKey: 'navigation.tasks',
     path: '/tasks',
   },
   {
     icon: Target,
-    label: 'Goals',
+    labelKey: 'navigation.goals',
     path: '/goals',
   },
   {
     icon: Flame,
-    label: 'Streaks',
+    labelKey: 'navigation.streaks',
     path: '/streaks',
   },
   {
     icon: BarChart3,
-    label: 'Analytics',
+    labelKey: 'navigation.analytics',
     path: '/analytics',
   },
 ]
@@ -70,6 +71,8 @@ export function SidebarMobile({
   isDragging,
   onClose,
 }: SidebarMobileProps) {
+  const { t } = useTranslation()
+
   const visibleProgress = open
     ? 1
     : dragProgress
@@ -231,7 +234,7 @@ export function SidebarMobile({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close menu"
+            aria-label={t('navigation.closeMenu')}
             className="
               rounded-lg
               p-1.5
@@ -257,7 +260,7 @@ export function SidebarMobile({
           {navItems.map(
             ({
               icon: Icon,
-              label,
+              labelKey,
               path,
             }) => (
               <NavLink
@@ -281,7 +284,7 @@ export function SidebarMobile({
                   className="flex-shrink-0"
                 />
 
-                <span>{label}</span>
+                <span>{t(labelKey)}</span>
               </NavLink>
             ),
           )}
@@ -316,7 +319,9 @@ export function SidebarMobile({
               className="flex-shrink-0"
             />
 
-            <span>Settings</span>
+            <span>
+              {t('navigation.settings')}
+            </span>
           </NavLink>
         </div>
       </motion.aside>

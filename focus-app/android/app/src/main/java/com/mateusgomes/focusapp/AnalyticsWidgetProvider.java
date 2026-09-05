@@ -49,6 +49,8 @@ public class AnalyticsWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_analytics
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         try {
             JSONObject root =
                 new JSONObject(payload);
@@ -102,7 +104,7 @@ public class AnalyticsWidgetProvider extends AppWidgetProvider {
                 String name =
                     topProject.optString(
                         "name",
-                        "No project"
+                        WidgetLanguage.text(context, "noProject")
                     );
 
                 int share =
@@ -118,12 +120,12 @@ public class AnalyticsWidgetProvider extends AppWidgetProvider {
 
                 views.setTextViewText(
                     R.id.analytics_share,
-                    share + "% of focus"
+                    WidgetLanguage.percentOfFocus(context, share)
                 );
             } else {
                 views.setTextViewText(
                     R.id.analytics_top_project,
-                    "No focus yet"
+                    WidgetLanguage.text(context, "noFocusYet")
                 );
 
                 views.setTextViewText(
@@ -195,12 +197,12 @@ public class AnalyticsWidgetProvider extends AppWidgetProvider {
 
             views.setTextViewText(
                 R.id.analytics_days,
-                "0 active days"
+                WidgetLanguage.activeDays(context, 0)
             );
 
             views.setTextViewText(
                 R.id.analytics_top_project,
-                "No focus yet"
+                WidgetLanguage.text(context, "noFocusYet")
             );
 
             views.setTextViewText(

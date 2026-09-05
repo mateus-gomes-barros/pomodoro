@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Monthly Analytics"
+        android:text="Análises mensais"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:textStyle="bold" />
@@ -27,7 +27,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="18 active days"
+        android:text="18 dias ativos"
         android:textColor="#A1A1AA"
         android:textSize="12sp" />
 

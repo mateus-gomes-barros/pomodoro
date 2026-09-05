@@ -44,6 +44,8 @@ public class MediumGoalsWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_medium_goals
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         try {
             JSONObject data =
                 new JSONObject(payload);

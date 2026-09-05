@@ -48,6 +48,8 @@ public class SmallStreakWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_small_streak
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         int streak = 0;
 
         try {
@@ -73,8 +75,8 @@ public class SmallStreakWidgetProvider extends AppWidgetProvider {
 
         views.setTextViewText(
             R.id.small_streak_label,
-            streak == 1
-                ? "day streak"
+            WidgetLanguage.isPt(context)
+                ? "dias de ofensiva"
                 : "day streak"
         );
 

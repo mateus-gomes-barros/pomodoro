@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Goals"
+            android:text="Metas"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             android:textStyle="bold" />
@@ -38,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:text="0 / 0 completed"
+        android:text="0 / 0 concluídas"
         android:textColor="#34D399"
         android:textSize="18sp"
         android:textStyle="bold" />

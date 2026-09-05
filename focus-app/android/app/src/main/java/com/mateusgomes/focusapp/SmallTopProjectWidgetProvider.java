@@ -42,6 +42,8 @@ public class SmallTopProjectWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_small_top_project
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         try {
             JSONObject root =
                 new JSONObject(payload);
@@ -69,7 +71,7 @@ public class SmallTopProjectWidgetProvider extends AppWidgetProvider {
                     R.id.small_top_project_name,
                     project.optString(
                         "name",
-                        "No project"
+                        WidgetLanguage.text(context, "noProject")
                     )
                 );
 
@@ -90,7 +92,7 @@ public class SmallTopProjectWidgetProvider extends AppWidgetProvider {
 
                 views.setTextViewText(
                     R.id.small_top_project_name,
-                    "No project"
+                    WidgetLanguage.text(context, "noProject")
                 );
 
                 views.setTextViewText(

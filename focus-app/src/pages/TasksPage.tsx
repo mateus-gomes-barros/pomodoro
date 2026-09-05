@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -20,6 +21,8 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { cn } from '../utils'
 
 export function TasksPage() {
+  const { t } = useTranslation()
+
   const {
     data: tasks = [],
     isLoading,
@@ -118,8 +121,8 @@ export function TasksPage() {
     return (
       <div className="mx-auto max-w-2xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
-          title="Tasks"
-          subtitle="Loading tasks"
+          title={t('tasksPage.title')}
+          subtitle={t('tasksPage.loading')}
         />
 
         <div className="flex items-center justify-center py-20">
@@ -136,15 +139,15 @@ export function TasksPage() {
     return (
       <div className="mx-auto max-w-2xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
-          title="Tasks"
-          subtitle="Unable to load tasks"
+          title={t('tasksPage.title')}
+          subtitle={t('tasksPage.unableToLoad')}
         />
 
         <div className="card p-6">
           <p className="text-sm text-accent-subtle">
             {error instanceof Error
               ? error.message
-              : 'An unexpected error occurred while loading your tasks.'}
+              : t('tasksPage.loadError')}
           </p>
         </div>
       </div>
@@ -154,10 +157,11 @@ export function TasksPage() {
   return (
     <div className="mx-auto max-w-2xl px-6 pb-6 lg:px-10 lg:pb-10">
       <PageHeader
-        title="Tasks"
-        subtitle={`${tasks.length} task${
-          tasks.length !== 1 ? 's' : ''
-        }`}
+        title={t('tasksPage.title')}
+        subtitle={t(
+          'tasksPage.count',
+          { count: tasks.length },
+        )}
         action={
           <button
             type="button"
@@ -166,7 +170,7 @@ export function TasksPage() {
           >
             <Plus size={16} />
 
-            Add Task
+            {t('tasksPage.add')}
           </button>
         }
       />
@@ -175,8 +179,7 @@ export function TasksPage() {
         deleteTaskMutation.isError) && (
         <div className="card p-4 mb-4">
           <p className="text-sm text-red-400">
-            Unable to update the task. Please
-            try again.
+            {t('tasksPage.updateError')}
           </p>
         </div>
       )}
@@ -184,7 +187,7 @@ export function TasksPage() {
       <div className="space-y-3">
         {tasks.length === 0 ? (
           <div className="card p-8 text-center text-accent-subtle">
-            No tasks yet
+            {t('tasksPage.empty')}
           </div>
         ) : (
           tasks.map((task, index) => {
@@ -235,8 +238,14 @@ export function TasksPage() {
                   disabled={isUpdating}
                   aria-label={
                     task.completed
-                      ? `Reopen ${task.title}`
-                      : `Complete ${task.title}`
+                      ? t(
+                          'tasksPage.reopen',
+                          { title: task.title },
+                        )
+                      : t(
+                          'tasksPage.complete',
+                          { title: task.title },
+                        )
                   }
                 >
                   {isToggling ? (
@@ -273,7 +282,10 @@ export function TasksPage() {
                     void handleDelete(task.id)
                   }}
                   disabled={isUpdating}
-                  aria-label={`Delete ${task.title}`}
+                  aria-label={t(
+                    'tasksPage.delete',
+                    { title: task.title },
+                  )}
                   className="text-accent-subtle hover:text-red-400 transition-colors disabled:opacity-40"
                 >
                   {isDeleting ? (
@@ -294,12 +306,12 @@ export function TasksPage() {
       <Modal
         isOpen={modalOpen}
         onClose={closeCreateModal}
-        title="New Task"
+        title={t('tasksPage.newTask')}
       >
         <div className="space-y-4">
           <input
             className="input"
-            placeholder="Task name..."
+            placeholder={t('tasksPage.placeholder')}
             value={title}
             disabled={isCreating}
             onChange={(event) =>
@@ -314,8 +326,7 @@ export function TasksPage() {
 
           {createTaskMutation.isError && (
             <p className="text-sm text-red-400">
-              Unable to create the task. Please
-              try again.
+              {t('tasksPage.createError')}
             </p>
           )}
 
@@ -337,8 +348,8 @@ export function TasksPage() {
             )}
 
             {isCreating
-              ? 'Creating...'
-              : 'Create Task'}
+              ? t('tasksPage.creating')
+              : t('tasksPage.create')}
           </button>
         </div>
       </Modal>

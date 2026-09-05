@@ -1,4 +1,8 @@
 import i18n from 'i18next'
+import {
+  Capacitor,
+  registerPlugin,
+} from '@capacitor/core'
 import { initReactI18next } from 'react-i18next'
 
 import en from './locales/en'
@@ -6,6 +10,37 @@ import ptBR from './locales/pt-BR'
 
 export const LANGUAGE_STORAGE_KEY =
   'focus-language'
+
+
+interface WidgetLanguagePlugin {
+  setLanguage(options: {
+    language: 'en' | 'pt-BR'
+  }): Promise<void>
+}
+
+const WidgetLanguageBridge =
+  registerPlugin<WidgetLanguagePlugin>(
+    'WidgetLanguageBridge',
+  )
+
+async function syncWidgetLanguage(
+  language: 'en' | 'pt-BR',
+) {
+  if (
+    !Capacitor.isNativePlatform() ||
+    Capacitor.getPlatform() !== 'android'
+  ) {
+    return
+  }
+
+  try {
+    await WidgetLanguageBridge.setLanguage({
+      language,
+    })
+  } catch {
+    // Widgets não devem bloquear troca de idioma.
+  }
+}
 
 function getInitialLanguage(): string {
   const savedLanguage =
@@ -20,14 +55,7 @@ function getInitialLanguage(): string {
     return savedLanguage
   }
 
-  const deviceLanguage =
-    navigator.language
-
-  return deviceLanguage
-    .toLowerCase()
-    .startsWith('pt')
-      ? 'pt-BR'
-      : 'en'
+  return 'pt-BR'
 }
 
 void i18n
@@ -49,6 +77,12 @@ void i18n
     },
   })
 
+void syncWidgetLanguage(
+  getInitialLanguage() as
+    | 'en'
+    | 'pt-BR',
+)
+
 export async function setAppLanguage(
   language: 'en' | 'pt-BR',
 ) {
@@ -58,6 +92,7 @@ export async function setAppLanguage(
   )
 
   await i18n.changeLanguage(language)
+  await syncWidgetLanguage(language)
 }
 
 export default i18n

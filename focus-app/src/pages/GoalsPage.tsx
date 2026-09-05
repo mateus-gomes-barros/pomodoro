@@ -1,3 +1,5 @@
+import { enUS, ptBR } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -26,6 +28,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { cn } from '@/utils'
 
 export function GoalsPage() {
+  const { t, i18n } = useTranslation()
+
   const currentYear =
     new Date().getFullYear()
 
@@ -157,21 +161,40 @@ export function GoalsPage() {
     completedAt?: string,
   ) {
     if (!completedAt) {
-      return `Completed in ${currentYear}`
+      return t(
+        'goalsPage.completed.inYear',
+        { year: currentYear },
+      )
     }
 
-    return `Completed on ${format(
-      new Date(completedAt),
-      'MMM d, yyyy',
-    )}`
+    return t(
+      'goalsPage.completed.onDate',
+      {
+        date: format(
+          new Date(completedAt),
+          i18n.language === 'pt-BR'
+            ? "d 'de' MMM 'de' yyyy"
+            : 'MMM d, yyyy',
+          {
+            locale:
+              i18n.language === 'pt-BR'
+                ? ptBR
+                : enUS,
+          },
+        ),
+      },
+    )
   }
 
   if (isLoading) {
     return (
       <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
-          title="Goals"
-          subtitle={`Loading ${currentYear} goals`}
+          title={t('goalsPage.title')}
+          subtitle={t(
+            'goalsPage.loading',
+            { year: currentYear },
+          )}
         />
 
         <div className="flex items-center justify-center py-20">
@@ -188,15 +211,15 @@ export function GoalsPage() {
     return (
       <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
-          title="Goals"
-          subtitle="Unable to load goals"
+          title={t('goalsPage.title')}
+          subtitle={t('goalsPage.unableToLoad')}
         />
 
         <div className="card p-6">
           <p className="text-sm text-accent-subtle">
             {error instanceof Error
               ? error.message
-              : 'An unexpected error occurred while loading your goals.'}
+              : t('goalsPage.loadError')}
           </p>
         </div>
       </div>
@@ -206,8 +229,11 @@ export function GoalsPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 pb-6 lg:px-10 lg:pb-10">
       <PageHeader
-        title="Goals"
-        subtitle={`${currentYear} yearly goals`}
+        title={t('goalsPage.title')}
+        subtitle={t(
+          'goalsPage.yearlyGoals',
+          { year: currentYear },
+        )}
         action={
           <button
             type="button"
@@ -216,7 +242,7 @@ export function GoalsPage() {
           >
             <Plus size={16} />
 
-            Add Goal
+            {t('goalsPage.add')}
           </button>
         }
       />
@@ -258,12 +284,20 @@ export function GoalsPage() {
 
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white">
-                Goals done this year
+                {t(
+                  'goalsPage.summary.title',
+                )}
               </p>
 
               <p className="mt-1 text-xs text-white/40">
-                {completedGoals.length} of{' '}
-                {goals.length} completed
+                {t(
+                  'goalsPage.summary.completed',
+                  {
+                    completed:
+                      completedGoals.length,
+                    total: goals.length,
+                  },
+                )}
               </p>
             </div>
           </div>
@@ -299,8 +333,7 @@ export function GoalsPage() {
         deleteGoalMutation.isError) && (
         <div className="card mb-5 p-4">
           <p className="text-sm text-red-400">
-            Unable to update the goal.
-            Please try again.
+            {t('goalsPage.updateError')}
           </p>
         </div>
       )}
@@ -315,13 +348,14 @@ export function GoalsPage() {
               />
 
               <h2 className="text-xl font-semibold text-white">
-                Your goals
+                {t('goalsPage.list.title')}
               </h2>
             </div>
 
             <p className="mt-2 max-w-md text-sm leading-relaxed text-white/40">
-              Check off each goal as you
-              complete it.
+              {t(
+                'goalsPage.list.description',
+              )}
             </p>
           </div>
 
@@ -344,7 +378,9 @@ export function GoalsPage() {
             </span>
 
             <span className="text-xs text-white/40">
-              remaining
+              {t(
+                'goalsPage.list.remaining',
+              )}
             </span>
           </div>
         </div>
@@ -370,12 +406,16 @@ export function GoalsPage() {
               </div>
 
               <p className="font-medium text-white">
-                No goals yet
+                {t(
+                  'goalsPage.list.empty',
+                )}
               </p>
 
               <p className="mt-2 text-sm text-white/40">
-                Add your first goal for{' '}
-                {currentYear}.
+                {t(
+                  'goalsPage.list.emptyDescription',
+                  { year: currentYear },
+                )}
               </p>
             </div>
           ) : (
@@ -450,8 +490,20 @@ export function GoalsPage() {
                     disabled={isUpdating}
                     aria-label={
                       goal.completed
-                        ? `Reopen ${goal.title}`
-                        : `Complete ${goal.title}`
+                        ? t(
+                            'goalsPage.list.reopen',
+                            {
+                              title:
+                                goal.title,
+                            },
+                          )
+                        : t(
+                            'goalsPage.list.complete',
+                            {
+                              title:
+                                goal.title,
+                            },
+                          )
                     }
                     className="
                       flex
@@ -515,7 +567,13 @@ export function GoalsPage() {
                       </div>
                     ) : (
                       <p className="mt-1.5 text-xs text-white/30">
-                        Goal for {currentYear}
+                        {t(
+                          'goalsPage.list.goalFor',
+                          {
+                            year:
+                              currentYear,
+                          },
+                        )}
                       </p>
                     )}
                   </div>
@@ -528,7 +586,13 @@ export function GoalsPage() {
                       )
                     }}
                     disabled={isUpdating}
-                    aria-label={`Delete ${goal.title}`}
+                    aria-label={t(
+                      'goalsPage.list.delete',
+                      {
+                        title:
+                          goal.title,
+                      },
+                    )}
                     className="
                       flex
                       h-9
@@ -569,13 +633,16 @@ export function GoalsPage() {
             />
 
             <h2 className="text-xl font-semibold text-white">
-              Achievements this year
+              {t(
+                'goalsPage.achievements.title',
+              )}
             </h2>
           </div>
 
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/40">
-            Every completed goal becomes
-            part of your yearly journey.
+            {t(
+              'goalsPage.achievements.description',
+            )}
           </p>
         </div>
 
@@ -609,12 +676,15 @@ export function GoalsPage() {
             </div>
 
             <p className="font-medium text-white/70">
-              No achievements yet
+              {t(
+                'goalsPage.achievements.empty',
+              )}
             </p>
 
             <p className="mt-2 max-w-xs text-sm leading-relaxed text-white/35">
-              Your completed goals will
-              appear here.
+              {t(
+                'goalsPage.achievements.emptyDescription',
+              )}
             </p>
           </div>
         ) : (
@@ -663,7 +733,9 @@ export function GoalsPage() {
 
                   <div className="min-w-0">
                     <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-accent-green">
-                      Achievement
+                      {t(
+                        'goalsPage.achievements.label',
+                      )}
                     </p>
 
                     <h3 className="break-words font-semibold leading-snug text-white">
@@ -686,7 +758,7 @@ export function GoalsPage() {
       <Modal
         isOpen={modalOpen}
         onClose={closeCreateModal}
-        title="New Goal"
+        title={t('goalsPage.modal.title')}
       >
         <div className="space-y-4">
           <div>
@@ -694,13 +766,18 @@ export function GoalsPage() {
               htmlFor="goal-title"
               className="mb-2 block text-sm font-medium text-white/70"
             >
-              What do you want to achieve?
+              {t(
+                'goalsPage.modal.question',
+              )}
             </label>
 
             <input
               id="goal-title"
               className="input"
-              placeholder={`Goal for ${currentYear}...`}
+              placeholder={t(
+                'goalsPage.modal.placeholder',
+                { year: currentYear },
+              )}
               value={title}
               maxLength={200}
               disabled={isCreating}
@@ -726,8 +803,9 @@ export function GoalsPage() {
 
           {createGoalMutation.isError && (
             <p className="text-sm text-red-400">
-              Unable to create the goal.
-              Please try again.
+              {t(
+                'goalsPage.modal.createError',
+              )}
             </p>
           )}
 
@@ -750,8 +828,12 @@ export function GoalsPage() {
             )}
 
             {isCreating
-              ? 'Creating...'
-              : 'Create Goal'}
+              ? t(
+                  'goalsPage.modal.creating',
+                )
+              : t(
+                  'goalsPage.modal.create',
+                )}
           </button>
         </div>
       </Modal>

@@ -1,13 +1,10 @@
+import { motion } from 'framer-motion'
+import { Menu } from 'lucide-react'
 import {
-    motion,
-  } from 'framer-motion'
-  import {
-    Menu,
-  } from 'lucide-react'
-  import {
-    format,
-    subDays,
-  } from 'date-fns'
+  format,
+  subDays,
+} from 'date-fns'
+import { useTranslation } from 'react-i18next'
   
   import {
     usePomodoroSessions,
@@ -81,6 +78,8 @@ import {
   export function MobileTopBar({
     onOpenMenu,
   }: MobileTopBarProps) {
+  const { t } = useTranslation()
+
     const sessionsQuery =
       usePomodoroSessions()
   
@@ -106,10 +105,12 @@ import {
     const badge =
       getStreakBadge(currentStreak)
   
-    const streakLabel =
-      currentStreak === 1
-        ? '1 day'
-        : `${currentStreak} days`
+    const streakLabel = t(
+      'layout.streakDays',
+      {
+        count: currentStreak,
+      },
+    )
   
     return (
       <header
@@ -133,7 +134,7 @@ import {
         <button
           type="button"
           onClick={onOpenMenu}
-          aria-label="Open navigation"
+          aria-label={t('navigation.openNavigation')}
           className="
             flex
             h-10
@@ -180,7 +181,9 @@ import {
           "
         >
           <motion.div
-            key={badge.name}
+            key={t(
+                `streaksPage.badges.${badge.minimumDays}.name`,
+              )}
             initial={{
               opacity: 0,
               scale: 0.82,
@@ -222,7 +225,9 @@ import {
             "
           >
             <motion.p
-              key={badge.name}
+              key={t(
+                `streaksPage.badges.${badge.minimumDays}.name`,
+              )}
               initial={{
                 opacity: 0,
                 x: 5,
@@ -243,7 +248,9 @@ import {
                 text-white/90
               "
             >
-              {badge.name}
+              {t(
+                `streaksPage.badges.${badge.minimumDays}.name`,
+              )}
             </motion.p>
   
             <p
@@ -256,7 +263,7 @@ import {
                 text-white/35
               "
             >
-              {streakLabel} streak
+              {streakLabel}
               <span
                 className="
                   mx-1.5

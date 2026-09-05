@@ -11,7 +11,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Weekly Analytics"
+        android:text="Análises semanais"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:textStyle="bold" />
@@ -43,7 +43,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="0 active days"
+                android:text="0 dias ativos"
                 android:textColor="#A1A1AA"
                 android:textSize="12sp" />
 
@@ -57,7 +57,7 @@
             android:gravity="end">
 
             <TextView
-                android:text="Top Project"
+                android:text="Projeto principal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="#71717A"
@@ -68,7 +68,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="No focus yet"
+                android:text="Sem foco ainda"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp"
                 android:textStyle="bold"

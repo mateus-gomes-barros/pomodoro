@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MonthlyActivityWidgetPlugin.class);
         registerPlugin(AnalyticsWidgetPlugin.class);
         registerPlugin(GoalsWidgetPlugin.class);
-        super.onCreate(savedInstanceState); 
+        super.onCreate(savedInstanceState);
+        registerPlugin(WidgetLanguagePlugin.class); 
     }
 }

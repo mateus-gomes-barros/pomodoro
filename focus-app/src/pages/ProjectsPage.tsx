@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import {
   AnimatePresence,
@@ -52,6 +53,8 @@ const EMPTY_FORM: ProjectForm = {
 }
 
 export function ProjectsPage() {
+  const { t } = useTranslation()
+
   const {
     data: projects = [],
     isLoading,
@@ -199,8 +202,8 @@ export function ProjectsPage() {
     return (
       <div className="mx-auto max-w-5xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
-          title="Projects"
-          subtitle="Loading projects"
+          title={t('projectsPage.title')}
+          subtitle={t('projectsPage.loading')}
         />
 
         <div className="flex items-center justify-center py-20">
@@ -217,15 +220,15 @@ export function ProjectsPage() {
     return (
       <div className="mx-auto max-w-5xl px-6 pb-6 lg:px-10 lg:pb-10">
         <PageHeader
-          title="Projects"
-          subtitle="Unable to load projects"
+          title={t('projectsPage.title')}
+          subtitle={t('projectsPage.unableToLoad')}
         />
 
         <div className="card p-6">
           <p className="text-sm text-accent-subtle">
             {error instanceof Error
               ? error.message
-              : 'An unexpected error occurred while loading your projects.'}
+              : t('projectsPage.loadError')}
           </p>
         </div>
       </div>
@@ -235,12 +238,14 @@ export function ProjectsPage() {
   return (
     <div className="mx-auto max-w-5xl px-6 pb-6 lg:px-10 lg:pb-10">
       <PageHeader
-        title="Projects"
-        subtitle={`${projects.length} active ${
-          projects.length === 1
-            ? 'project'
-            : 'projects'
-        }`}
+        title={t('projectsPage.title')}
+        subtitle={t(
+          'projectsPage.active',
+          {
+            count:
+              projects.length,
+          },
+        )}
         action={
           <button
             type="button"
@@ -249,7 +254,9 @@ export function ProjectsPage() {
           >
             <Plus size={16} />
 
-            New Project
+            {t(
+              'projectsPage.newProject',
+            )}
           </button>
         }
       />
@@ -292,14 +299,18 @@ export function ProjectsPage() {
         }
         title={
           editingId
-            ? 'Edit Project'
-            : 'Create Project'
+            ? t(
+                'projectsPage.editProject',
+              )
+            : t(
+                'projectsPage.createProject',
+              )
         }
       >
         <div className="space-y-4">
           <div>
             <label className="label mb-2 block">
-              Icon
+              {t('projectsPage.form.icon')}
             </label>
 
             <div className="flex flex-wrap gap-2">
@@ -321,7 +332,10 @@ export function ProjectsPage() {
                     disabled={
                       isSaving
                     }
-                    aria-label={`Select ${emoji} icon`}
+                    aria-label={t(
+                      'projectsPage.form.selectIcon',
+                      { emoji },
+                    )}
                     className={cn(
                       'flex h-10 w-10 items-center justify-center rounded-xl text-lg transition-all',
                       'bg-bg-secondary',
@@ -341,12 +355,12 @@ export function ProjectsPage() {
 
           <div>
             <label className="label mb-2 block">
-              Name
+              {t('projectsPage.form.name')}
             </label>
 
             <input
               className="input"
-              placeholder="Project name"
+              placeholder={t('projectsPage.form.namePlaceholder')}
               value={form.name}
               disabled={isSaving}
               onChange={(event) =>
@@ -366,12 +380,12 @@ export function ProjectsPage() {
 
           <div>
             <label className="label mb-2 block">
-              Description
+              {t('projectsPage.form.description')}
             </label>
 
             <input
               className="input"
-              placeholder="Optional description"
+              placeholder={t('projectsPage.form.descriptionPlaceholder')}
               value={
                 form.description
               }
@@ -393,7 +407,7 @@ export function ProjectsPage() {
 
           <div>
             <label className="label mb-2 block">
-              Color
+              {t('projectsPage.form.color')}
             </label>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -415,7 +429,10 @@ export function ProjectsPage() {
                     disabled={
                       isSaving
                     }
-                    aria-label={`Select project color ${color}`}
+                    aria-label={t(
+                      'projectsPage.form.selectColor',
+                      { color },
+                    )}
                     style={{
                       backgroundColor:
                         color,
@@ -455,7 +472,7 @@ export function ProjectsPage() {
                 <Palette size={13} />
 
                 <span>
-                  Custom
+                  {t('projectsPage.form.custom')}
                 </span>
 
                 <input
@@ -464,7 +481,7 @@ export function ProjectsPage() {
                     form.color
                   }
                   disabled={isSaving}
-                  aria-label="Choose a custom project color"
+                  aria-label={t('projectsPage.form.customColor')}
                   onChange={(
                     event,
                   ) =>
@@ -489,17 +506,18 @@ export function ProjectsPage() {
             </div>
 
             <p className="mt-2 text-[10px] text-white/25">
-              Choose a preset or
-              create your own color.
+              {t(
+                'projectsPage.form.colorHelp',
+              )}
             </p>
           </div>
 
           {(createProjectMutation.isError ||
             updateProjectMutation.isError) && (
             <p className="text-sm text-red-400">
-              Unable to save the
-              project. Please try
-              again.
+              {t(
+                'projectsPage.form.saveError',
+              )}
             </p>
           )}
 
@@ -522,10 +540,16 @@ export function ProjectsPage() {
             )}
 
             {isSaving
-              ? 'Saving...'
+              ? t(
+                  'projectsPage.form.saving',
+                )
               : editingId
-                ? 'Save Changes'
-                : 'Create Project'}
+                ? t(
+                    'projectsPage.form.saveChanges',
+                  )
+                : t(
+                    'projectsPage.form.create',
+                  )}
           </button>
         </div>
       </Modal>
@@ -541,19 +565,20 @@ export function ProjectsPage() {
             )
           }
         }}
-        title="Delete Project"
+        title={t('projectsPage.delete.title')}
       >
         <div className="space-y-4">
           <p className="text-sm text-accent-subtle">
-            Delete this project
-            permanently?
+            {t(
+              'projectsPage.delete.confirmation',
+            )}
           </p>
 
           {deleteProjectMutation.isError && (
             <p className="text-sm text-red-400">
-              Unable to delete the
-              project. Please try
-              again.
+              {t(
+                'projectsPage.delete.error',
+              )}
             </p>
           )}
 
@@ -570,7 +595,9 @@ export function ProjectsPage() {
               }
               className="btn-ghost flex-1 disabled:opacity-40"
             >
-              Cancel
+              {t(
+                'projectsPage.delete.cancel',
+              )}
             </button>
 
             <button
@@ -591,8 +618,12 @@ export function ProjectsPage() {
               )}
 
               {isDeleting
-                ? 'Deleting...'
-                : 'Delete'}
+                ? t(
+                    'projectsPage.delete.deleting',
+                  )
+                : t(
+                    'projectsPage.delete.delete',
+                  )}
             </button>
           </div>
         </div>
@@ -614,6 +645,8 @@ function ProjectCard({
   onEdit,
   onDelete,
 }: ProjectCardProps) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{
@@ -661,7 +694,10 @@ function ProjectCard({
           <button
             type="button"
             onClick={onEdit}
-            aria-label={`Edit ${project.name}`}
+            aria-label={t(
+              'projectsPage.card.edit',
+              { name: project.name },
+            )}
           >
             <Pencil size={15} />
           </button>
@@ -669,7 +705,10 @@ function ProjectCard({
           <button
             type="button"
             onClick={onDelete}
-            aria-label={`Delete ${project.name}`}
+            aria-label={t(
+              'projectsPage.card.delete',
+              { name: project.name },
+            )}
           >
             <Trash2 size={15} />
           </button>
@@ -698,6 +737,8 @@ interface EmptyStateProps {
 function EmptyState({
   onAdd,
 }: EmptyStateProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-col items-center justify-center py-20">
       <div className="mb-4 text-5xl">
@@ -705,11 +746,15 @@ function EmptyState({
       </div>
 
       <h2 className="mb-2 text-xl font-semibold">
-        No projects yet
+        {t(
+          'projectsPage.empty.title',
+        )}
       </h2>
 
       <p className="mb-6 text-accent-subtle">
-        Create your first project
+        {t(
+          'projectsPage.empty.description',
+        )}
       </p>
 
       <button
@@ -717,7 +762,9 @@ function EmptyState({
         onClick={onAdd}
         className="btn-primary"
       >
-        Create Project
+        {t(
+          'projectsPage.empty.action',
+        )}
       </button>
     </div>
   )

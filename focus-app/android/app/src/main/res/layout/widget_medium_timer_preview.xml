@@ -18,7 +18,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="FOCUSING"
+            android:text="FOCANDO"
             android:textColor="#34D399"
             android:textSize="10sp"
             android:textStyle="bold" />
@@ -36,7 +36,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:text="Focus session"
+            android:text="Sessão de foco"
             android:textColor="#71717A"
             android:textSize="11sp" />
 

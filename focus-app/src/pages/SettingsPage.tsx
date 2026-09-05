@@ -198,13 +198,13 @@ export function SettingsPage() {
           className="card p-6"
         >
           <h3 className="text-sm font-semibold text-accent-white mb-2">
-            Account
+            {t('settings.account.title')}
           </h3>
 
           {user ? (
             <>
               <p className="text-sm text-accent-white">
-                Connected Account
+                {t('settings.account.connected')}
               </p>
 
               <p className="mt-2 text-sm text-accent-subtle break-all">
@@ -217,7 +217,7 @@ export function SettingsPage() {
                   htmlFor="display-name"
                   className="text-sm font-medium text-accent-white"
                 >
-                  Display name
+                  {t('settings.account.displayName')}
                 </label>
 
                 <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
@@ -316,7 +316,7 @@ export function SettingsPage() {
           ) : isDemoMode ? (
             <>
               <p className="text-sm text-accent-white">
-                Guest Mode
+                {t('settings.account.guestMode')}
               </p>
 
               <p className="mt-2 text-sm text-accent-subtle">
@@ -341,14 +341,14 @@ export function SettingsPage() {
                   disabled={isSigningIn}
                   className="rounded-xl border border-white/10 px-4 py-3 font-medium text-accent-subtle transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Exit Guest Mode
+                  {t('settings.account.exitGuest')}
                 </button>
               </div>
             </>
           ) : (
             <>
               <p className="text-sm text-accent-white">
-                No Account Connected
+                {t('settings.account.noAccount')}
               </p>
 
               <p className="mt-2 text-sm text-accent-subtle">
@@ -463,7 +463,7 @@ export function SettingsPage() {
           className="card p-6"
         >
           <h3 className="text-sm font-semibold text-accent-white mb-5">
-            Timer Durations
+            {t('settings.timer.durationsTitle')}
           </h3>
 
           <div className="space-y-4">
@@ -545,7 +545,7 @@ export function SettingsPage() {
           className="card p-6"
         >
           <h3 className="text-sm font-semibold text-accent-white mb-5">
-            Preferences
+            {t('settings.preferences.title')}
           </h3>
 
           <div className="space-y-4">
@@ -600,7 +600,7 @@ export function SettingsPage() {
           className="card p-6"
         >
           <h3 className="text-sm font-semibold text-accent-white mb-2">
-            About
+            {t('settings.about.title')}
           </h3>
 
           <p className="text-sm text-accent-subtle">
@@ -685,8 +685,8 @@ function Toggle({
   onChange: (value: boolean) => void
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-accent-muted">
+    <div className="grid grid-cols-[minmax(0,1fr)_44px] items-center gap-4">
+      <span className="min-w-0 text-sm leading-5 text-accent-muted">
         {label}
       </span>
 
@@ -695,7 +695,7 @@ function Toggle({
         onClick={() =>
           onChange(!value)
         }
-        className={`w-11 h-6 rounded-full relative transition-all duration-300 ${
+        className={`relative h-6 w-11 shrink-0 justify-self-end rounded-full transition-all duration-300 ${
           value
             ? 'bg-accent-green'
             : 'bg-bg-secondary border border-border-muted'

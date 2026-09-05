@@ -54,7 +54,7 @@ public class MediumTimerWidgetProvider extends AppWidgetProvider {
         String title =
             prefs.getString(
                 "timer_widget_title",
-                "Focus"
+                WidgetLanguage.focusTitle(context)
             );
 
         String body =
@@ -87,6 +87,8 @@ public class MediumTimerWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_medium_timer
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         views.setTextViewText(
             R.id.medium_timer_badge,
             badge == null || badge.isEmpty()
@@ -97,8 +99,7 @@ public class MediumTimerWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(
             R.id.medium_timer_title,
             title == null || title.isEmpty()
-                ? "Focus"
-                : title
+                ? WidgetLanguage.focusTitle(context) : title
         );
 
         if (
@@ -159,7 +160,7 @@ public class MediumTimerWidgetProvider extends AppWidgetProvider {
 
             views.setTextViewText(
                 R.id.medium_timer_status,
-                "FOCUSING"
+                WidgetLanguage.text(context, "focusing")
             );
 
         } else {
@@ -180,7 +181,7 @@ public class MediumTimerWidgetProvider extends AppWidgetProvider {
 
             views.setTextViewText(
                 R.id.medium_timer_status,
-                "FOCUS"
+                WidgetLanguage.text(context, "focus")
             );
         }
 

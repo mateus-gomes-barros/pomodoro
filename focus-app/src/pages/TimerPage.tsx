@@ -22,14 +22,15 @@ import {
 } from '@/utils'
 
 import type { SessionType } from '@/types'
+import { useTranslation } from 'react-i18next'
 
-const SESSION_LABELS: Record<
+const SESSION_LABEL_KEYS: Record<
   SessionType,
   string
 > = {
-  work: 'Focus',
-  short_break: 'Short Break',
-  long_break: 'Long Break',
+  work: 'timer.session.work',
+  short_break: 'timer.session.shortBreak',
+  long_break: 'timer.session.longBreak',
 }
 
 const SESSION_TYPES: SessionType[] = [
@@ -39,6 +40,8 @@ const SESSION_TYPES: SessionType[] = [
 ]
 
 export function TimerPage() {
+  const { t } = useTranslation()
+
   const {
     status,
     sessionType,
@@ -127,7 +130,7 @@ export function TimerPage() {
                 'cursor-not-allowed opacity-60',
             )}
           >
-            {SESSION_LABELS[type]}
+            {t(SESSION_LABEL_KEYS[type])}
           </button>
         ))}
       </motion.div>
@@ -185,9 +188,11 @@ export function TimerPage() {
 
               <span className="mt-2 text-[13px] text-white/40">
                 {
-                  SESSION_LABELS[
-                    sessionType
-                  ]
+                  t(
+                    SESSION_LABEL_KEYS[
+                      sessionType
+                    ],
+                  )
                 }
               </span>
             </motion.div>
@@ -261,7 +266,7 @@ export function TimerPage() {
           type="button"
           onClick={reset}
           className="btn-ghost h-11 w-11 justify-center p-0"
-          aria-label="Reset timer"
+          aria-label={t('timer.status.reset')}
         >
           <RotateCcw size={16} />
         </button>
@@ -314,8 +319,8 @@ export function TimerPage() {
           className="btn-ghost h-11 w-11 justify-center p-0"
           aria-label={
             settings.soundEnabled
-              ? 'Mute sound'
-              : 'Enable sound'
+              ? t('timer.sound.mute')
+              : t('timer.sound.enable')
           }
         >
           {settings.soundEnabled ? (
@@ -358,7 +363,7 @@ export function TimerPage() {
                 instanceof Error
                 ? projectsQuery.error
                     .message
-                : 'Unable to load projects.'}
+                : t('timer.projects.loadError')}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -483,28 +488,28 @@ export function TimerPage() {
               <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2">
                 {([
                   [
-                    'Focus',
+                    t('timer.settings.focus'),
                     settings.workDuration,
                     'workDuration',
                     5,
                     90,
                   ],
                   [
-                    'Short Break',
+                    t('timer.settings.shortBreak'),
                     settings.shortBreakDuration,
                     'shortBreakDuration',
                     1,
                     30,
                   ],
                   [
-                    'Long Break',
+                    t('timer.settings.longBreak'),
                     settings.longBreakDuration,
                     'longBreakDuration',
                     5,
                     60,
                   ],
                   [
-                    'Sessions until long break',
+                    t('timer.settings.sessionsUntilLongBreak'),
                     settings.sessionsUntilLongBreak,
                     'sessionsUntilLongBreak',
                     2,

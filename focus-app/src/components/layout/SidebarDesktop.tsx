@@ -6,6 +6,7 @@ import {
   NavLink,
   useNavigate,
 } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   BarChart3,
   CheckSquare,
@@ -32,37 +33,37 @@ import { cn } from '@/utils'
 const navItems = [
   {
     icon: LayoutDashboard,
-    label: 'Dashboard',
+    labelKey: 'navigation.dashboard',
     path: '/',
   },
   {
     icon: Timer,
-    label: 'Timer',
+    labelKey: 'navigation.timer',
     path: '/timer',
   },
   {
     icon: FolderOpen,
-    label: 'Projects',
+    labelKey: 'navigation.projects',
     path: '/projects',
   },
   {
     icon: CheckSquare,
-    label: 'Tasks',
+    labelKey: 'navigation.tasks',
     path: '/tasks',
   },
   {
     icon: Target,
-    label: 'Goals',
+    labelKey: 'navigation.goals',
     path: '/goals',
   },
   {
     icon: Flame,
-    label: 'Streaks',
+    labelKey: 'navigation.streaks',
     path: '/streaks',
   },
   {
     icon: BarChart3,
-    label: 'Analytics',
+    labelKey: 'navigation.analytics',
     path: '/analytics',
   },
 ]
@@ -126,6 +127,8 @@ function calculateCurrentStreak(
 }
 
 export function SidebarDesktop() {
+  const { t } = useTranslation()
+
   const navigate = useNavigate()
 
   const {
@@ -167,10 +170,12 @@ export function SidebarDesktop() {
   const totalPomodoros =
     workSessions.length
 
-  const streakLabel =
-    currentStreak === 1
-      ? '1 day streak'
-      : `${currentStreak} days streak`
+  const streakLabel = t(
+    'layout.streakDays',
+    {
+      count: currentStreak,
+    },
+  )
 
   async function handleSignOut() {
     try {
@@ -235,7 +240,7 @@ export function SidebarDesktop() {
         {navItems.map(
           ({
             icon: Icon,
-            label,
+            labelKey,
             path,
           }) => (
             <NavLink
@@ -259,7 +264,7 @@ export function SidebarDesktop() {
               />
 
               <span className="truncate">
-                {label}
+                {t(labelKey)}
               </span>
             </NavLink>
           ),
@@ -331,7 +336,9 @@ export function SidebarDesktop() {
                   text-white/90
                 "
               >
-                {currentBadge.name}
+                {t(
+                  `streaksPage.badges.${currentBadge.minimumDays}.name`,
+                )}
               </p>
 
               <p
@@ -379,7 +386,7 @@ export function SidebarDesktop() {
                   text-white/25
                 "
               >
-                Streak
+                {t('layout.streak')}
               </p>
 
               <p
@@ -448,7 +455,7 @@ export function SidebarDesktop() {
           />
 
           <span className="truncate">
-            Settings
+            {t('navigation.settings')}
           </span>
         </NavLink>
 
@@ -470,8 +477,8 @@ export function SidebarDesktop() {
 
             <span className="truncate">
               {isSigningOut
-                ? 'Signing out...'
-                : 'Sign out'}
+                ? t('navigation.signingOut')
+                : t('navigation.signOut')}
             </span>
           </button>
         )}

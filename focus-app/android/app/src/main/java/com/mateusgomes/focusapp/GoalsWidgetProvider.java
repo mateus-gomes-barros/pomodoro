@@ -50,6 +50,8 @@ public class GoalsWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_goals
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         try {
             JSONObject data =
                 new JSONObject(payload);
@@ -138,7 +140,7 @@ public class GoalsWidgetProvider extends AppWidgetProvider {
                     String title =
                         goal.optString(
                             "title",
-                            "Goal"
+                            WidgetLanguage.text(context, "goal")
                         );
 
                     boolean completedGoal =
@@ -169,7 +171,7 @@ public class GoalsWidgetProvider extends AppWidgetProvider {
         } catch (Exception ignored) {
             views.setTextViewText(
                 R.id.goals_progress,
-                "0 / 0 completed"
+                WidgetLanguage.completedGoals(context, 0, 0)
             );
         }
 

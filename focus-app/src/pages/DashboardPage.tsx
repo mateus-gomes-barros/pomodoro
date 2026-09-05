@@ -1,3 +1,5 @@
+import { enUS, ptBR } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -87,6 +89,8 @@ function calculateCurrentStreak(
 }
 
 export function DashboardPage() {
+  const { t, i18n } = useTranslation()
+
   const {
     user,
   } = useAuth()
@@ -249,12 +253,17 @@ const completedGoalsThisYear =
 
   const hour = new Date().getHours()
 
-  const greeting =
+  const greetingKey =
     hour < 12
       ? 'morning'
       : hour < 17
         ? 'afternoon'
         : 'evening'
+
+  const dateLocale =
+    i18n.language === 'pt-BR'
+      ? ptBR
+      : enUS
 
   const metadataName =
     user?.user_metadata
@@ -307,7 +316,7 @@ const completedGoalsThisYear =
           <p className="text-sm text-red-400">
             {error instanceof Error
               ? error.message
-              : 'An unexpected error occurred while loading the dashboard.'}
+              : t('dashboard.error')}
           </p>
         </div>
       </div>
@@ -340,12 +349,19 @@ const completedGoalsThisYear =
         <p className="label-section mb-2">
           {format(
             new Date(),
-            'EEEE, MMMM d',
+            i18n.language === 'pt-BR'
+              ? "EEEE, d 'de' MMMM"
+              : 'EEEE, MMMM d',
+            {
+              locale: dateLocale,
+            },
           )}
         </p>
 
         <h1 className="text-3xl font-bold tracking-tight text-white">
-          Good {greeting}
+          {t(
+            `dashboard.greeting.${greetingKey}`,
+          )}
           {displayName
             ? `, ${displayName}`
             : ''}
@@ -353,10 +369,18 @@ const completedGoalsThisYear =
 
         <p className="mt-2 text-sm leading-relaxed text-white/45">
           {todayFocus > 0
-            ? `You've focused for ${formatDuration(
-                todayFocus,
-              )} today.`
-            : 'Start your first session to build momentum.'}
+            ? t(
+                'dashboard.focusedToday',
+                {
+                  duration:
+                    formatDuration(
+                      todayFocus,
+                    ),
+                },
+              )
+            : t(
+                'dashboard.startMomentum',
+              )}
         </p>
       </motion.div>
 
@@ -364,24 +388,30 @@ const completedGoalsThisYear =
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Today's Focus"
+          label={t('dashboard.stats.todayFocus')}
           value={formatDuration(
             todayFocus,
           )}
-          sub={`Goal: ${formatDuration(
-            DAILY_GOAL_MINUTES,
-          )}`}
+          sub={t(
+            'dashboard.stats.goal',
+            {
+              duration:
+                formatDuration(
+                  DAILY_GOAL_MINUTES,
+                ),
+            },
+          )}
           icon={<Timer size={15} />}
           delay={0}
         />
 
         <StatCard
-          label="Streak"
+          label={t('dashboard.stats.streak')}
           value={currentStreak}
           sub={
             currentStreak === 1
-              ? 'day'
-              : 'days'
+              ? t('dashboard.stats.day')
+              : t('dashboard.stats.days')
           }
           icon={<Flame size={15} />}
           accent={
@@ -391,11 +421,11 @@ const completedGoalsThisYear =
         />
 
         <StatCard
-          label="Tasks Done"
+          label={t('dashboard.stats.tasksDone')}
           value={
             todayCompletedTasks
           }
-          sub="today"
+          sub={t('dashboard.stats.today')}
           icon={
             <CheckSquare
               size={15}
@@ -405,11 +435,11 @@ const completedGoalsThisYear =
         />
 
         <StatCard
-          label="Sessions"
+          label={t('dashboard.stats.sessions')}
           value={
             todaySessions.length
           }
-          sub="pomodoros"
+          sub={t('dashboard.stats.pomodoros')}
           icon={
             <TrendingUp
               size={15}
@@ -473,11 +503,16 @@ const completedGoalsThisYear =
 
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-white">
-                Goals done this year
+                {t('dashboard.goals.doneThisYear')}
               </p>
 
               <p className="mt-0.5 text-xs text-white/35">
-                View your {currentYear} goals
+                {t(
+                  'dashboard.goals.viewYear',
+                  {
+                    year: currentYear,
+                  },
+                )}
               </p>
             </div>
           </div>
@@ -530,11 +565,17 @@ const completedGoalsThisYear =
             <p className="label-section mb-6">
               {sessionType ===
               'work'
-                ? 'Focus Session'
+                ? t(
+                    'dashboard.timer.focusSession',
+                  )
                 : sessionType ===
                     'short_break'
-                  ? 'Short Break'
-                  : 'Long Break'}
+                  ? t(
+                      'dashboard.timer.shortBreak',
+                    )
+                  : t(
+                      'dashboard.timer.longBreak',
+                    )}
             </p>
 
             <CircularProgress
@@ -564,8 +605,12 @@ const completedGoalsThisYear =
 
                   {status ===
                   'paused'
-                    ? 'Resume'
-                    : 'Start Session'}
+                    ? t(
+                        'dashboard.timer.resume',
+                      )
+                    : t(
+                        'dashboard.timer.startSession',
+                      )}
                 </button>
               ) : (
                 <Link
@@ -573,7 +618,9 @@ const completedGoalsThisYear =
                   className="badge-green flex items-center gap-2 px-3 py-1.5"
                 >
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  Running
+                  {t(
+                    'dashboard.timer.running',
+                  )}
                 </Link>
               )}
             </div>
@@ -595,7 +642,9 @@ const completedGoalsThisYear =
           >
             <div className="mb-4 flex items-center justify-between">
               <span className="label-section">
-                Daily Progress
+                {t(
+                  'dashboard.timer.dailyProgress',
+                )}
               </span>
 
               <span className="font-mono text-xs text-white/40">
@@ -659,14 +708,18 @@ const completedGoalsThisYear =
           >
             <div className="mb-5 flex items-center justify-between">
               <span className="label-section">
-                Pending Tasks
+                {t(
+                  'dashboard.tasks.pending',
+                )}
               </span>
 
               <Link
                 to="/tasks"
                 className="flex items-center gap-1 text-xs text-white/35 transition-colors hover:text-white/65"
               >
-                View all
+                {t(
+                  'dashboard.tasks.viewAll',
+                )}
                 <ArrowRight
                   size={12}
                 />
@@ -677,8 +730,9 @@ const completedGoalsThisYear =
             0 ? (
               <div className="flex min-h-[180px] items-center justify-center">
                 <p className="text-sm text-white/30">
-                  All tasks complete
-                  🎉
+                  {t(
+                    'dashboard.tasks.allComplete',
+                  )}
                 </p>
               </div>
             ) : (
@@ -760,14 +814,18 @@ const completedGoalsThisYear =
           >
             <div className="mb-5 flex items-center justify-between">
               <span className="label-section">
-                Projects
+                {t(
+                  'dashboard.projects.title',
+                )}
               </span>
 
               <Link
                 to="/projects"
                 className="flex items-center gap-1 text-xs text-white/35 transition-colors hover:text-white/65"
               >
-                View all
+                {t(
+                  'dashboard.projects.viewAll',
+                )}
                 <ArrowRight
                   size={12}
                 />
@@ -777,7 +835,9 @@ const completedGoalsThisYear =
             {projects.length === 0 ? (
               <div className="flex min-h-[140px] items-center justify-center">
                 <p className="text-sm text-white/30">
-                  No projects yet.
+                  {t(
+                    'dashboard.projects.empty',
+                  )}
                 </p>
               </div>
             ) : (

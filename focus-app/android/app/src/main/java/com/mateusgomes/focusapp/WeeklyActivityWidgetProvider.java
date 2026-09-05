@@ -49,6 +49,8 @@ public class WeeklyActivityWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_weekly_activity
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         try {
             JSONObject data =
                 new JSONObject(payload);
@@ -73,14 +75,14 @@ public class WeeklyActivityWidgetProvider extends AppWidgetProvider {
 
             views.setTextViewText(
                 R.id.widget_streak,
-                "🔥 " + streak + " day streak"
+                "🔥 " + WidgetLanguage.dayStreak(context, streak)
             );
 
             views.setTextViewText(
                 R.id.widget_total,
                 hours > 0
-                    ? hours + "h " + minutes + "m focused"
-                    : minutes + "m focused"
+                    ? WidgetLanguage.focusedMinutes(context, hours + "h " + minutes + "m")
+                    : WidgetLanguage.focusedMinutes(context, minutes + "m")
             );
 
             JSONArray days =
@@ -141,12 +143,12 @@ public class WeeklyActivityWidgetProvider extends AppWidgetProvider {
         } catch (Exception ignored) {
             views.setTextViewText(
                 R.id.widget_streak,
-                "🔥 0 day streak"
+                "🔥 " + WidgetLanguage.dayStreak(context, 0)
             );
 
             views.setTextViewText(
                 R.id.widget_total,
-                "0m focused"
+                WidgetLanguage.focusedMinutes(context, "0m")
             );
         }
 

@@ -1,3 +1,5 @@
+import { enUS, ptBR } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -53,23 +55,23 @@ interface ProjectChangeBadgeProps {
 
 const trendRangeOptions: Array<{
   value: TrendRange
-  label: string
+  labelKey: string
 }> = [
   {
     value: 'week',
-    label: 'This Week',
+    labelKey: 'analyticsPage.ranges.week',
   },
   {
     value: 'month',
-    label: 'This Month',
+    labelKey: 'analyticsPage.ranges.month',
   },
   {
     value: 'year',
-    label: 'This Year',
+    labelKey: 'analyticsPage.ranges.year',
   },
   {
     value: 'all',
-    label: 'All Time',
+    labelKey: 'analyticsPage.ranges.all',
   },
 ]
 
@@ -82,6 +84,8 @@ function ChartTooltip({
   payload?: ChartTooltipPayload[]
   label?: string
 }) {
+  const { t } = useTranslation()
+
   if (!active || !payload?.length) {
     return null
   }
@@ -97,11 +101,17 @@ function ChartTooltip({
           const itemLabel =
             item.name ===
             'sessionsCompleted'
-              ? 'Sessions'
+              ? t(
+                  'analyticsPage.tooltip.sessions',
+                )
               : item.name ===
                   'tasksCompleted'
-                ? 'Tasks'
-                : 'Hours'
+                ? t(
+                    'analyticsPage.tooltip.tasks',
+                  )
+                : t(
+                    'analyticsPage.tooltip.hours',
+                  )
 
           return (
             <div
@@ -135,6 +145,8 @@ function ProjectChangeBadge({
   isNew,
   range,
 }: ProjectChangeBadgeProps) {
+  const { t } = useTranslation()
+
   if (range === 'all') {
     return null
   }
@@ -142,7 +154,7 @@ function ProjectChangeBadge({
   if (isNew) {
     return (
       <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-300">
-        New
+        {t('analyticsPage.change.new')}
       </span>
     )
   }
@@ -150,7 +162,9 @@ function ProjectChangeBadge({
   if (changePercentage === null) {
     return (
       <span className="rounded-full bg-white/[0.05] px-2 py-1 text-[10px] font-medium text-white/30">
-        No previous data
+        {t(
+          'analyticsPage.change.noPrevious',
+        )}
       </span>
     )
   }
@@ -187,25 +201,9 @@ function ProjectChangeBadge({
   )
 }
 
-function getPreviousPeriodLabel(
-  range: TrendRange,
-) {
-  if (range === 'week') {
-    return 'last week'
-  }
-
-  if (range === 'month') {
-    return 'last month'
-  }
-
-  if (range === 'year') {
-    return 'last year'
-  }
-
-  return null
-}
-
 export function AnalyticsPage() {
+  const { t, i18n } = useTranslation()
+
   const [
     chartRange,
     setChartRange,
@@ -253,6 +251,12 @@ export function AnalyticsPage() {
         chartRange === 'week'
           ? 'EEE'
           : 'd',
+        {
+          locale:
+            i18n.language === 'pt-BR'
+              ? ptBR
+              : enUS,
+        },
       ),
 
       hours: Number(
@@ -278,9 +282,13 @@ export function AnalyticsPage() {
       : otherProjects.slice(0, 3)
 
   const previousPeriodLabel =
-    getPreviousPeriodLabel(
-      trendRange,
-    )
+    trendRange === 'week'
+      ? t('analyticsPage.ranges.lastWeek')
+      : trendRange === 'month'
+        ? t('analyticsPage.ranges.lastMonth')
+        : trendRange === 'year'
+          ? t('analyticsPage.ranges.lastYear')
+          : null
 
   const hasFocusData =
     trends.totalFocusMinutes > 0
@@ -309,8 +317,8 @@ export function AnalyticsPage() {
     return (
       <div className="w-full min-w-0 space-y-8">
         <PageHeader
-          title="Analytics"
-          subtitle="Loading your productivity data"
+          title={t('analyticsPage.title')}
+          subtitle={t('analyticsPage.loading')}
         />
 
         <div className="flex items-center justify-center py-24">
@@ -327,15 +335,15 @@ export function AnalyticsPage() {
     return (
       <div className="w-full min-w-0 space-y-8">
         <PageHeader
-          title="Analytics"
-          subtitle="Unable to load your productivity data"
+          title={t('analyticsPage.title')}
+          subtitle={t('analyticsPage.unableToLoad')}
         />
 
         <div className="card p-6">
           <p className="text-sm text-red-400">
             {error instanceof Error
               ? error.message
-              : 'An unexpected error occurred while loading analytics.'}
+              : t('analyticsPage.loadError')}
           </p>
         </div>
       </div>
@@ -345,46 +353,46 @@ export function AnalyticsPage() {
   return (
     <div className="w-full min-w-0 space-y-8">
       <PageHeader
-        title="Analytics"
-        subtitle="Your productivity at a glance"
+        title={t('analyticsPage.title')}
+        subtitle={t('analyticsPage.subtitle')}
       />
 
       {/* Statistics */}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Total Focus"
+          label={t('analyticsPage.stats.totalFocus')}
           value={formatDuration(
             totalFocusMinutes,
           )}
-          sub="all time"
+          sub={t('analyticsPage.stats.allTime')}
           delay={0}
         />
 
         <StatCard
-          label="Total Sessions"
+          label={t('analyticsPage.stats.totalSessions')}
           value={totalSessions}
-          sub="pomodoros"
+          sub={t('analyticsPage.stats.pomodoros')}
           delay={0.05}
         />
 
         <StatCard
-          label="Daily Average"
+          label={t('analyticsPage.stats.dailyAverage')}
           value={formatDuration(
             averageDailyFocusMinutes,
           )}
-          sub="this week"
+          sub={t('analyticsPage.stats.thisWeek')}
           delay={0.1}
         />
 
         <StatCard
-          label="Top Project"
+          label={t('analyticsPage.stats.topProject')}
           value={
             topProject?.emoji ?? '—'
           }
           sub={
             topProject?.name ??
-            'None yet'
+            t('analyticsPage.stats.noneYet')
           }
           accent={Boolean(
             topProject,
@@ -416,8 +424,8 @@ export function AnalyticsPage() {
             )}
           >
             {item === 'week'
-              ? 'This Week'
-              : 'This Month'}
+              ? t('analyticsPage.ranges.week')
+              : t('analyticsPage.ranges.month')}
           </button>
         ))}
       </div>
@@ -440,11 +448,15 @@ export function AnalyticsPage() {
       >
         <div className="mb-5">
           <p className="text-[13px] font-semibold text-white">
-            Focus Hours
+            {t(
+              'analyticsPage.focusChart.title',
+            )}
           </p>
 
           <p className="mt-0.5 text-[11px] text-white/35">
-            Daily concentration time
+            {t(
+              'analyticsPage.focusChart.subtitle',
+            )}
           </p>
         </div>
 
@@ -550,11 +562,15 @@ export function AnalyticsPage() {
       >
         <div className="mb-5">
           <p className="text-[13px] font-semibold text-white">
-            Sessions & Tasks
+            {t(
+              'analyticsPage.sessionsChart.title',
+            )}
           </p>
 
           <p className="mt-0.5 text-[11px] text-white/35">
-            Pomodoros completed vs tasks done
+            {t(
+              'analyticsPage.sessionsChart.subtitle',
+            )}
           </p>
         </div>
 
@@ -634,13 +650,17 @@ export function AnalyticsPage() {
           <div className="flex items-center gap-2 text-[11px] text-white/35">
             <div className="h-3 w-3 rounded-sm bg-emerald-400/80" />
 
-            Sessions
+            {t(
+              'analyticsPage.sessionsChart.sessions',
+            )}
           </div>
 
           <div className="flex items-center gap-2 text-[11px] text-white/35">
             <div className="h-3 w-3 rounded-sm bg-blue-400/60" />
 
-            Tasks
+            {t(
+              'analyticsPage.sessionsChart.tasks',
+            )}
           </div>
         </div>
       </motion.div>
@@ -664,11 +684,11 @@ export function AnalyticsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[15px] font-semibold text-white">
-              Last 6 Months
+              {t('analyticsPage.monthly.title')}
             </p>
 
             <p className="mt-1 text-[12px] text-white/35">
-              Your monthly focus history
+              {t('analyticsPage.monthly.subtitle')}
             </p>
           </div>
 
@@ -677,7 +697,7 @@ export function AnalyticsPage() {
               {monthlyHistory.latestMonthChangePercentage ===
               null ? (
                 <span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-[10px] font-medium text-white/35">
-                  No previous month data
+                  {t('analyticsPage.monthly.noPrevious')}
                 </span>
               ) : monthlyHistory.latestMonthChangePercentage >
                 0 ? (
@@ -686,10 +706,13 @@ export function AnalyticsPage() {
                     size={12}
                   />
 
-                  {
-                    monthlyHistory.latestMonthChangePercentage
-                  }
-                  % from last month
+                  {t(
+                    'analyticsPage.monthly.fromLastMonth',
+                    {
+                      percentage:
+                        monthlyHistory.latestMonthChangePercentage,
+                    },
+                  )}
                 </span>
               ) : monthlyHistory.latestMonthChangePercentage <
                 0 ? (
@@ -698,16 +721,21 @@ export function AnalyticsPage() {
                     size={12}
                   />
 
-                  {Math.abs(
-                    monthlyHistory.latestMonthChangePercentage,
+                  {t(
+                    'analyticsPage.monthly.fromLastMonth',
+                    {
+                      percentage:
+                        Math.abs(
+                          monthlyHistory.latestMonthChangePercentage,
+                        ),
+                    },
                   )}
-                  % from last month
                 </span>
               ) : (
                 <span className="flex items-center gap-1 rounded-full bg-white/[0.05] px-3 py-1.5 text-[10px] font-medium text-white/35">
                   <Minus size={12} />
 
-                  Unchanged
+                  {t('analyticsPage.monthly.unchanged')}
                 </span>
               )}
             </div>
@@ -724,12 +752,13 @@ export function AnalyticsPage() {
                 />
 
                 <p className="mt-4 text-[13px] font-medium text-white/45">
-                  No monthly focus history yet
+                  {t('analyticsPage.monthly.empty')}
                 </p>
 
                 <p className="mt-1.5 text-[11px] leading-relaxed text-white/25">
-                  Complete Pomodoro sessions to build
-                  your monthly progress history.
+                  {t(
+                    'analyticsPage.monthly.emptyDescription',
+                  )}
                 </p>
               </div>
             </div>
@@ -780,13 +809,13 @@ export function AnalyticsPage() {
                               </p>
 
                               <p className="mt-0.5 text-[9px] text-white/25">
-                                {
-                                  month.sessionsCompleted
-                                }{' '}
-                                {month.sessionsCompleted ===
-                                1
-                                  ? 'session'
-                                  : 'sessions'}
+                                {t(
+                                  'analyticsPage.monthly.session',
+                                  {
+                                    count:
+                                      month.sessionsCompleted,
+                                  },
+                                )}
                               </p>
                             </div>
 
@@ -829,13 +858,13 @@ export function AnalyticsPage() {
                               </p>
 
                               <p className="mt-0.5 text-[9px] text-white/25">
-                                {
-                                  month.activeDays
-                                }{' '}
-                                {month.activeDays ===
-                                1
-                                  ? 'active day'
-                                  : 'active days'}
+                                {t(
+                                  'analyticsPage.monthly.activeDay',
+                                  {
+                                    count:
+                                      month.activeDays,
+                                  },
+                                )}
                               </p>
                             </div>
                           </motion.div>
@@ -849,7 +878,7 @@ export function AnalyticsPage() {
               <div className="space-y-3">
                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
-                    Six-month total
+                    {t('analyticsPage.monthly.sixMonthTotal')}
                   </p>
 
                   <p className="mt-2 font-mono text-[22px] font-semibold text-white/85">
@@ -859,11 +888,15 @@ export function AnalyticsPage() {
                   </p>
 
                   <p className="mt-1 text-[10px] text-white/30">
-                    Average of{' '}
-                    {formatDuration(
-                      monthlyHistory.averageMonthlyFocusMinutes,
-                    )}{' '}
-                    per month
+                    {t(
+                      'analyticsPage.monthly.averagePerMonth',
+                      {
+                        duration:
+                          formatDuration(
+                            monthlyHistory.averageMonthlyFocusMinutes,
+                          ),
+                      },
+                    )}
                   </p>
                 </div>
 
@@ -878,13 +911,15 @@ export function AnalyticsPage() {
 
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
-                        Best month
+                        {t('analyticsPage.monthly.bestMonth')}
                       </p>
 
                       <p className="mt-1 truncate text-[13px] font-semibold text-white/75">
                         {monthlyHistory.bestMonth
                           ?.fullLabel ??
-                          'No data'}
+                          t(
+                            'analyticsPage.monthly.noData',
+                          )}
                       </p>
 
                       <p className="mt-0.5 font-mono text-[10px] text-white/35">
@@ -916,13 +951,13 @@ export function AnalyticsPage() {
 
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
-                        Top project
+                        {t('analyticsPage.monthly.topProject')}
                       </p>
 
                       <p className="mt-1 truncate text-[13px] font-semibold text-white/75">
                         {monthlyHistory.topProject
                           ?.name ??
-                          'None yet'}
+                          t('analyticsPage.stats.noneYet')}
                       </p>
 
                       <p className="mt-0.5 font-mono text-[10px] text-white/35">
@@ -939,12 +974,14 @@ export function AnalyticsPage() {
 
                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
-                    Current month
+                    {t('analyticsPage.monthly.currentMonth')}
                   </p>
 
                   <p className="mt-2 text-[13px] font-semibold text-white/75">
                     {latestMonth?.fullLabel ??
-                      'Current month'}
+                      t(
+                        'analyticsPage.monthly.currentMonth',
+                      )}
                   </p>
 
                   <p className="mt-1 font-mono text-[10px] text-white/35">
@@ -980,12 +1017,13 @@ export function AnalyticsPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[15px] font-semibold text-white">
-              Trends
+              {t('analyticsPage.trends.title')}
             </p>
 
             <p className="mt-1 text-[12px] text-white/35">
-              Discover where your focus
-              time is going
+              {t(
+                'analyticsPage.trends.subtitle',
+              )}
             </p>
           </div>
 
@@ -1012,7 +1050,7 @@ export function AnalyticsPage() {
                       : 'inactive',
                   )}
                 >
-                  {option.label}
+                  {t(option.labelKey)}
                 </button>
               ),
             )}
@@ -1020,7 +1058,7 @@ export function AnalyticsPage() {
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.8fr)]">
-          {/* Top projects */}
+          {/* {t('analyticsPage.monthly.topProject')}s */}
 
           <div className="card p-6">
             <div className="mb-6 flex items-start justify-between gap-4">
@@ -1032,14 +1070,24 @@ export function AnalyticsPage() {
                   />
 
                   <p className="text-[13px] font-semibold text-white">
-                    Top Projects
+                    {t(
+                      'analyticsPage.trends.topProjects',
+                    )}
                   </p>
                 </div>
 
                 <p className="mt-1 text-[11px] text-white/35">
                   {previousPeriodLabel
-                    ? `Focus time compared with ${previousPeriodLabel}`
-                    : 'Share of all recorded focus time'}
+                    ? t(
+                        'analyticsPage.trends.comparedWith',
+                        {
+                          period:
+                            previousPeriodLabel,
+                        },
+                      )
+                    : t(
+                        'analyticsPage.trends.allRecorded',
+                      )}
                 </p>
               </div>
 
@@ -1051,7 +1099,9 @@ export function AnalyticsPage() {
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-white/30">
-                  total focus
+                  {t(
+                    'analyticsPage.trends.totalFocus',
+                  )}
                 </p>
               </div>
             </div>
@@ -1060,14 +1110,15 @@ export function AnalyticsPage() {
               <div className="flex min-h-[220px] items-center justify-center">
                 <div className="max-w-[260px] text-center">
                   <p className="text-[13px] font-medium text-white/45">
-                    No project focus data
-                    in this period
+                    {t(
+                      'analyticsPage.trends.empty',
+                    )}
                   </p>
 
                   <p className="mt-1.5 text-[11px] leading-relaxed text-white/25">
-                    Complete a Pomodoro
-                    connected to a project
-                    to see its trend here.
+                    {t(
+                      'analyticsPage.trends.emptyDescription',
+                    )}
                   </p>
                 </div>
               </div>
@@ -1075,7 +1126,9 @@ export function AnalyticsPage() {
               <div className="space-y-7">
                 <div>
                   <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/30">
-                    Top 3 Projects
+                    {t(
+                      'analyticsPage.trends.topThree',
+                    )}
                   </p>
 
                   <div className="space-y-3">
@@ -1132,11 +1185,13 @@ export function AnalyticsPage() {
                               </p>
 
                               <p className="mt-0.5 text-[10px] text-white/30">
-                                {
-                                  project.sharePercentage
-                                }
-                                % of your
-                                focus time
+                                {t(
+                                  'analyticsPage.trends.share',
+                                  {
+                                    percentage:
+                                      project.sharePercentage,
+                                  },
+                                )}
                               </p>
                             </div>
 
@@ -1200,17 +1255,19 @@ export function AnalyticsPage() {
                   <div className="border-t border-white/[0.06] pt-6">
                     <div className="mb-4 flex items-center justify-between gap-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/30">
-                        Other Projects
+                        {t(
+                          'analyticsPage.trends.otherProjects',
+                        )}
                       </p>
 
                       <span className="text-[10px] text-white/25">
-                        {
-                          otherProjects.length
-                        }{' '}
-                        {otherProjects.length ===
-                        1
-                          ? 'project'
-                          : 'projects'}
+                        {t(
+                          'analyticsPage.trends.project',
+                          {
+                            count:
+                              otherProjects.length,
+                          },
+                        )}
                       </span>
                     </div>
 
@@ -1262,12 +1319,13 @@ export function AnalyticsPage() {
                                 </p>
 
                                 <p className="mt-0.5 text-[9px] text-white/25">
+                                  {t(
+                                  'analyticsPage.trends.shareShort',
                                   {
-                                    project.sharePercentage
-                                  }
-                                  % of
-                                  focus
-                                  time
+                                    percentage:
+                                      project.sharePercentage,
+                                  },
+                                )}
                                 </p>
                               </div>
 
@@ -1334,8 +1392,16 @@ export function AnalyticsPage() {
                         className="mt-4 flex w-full items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.025] px-4 py-2.5 text-[11px] font-medium text-white/45 transition-colors hover:bg-white/[0.05] hover:text-white/70"
                       >
                         {showAllProjects
-                          ? 'Show less'
-                          : `Show all ${otherProjects.length} projects`}
+                          ? t(
+                              'analyticsPage.trends.showLess',
+                            )
+                          : t(
+                              'analyticsPage.trends.showAll',
+                              {
+                                count:
+                                  otherProjects.length,
+                              },
+                            )}
                       </button>
                     )}
                   </div>
@@ -1355,12 +1421,15 @@ export function AnalyticsPage() {
 
               <div>
                 <p className="text-[13px] font-semibold text-white">
-                  Insights
+                  {t(
+                    'analyticsPage.insights.title',
+                  )}
                 </p>
 
                 <p className="mt-0.5 text-[11px] text-white/35">
-                  Highlights from this
-                  period
+                  {t(
+                    'analyticsPage.insights.subtitle',
+                  )}
                 </p>
               </div>
             </div>
@@ -1368,10 +1437,9 @@ export function AnalyticsPage() {
             {!hasFocusData ? (
               <div className="flex min-h-[220px] items-center justify-center">
                 <p className="max-w-[230px] text-center text-[12px] leading-relaxed text-white/30">
-                  Your insights will
-                  appear after you
-                  complete focus
-                  sessions.
+                  {t(
+                    'analyticsPage.insights.empty',
+                  )}
                 </p>
               </div>
             ) : (
@@ -1407,22 +1475,52 @@ export function AnalyticsPage() {
                     </div>
 
                     <p className="text-[12px] font-semibold text-white/80">
-                      Focus momentum
+                      {t(
+                        'analyticsPage.insights.momentum',
+                      )}
                     </p>
 
                     <p className="mt-1 text-[11px] leading-relaxed text-white/35">
                       {trends.totalChangePercentage ===
                       null
-                        ? `There is no focus data from ${previousPeriodLabel} to compare yet.`
+                        ? t(
+                            'analyticsPage.insights.noComparison',
+                            {
+                              period:
+                                previousPeriodLabel,
+                            },
+                          )
                         : trends.totalChangePercentage >
                             0
-                          ? `You focused ${trends.totalChangePercentage}% more than ${previousPeriodLabel}.`
+                          ? t(
+                              'analyticsPage.insights.more',
+                              {
+                                percentage:
+                                  trends.totalChangePercentage,
+                                period:
+                                  previousPeriodLabel,
+                              },
+                            )
                           : trends.totalChangePercentage <
                               0
-                            ? `You focused ${Math.abs(
-                                trends.totalChangePercentage,
-                              )}% less than ${previousPeriodLabel}.`
-                            : `Your focus time is unchanged from ${previousPeriodLabel}.`}
+                            ? t(
+                                'analyticsPage.insights.less',
+                                {
+                                  percentage:
+                                    Math.abs(
+                                      trends.totalChangePercentage,
+                                    ),
+                                  period:
+                                    previousPeriodLabel,
+                                },
+                              )
+                            : t(
+                                'analyticsPage.insights.unchanged',
+                                {
+                                  period:
+                                    previousPeriodLabel,
+                                },
+                              )}
                     </p>
                   </div>
                 )}
@@ -1436,13 +1534,23 @@ export function AnalyticsPage() {
                   </div>
 
                   <p className="text-[12px] font-semibold text-white/80">
-                    Most productive day
+                    {t(
+                      'analyticsPage.insights.productiveDay',
+                    )}
                   </p>
 
                   <p className="mt-1 text-[11px] leading-relaxed text-white/35">
                     {trends.mostProductiveWeekday
-                      ? `${trends.mostProductiveWeekday} is your strongest focus day in this period.`
-                      : 'Not enough activity to identify your best day yet.'}
+                      ? t(
+                          'analyticsPage.insights.productiveDayText',
+                          {
+                            day:
+                              trends.mostProductiveWeekday,
+                          },
+                        )
+                      : t(
+                          'analyticsPage.insights.productiveDayEmpty',
+                        )}
                   </p>
                 </div>
 
@@ -1455,34 +1563,43 @@ export function AnalyticsPage() {
                   </div>
 
                   <p className="text-[12px] font-semibold text-white/80">
-                    Main focus
+                    {t(
+                      'analyticsPage.insights.mainFocus',
+                    )}
                   </p>
 
                   <p className="mt-1 text-[11px] leading-relaxed text-white/35">
                     {topTrendProject
-                      ? `${topTrendProject.name} received ${topTrendProject.sharePercentage}% of your total focus time.`
-                      : 'Connect sessions to projects to discover your main focus.'}
+                      ? t(
+                          'analyticsPage.insights.mainFocusText',
+                          {
+                            project:
+                              topTrendProject.name,
+                            percentage:
+                              topTrendProject.sharePercentage,
+                          },
+                        )
+                      : t(
+                          'analyticsPage.insights.mainFocusEmpty',
+                        )}
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
                   <p className="text-[12px] font-semibold text-white/80">
-                    Active days
+                    {t(
+                      'analyticsPage.insights.activeDays',
+                    )}
                   </p>
 
                   <p className="mt-1 text-[11px] leading-relaxed text-white/35">
-                    You recorded focus
-                    time on{' '}
-                    <span className="font-semibold text-white/65">
+                    {t(
+                      'analyticsPage.insights.activeDaysText',
                       {
-                        trends.activeDays
-                      }
-                    </span>{' '}
-                    {trends.activeDays ===
-                    1
-                      ? 'day'
-                      : 'days'}{' '}
-                    during this period.
+                        count:
+                          trends.activeDays,
+                      },
+                    )}
                   </p>
                 </div>
               </div>

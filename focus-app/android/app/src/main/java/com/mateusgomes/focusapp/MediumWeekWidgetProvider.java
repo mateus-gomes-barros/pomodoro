@@ -43,6 +43,8 @@ public class MediumWeekWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_medium_week
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         try {
             JSONObject data =
                 new JSONObject(payload);

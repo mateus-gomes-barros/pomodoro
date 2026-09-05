@@ -49,6 +49,8 @@ public class SmallTodayFocusWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_small_today_focus
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         int todayMinutes = 0;
 
         try {
@@ -88,7 +90,7 @@ public class SmallTodayFocusWidgetProvider extends AppWidgetProvider {
 
         views.setTextViewText(
             R.id.today_focus_subtitle,
-            "focused today"
+            WidgetLanguage.text(context, "focusedToday")
         );
 
         Intent openApp =

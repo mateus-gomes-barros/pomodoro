@@ -87,6 +87,8 @@ public class MonthlyActivityWidgetProvider extends AppWidgetProvider {
                 R.layout.widget_monthly_activity
             );
 
+        WidgetLanguage.applyStaticLabels(context, views);
+
         resetDays(views);
 
         try {
@@ -98,7 +100,7 @@ public class MonthlyActivityWidgetProvider extends AppWidgetProvider {
             String monthTitle =
                 data.optString(
                     "monthTitle",
-                    "Monthly Activity"
+                    WidgetLanguage.text(context, "monthlyActivity")
                 );
 
             int longestStreak =
@@ -114,9 +116,7 @@ public class MonthlyActivityWidgetProvider extends AppWidgetProvider {
 
             views.setTextViewText(
                 R.id.month_widget_streak,
-                "🔥 " +
-                longestStreak +
-                " day best streak"
+                WidgetLanguage.bestStreak(context, longestStreak)
             );
 
             JSONArray days =
@@ -173,12 +173,12 @@ public class MonthlyActivityWidgetProvider extends AppWidgetProvider {
         ) {
             views.setTextViewText(
                 R.id.month_widget_title,
-                "Monthly Activity"
+                WidgetLanguage.text(context, "monthlyActivity")
             );
 
             views.setTextViewText(
                 R.id.month_widget_streak,
-                "🔥 0 day best streak"
+                WidgetLanguage.bestStreak(context, 0)
             );
         }
 

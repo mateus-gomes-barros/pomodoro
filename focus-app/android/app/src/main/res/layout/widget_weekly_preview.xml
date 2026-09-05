@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Weekly Focus"
+        android:text="Foco semanal"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:textStyle="bold" />
@@ -19,7 +19,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="🔥 12 day streak"
+        android:text="🔥 12 dias de ofensiva"
         android:textColor="#34D399"
         android:textSize="18sp"
         android:textStyle="bold" />
@@ -36,7 +36,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:text="8h 35m focused"
+        android:text="8h 35m de foco"
         android:textColor="#A1A1AA"
         android:textSize="12sp" />
 
