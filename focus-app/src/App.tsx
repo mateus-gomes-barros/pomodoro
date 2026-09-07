@@ -1,5 +1,6 @@
 import {
   BrowserRouter,
+  Navigate,
   Route,
   Routes,
 } from 'react-router-dom'
@@ -49,6 +50,11 @@ function App() {
             <Route path="/streaks" element={<StreaksPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/focusme" element={<FocusMePage />} />
+            <Route
+              path="/settings/focusme"
+              element={<Navigate to="/focusme" replace />}
+            />
             <Route
               path="/settings/focusme"
               element={<FocusMePage />}

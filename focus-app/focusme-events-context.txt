@@ -1,0 +1,1253 @@
+===== SUPABASE CLIENT =====
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabasePublishableKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+if (!supabaseUrl) {
+  throw new Error(
+    'Missing VITE_SUPABASE_URL environment variable.',
+  )
+}
+
+if (!supabasePublishableKey) {
+  throw new Error(
+    'Missing VITE_SUPABASE_PUBLISHABLE_KEY environment variable.',
+  )
+}
+
+export const supabase = createClient(
+  supabaseUrl,
+  supabasePublishableKey,
+)===== TASK SERVICE =====
+import { supabase } from '@/lib/supabase'
+
+import type {
+  Task,
+  TaskCategory,
+  TaskPriority,
+} from '@/types'
+
+interface TaskRow {
+  id: string
+  title: string
+  completed: boolean
+  project_id: string | null
+  priority: TaskPriority
+  category: TaskCategory
+  estimated_pomodoros: number
+  completed_pomodoros: number
+  created_at: string
+  completed_at: string | null
+  deleted_at: string | null
+  scheduled_deletion_at: string | null
+  task_order: number
+}
+
+export interface CreateTaskInput {
+  title: string
+  projectId?: string
+  priority: TaskPriority
+  category?: TaskCategory
+  estimatedPomodoros: number
+}
+
+export interface UpdateTaskInput {
+  title?: string
+  completed?: boolean
+  projectId?: string
+  priority?: TaskPriority
+  category?: TaskCategory
+  estimatedPomodoros?: number
+  completedPomodoros?: number
+  completedAt?: string
+  order?: number
+}
+
+const TASK_SELECT = `
+  id,
+  title,
+  completed,
+  project_id,
+  priority,
+  category,
+  estimated_pomodoros,
+  completed_pomodoros,
+  created_at,
+  completed_at,
+  deleted_at,
+  scheduled_deletion_at,
+  task_order
+`
+
+function mapTaskRow(row: TaskRow): Task {
+  return {
+    id: row.id,
+    title: row.title,
+    completed: row.completed,
+    projectId:
+      row.project_id ?? undefined,
+    priority: row.priority,
+    category: row.category,
+    estimatedPomodoros:
+      row.estimated_pomodoros,
+    completedPomodoros:
+      row.completed_pomodoros,
+    createdAt: row.created_at,
+    completedAt:
+      row.completed_at ?? undefined,
+    deletedAt:
+      row.deleted_at ?? undefined,
+    scheduledDeletionAt:
+      row.scheduled_deletion_at ??
+      undefined,
+    order: row.task_order,
+  }
+}
+
+export async function purgeExpiredTasks(): Promise<void> {
+  const now = new Date().toISOString()
+
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .not('deleted_at', 'is', null)
+    .lte('scheduled_deletion_at', now)
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function getTasks(): Promise<Task[]> {
+  await purgeExpiredTasks()
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .select(TASK_SELECT)
+    .is('deleted_at', null)
+    .order('task_order', {
+      ascending: true,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return (data as TaskRow[]).map(
+    mapTaskRow,
+  )
+}
+
+export async function getTrashTasks(): Promise<
+  Task[]
+> {
+  await purgeExpiredTasks()
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .select(TASK_SELECT)
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', {
+      ascending: false,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return (data as TaskRow[]).map(
+    mapTaskRow,
+  )
+}
+
+export async function createTask(
+  input: CreateTaskInput,
+): Promise<Task> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError) {
+    throw userError
+  }
+
+  if (!user) {
+    throw new Error(
+      'You must be authenticated to create a task.',
+    )
+  }
+
+  const { count, error: countError } =
+    await supabase
+      .from('tasks')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .is('deleted_at', null)
+
+  if (countError) {
+    throw countError
+  }
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert({
+      user_id: user.id,
+      title: input.title.trim(),
+      project_id:
+        input.projectId || null,
+      priority: input.priority,
+      category:
+        input.category ?? 'planned',
+      estimated_pomodoros:
+        input.estimatedPomodoros,
+      task_order: count ?? 0,
+    })
+    .select(TASK_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapTaskRow(data as TaskRow)
+}
+
+export async function updateTask(
+  taskId: string,
+  input: UpdateTaskInput,
+): Promise<Task> {
+  const updates: Record<
+    string,
+    unknown
+  > = {}
+
+  if (input.title !== undefined) {
+    updates.title = input.title.trim()
+  }
+
+  if (input.completed !== undefined) {
+    updates.completed = input.completed
+  }
+
+  if (input.projectId !== undefined) {
+    updates.project_id =
+      input.projectId || null
+  }
+
+  if (input.priority !== undefined) {
+    updates.priority = input.priority
+  }
+
+  if (input.category !== undefined) {
+    updates.category = input.category
+  }
+
+  if (
+    input.estimatedPomodoros !==
+    undefined
+  ) {
+    updates.estimated_pomodoros =
+      input.estimatedPomodoros
+  }
+
+  if (
+    input.completedPomodoros !==
+    undefined
+  ) {
+    updates.completed_pomodoros =
+      input.completedPomodoros
+  }
+
+  if (input.completedAt !== undefined) {
+    updates.completed_at =
+      input.completedAt || null
+  }
+
+  if (input.order !== undefined) {
+    updates.task_order = input.order
+  }
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .update(updates)
+    .eq('id', taskId)
+    .is('deleted_at', null)
+    .select(TASK_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapTaskRow(data as TaskRow)
+}
+
+export async function deleteTask(
+  taskId: string,
+): Promise<Task> {
+  const deletedAt = new Date()
+  const scheduledDeletionAt =
+    new Date(deletedAt)
+
+  scheduledDeletionAt.setUTCDate(
+    scheduledDeletionAt.getUTCDate() + 30,
+  )
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({
+      deleted_at:
+        deletedAt.toISOString(),
+      scheduled_deletion_at:
+        scheduledDeletionAt.toISOString(),
+    })
+    .eq('id', taskId)
+    .is('deleted_at', null)
+    .select(TASK_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapTaskRow(data as TaskRow)
+}
+
+export async function restoreTask(
+  taskId: string,
+): Promise<Task> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({
+      deleted_at: null,
+      scheduled_deletion_at: null,
+    })
+    .eq('id', taskId)
+    .not('deleted_at', 'is', null)
+    .select(TASK_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapTaskRow(data as TaskRow)
+}
+
+export async function deleteTaskPermanently(
+  taskId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', taskId)
+    .not('deleted_at', 'is', null)
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function toggleTask(
+  task: Task,
+): Promise<Task> {
+  const nextCompleted = !task.completed
+
+  return updateTask(task.id, {
+    completed: nextCompleted,
+    completedAt: nextCompleted
+      ? new Date().toISOString()
+      : '',
+  })
+}
+
+export async function incrementTaskPomodoro(
+  task: Task,
+): Promise<Task> {
+  return updateTask(task.id, {
+    completedPomodoros:
+      task.completedPomodoros + 1,
+  })
+}
+
+export async function reorderTasks(
+  tasks: Task[],
+): Promise<void> {
+  const activeTasks = tasks.filter(
+    (task) => !task.deletedAt,
+  )
+
+  const results = await Promise.all(
+    activeTasks.map((task, index) =>
+      supabase
+        .from('tasks')
+        .update({
+          task_order: index,
+        })
+        .eq('id', task.id)
+        .is('deleted_at', null),
+    ),
+  )
+
+  const failedResult = results.find(
+    ({ error }) => error,
+  )
+
+  if (failedResult?.error) {
+    throw failedResult.error
+  }
+}
+===== PROJECT SERVICE =====
+import { supabase } from '@/lib/supabase'
+
+import type {
+  Project,
+  ProjectStatus,
+} from '@/types'
+
+interface ProjectRow {
+  id: string
+  name: string
+  description: string | null
+  color: string | null
+  emoji: string
+  total_sessions: number
+  completed_sessions: number
+  total_focus_minutes: number
+  status: ProjectStatus
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateProjectInput {
+  name: string
+  description: string
+  color: string
+  emoji: string
+}
+
+export interface UpdateProjectInput {
+  name?: string
+  description?: string
+  color?: string
+  emoji?: string
+  totalSessions?: number
+  completedSessions?: number
+  totalFocusMinutes?: number
+  status?: ProjectStatus
+  completedAt?: string
+}
+
+const PROJECT_SELECT = `
+  id,
+  name,
+  description,
+  color,
+  emoji,
+  total_sessions,
+  completed_sessions,
+  total_focus_minutes,
+  status,
+  completed_at,
+  created_at,
+  updated_at
+`
+
+function mapProjectRow(
+  row: ProjectRow,
+): Project {
+  return {
+    id: row.id,
+    name: row.name,
+    description:
+      row.description ?? '',
+    color:
+      row.color ?? '#10b981',
+    emoji: row.emoji,
+    totalSessions:
+      row.total_sessions,
+    completedSessions:
+      row.completed_sessions,
+    totalFocusMinutes:
+      row.total_focus_minutes,
+    status: row.status,
+    completedAt:
+      row.completed_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export async function getProjects(): Promise<
+  Project[]
+> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select(PROJECT_SELECT)
+    .order('created_at', {
+      ascending: true,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return (data as ProjectRow[]).map(
+    mapProjectRow,
+  )
+}
+
+export async function createProject(
+  input: CreateProjectInput,
+): Promise<Project> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError) {
+    throw userError
+  }
+
+  if (!user) {
+    throw new Error(
+      'You must be authenticated to create a project.',
+    )
+  }
+
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({
+      user_id: user.id,
+      name: input.name.trim(),
+      description:
+        input.description.trim() ||
+        null,
+      color: input.color,
+      emoji: input.emoji,
+      status: 'active',
+      completed_at: null,
+    })
+    .select(PROJECT_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapProjectRow(
+    data as ProjectRow,
+  )
+}
+
+export async function updateProject(
+  projectId: string,
+  input: UpdateProjectInput,
+): Promise<Project> {
+  const updates: Record<
+    string,
+    unknown
+  > = {}
+
+  if (input.name !== undefined) {
+    updates.name = input.name.trim()
+  }
+
+  if (
+    input.description !== undefined
+  ) {
+    updates.description =
+      input.description.trim() ||
+      null
+  }
+
+  if (input.color !== undefined) {
+    updates.color = input.color
+  }
+
+  if (input.emoji !== undefined) {
+    updates.emoji = input.emoji
+  }
+
+  if (
+    input.totalSessions !== undefined
+  ) {
+    updates.total_sessions =
+      input.totalSessions
+  }
+
+  if (
+    input.completedSessions !==
+    undefined
+  ) {
+    updates.completed_sessions =
+      input.completedSessions
+  }
+
+  if (
+    input.totalFocusMinutes !==
+    undefined
+  ) {
+    updates.total_focus_minutes =
+      input.totalFocusMinutes
+  }
+
+  if (input.status !== undefined) {
+    updates.status = input.status
+  }
+
+  if (
+    input.completedAt !== undefined
+  ) {
+    updates.completed_at =
+      input.completedAt || null
+  }
+
+  updates.updated_at =
+    new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('projects')
+    .update(updates)
+    .eq('id', projectId)
+    .select(PROJECT_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapProjectRow(
+    data as ProjectRow,
+  )
+}
+
+export async function completeProject(
+  projectId: string,
+): Promise<Project> {
+  return updateProject(projectId, {
+    status: 'completed',
+    completedAt:
+      new Date().toISOString(),
+  })
+}
+
+export async function reopenProject(
+  projectId: string,
+): Promise<Project> {
+  return updateProject(projectId, {
+    status: 'active',
+    completedAt: '',
+  })
+}
+
+export async function toggleProjectStatus(
+  project: Project,
+): Promise<Project> {
+  return project.status === 'completed'
+    ? reopenProject(project.id)
+    : completeProject(project.id)
+}
+
+export async function deleteProject(
+  projectId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId)
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function incrementProjectSession(
+  project: Project,
+  minutes: number,
+): Promise<Project> {
+  return updateProject(project.id, {
+    totalSessions:
+      project.totalSessions + 1,
+    completedSessions:
+      project.completedSessions + 1,
+    totalFocusMinutes:
+      project.totalFocusMinutes +
+      minutes,
+  })
+}
+===== GOAL SERVICE =====
+src/services/goalsWidgetService.ts
+import {
+    Capacitor,
+    registerPlugin,
+  } from '@capacitor/core'
+  
+  import {
+    updateGoal,
+  } from '@/services/goalsService'
+  
+  import type { Goal } from '@/types'
+  
+  interface GoalsWidgetPlugin {
+    saveSnapshot(
+      options: {
+        payload: string
+      },
+    ): Promise<{
+      saved: boolean
+    }>
+  
+    getPendingCompletions(): Promise<{
+      goalIDs: string[]
+    }>
+  
+    removePendingCompletions(
+      options: {
+        goalIDs: string[]
+      },
+    ): Promise<{
+      removed: boolean
+    }>
+  }
+  
+  interface GoalsWidgetItem {
+    id: string
+    title: string
+    completed: boolean
+  }
+  
+  interface GoalsWidgetSnapshot {
+    year: number
+    completedCount: number
+    totalCount: number
+    goals: GoalsWidgetItem[]
+    updatedAt: string
+  }
+  
+  const goalsWidgetPlugin =
+    registerPlugin<GoalsWidgetPlugin>(
+      'GoalsWidget',
+    )
+  
+  let pendingSyncPromise:
+    Promise<number> | null = null
+  
+  function isAvailable(): boolean {
+    return (
+      Capacitor.isNativePlatform() &&
+      (
+        Capacitor.getPlatform() === 'ios' ||
+        Capacitor.getPlatform() === 'android'
+      )
+    )
+  }
+  
+  export async function saveGoalsWidgetSnapshot(
+    goals: Goal[],
+    year: number,
+  ): Promise<void> {
+    if (!isAvailable()) {
+      return
+    }
+  
+    const sortedGoals = [...goals].sort(
+      (firstGoal, secondGoal) => {
+        if (
+          firstGoal.completed ===
+          secondGoal.completed
+        ) {
+          return (
+            firstGoal.order -
+            secondGoal.order
+          )
+        }
+  
+        return firstGoal.completed
+          ? 1
+          : -1
+      },
+    )
+  
+    const snapshot: GoalsWidgetSnapshot = {
+      year,
+      completedCount:
+        goals.filter(
+          (goal) => goal.completed,
+        ).length,
+      totalCount: goals.length,
+      goals: sortedGoals
+        .slice(0, 3)
+        .map((goal) => ({
+          id: goal.id,
+          title: goal.title,
+          completed: goal.completed,
+        })),
+      updatedAt:
+        new Date().toISOString(),
+    }
+  
+    try {
+      await goalsWidgetPlugin.saveSnapshot({
+        payload: JSON.stringify(
+          snapshot,
+        ),
+      })
+    } catch (error) {
+      console.error(
+        'Failed to update Goals widget:',
+        error,
+      )
+    }
+  }
+  
+  async function performPendingSync():
+    Promise<number> {
+    if (!isAvailable()) {
+      return 0
+    }
+  
+    try {
+      const {
+        goalIDs,
+      } =
+        await goalsWidgetPlugin
+          .getPendingCompletions()
+  
+      const uniqueGoalIDs = [
+        ...new Set(goalIDs),
+      ]
+  
+      if (uniqueGoalIDs.length === 0) {
+        return 0
+      }
+  
+      const synchronizedGoalIDs:
+        string[] = []
+  
+      for (
+        const goalID of uniqueGoalIDs
+      ) {
+        try {
+          await updateGoal(goalID, {
+            completed: true,
+            completedAt:
+              new Date().toISOString(),
+          })
+  
+          synchronizedGoalIDs.push(
+            goalID,
+          )
+        } catch (error) {
+          console.error(
+            `Failed to complete goal ${goalID}:`,
+            error,
+          )
+        }
+      }
+  
+      if (
+        synchronizedGoalIDs.length > 0
+      ) {
+        await goalsWidgetPlugin
+          .removePendingCompletions({
+            goalIDs:
+              synchronizedGoalIDs,
+          })
+      }
+  
+      return synchronizedGoalIDs.length
+    } catch (error) {
+      console.error(
+        'Failed to synchronize Goals widget completions:',
+        error,
+      )
+  
+      return 0
+    }
+  }
+  
+  export function syncPendingGoalCompletions():
+    Promise<number> {
+    if (pendingSyncPromise) {
+      return pendingSyncPromise
+    }
+  
+    pendingSyncPromise =
+      performPendingSync().finally(() => {
+        pendingSyncPromise = null
+      })
+  
+    return pendingSyncPromise
+  }src/services/goalsService.ts
+import { supabase } from '@/lib/supabase'
+
+import type { Goal } from '@/types'
+
+interface GoalRow {
+  id: string
+  title: string
+  year: number
+  completed: boolean
+  completed_at: string | null
+  goal_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateGoalInput {
+  title: string
+  year?: number
+}
+
+export interface UpdateGoalInput {
+  title?: string
+  year?: number
+  completed?: boolean
+  completedAt?: string | null
+  order?: number
+}
+
+const GOAL_SELECT = `
+  id,
+  title,
+  year,
+  completed,
+  completed_at,
+  goal_order,
+  created_at,
+  updated_at
+`
+
+function mapGoalRow(
+  row: GoalRow,
+): Goal {
+  return {
+    id: row.id,
+    title: row.title,
+    year: row.year,
+    completed: row.completed,
+    completedAt:
+      row.completed_at ?? undefined,
+    order: row.goal_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export async function getGoals(
+  year = new Date().getFullYear(),
+): Promise<Goal[]> {
+  const { data, error } = await supabase
+    .from('goals')
+    .select(GOAL_SELECT)
+    .eq('year', year)
+    .order('goal_order', {
+      ascending: true,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return (data as GoalRow[]).map(
+    mapGoalRow,
+  )
+}
+
+export async function createGoal(
+  input: CreateGoalInput,
+): Promise<Goal> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError) {
+    throw userError
+  }
+
+  if (!user) {
+    throw new Error(
+      'You must be authenticated to create a goal.',
+    )
+  }
+
+  const year =
+    input.year ??
+    new Date().getFullYear()
+
+  const { count, error: countError } =
+    await supabase
+      .from('goals')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('year', year)
+
+  if (countError) {
+    throw countError
+  }
+
+  const { data, error } = await supabase
+    .from('goals')
+    .insert({
+      user_id: user.id,
+      title: input.title.trim(),
+      year,
+      completed: false,
+      goal_order: count ?? 0,
+    })
+    .select(GOAL_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapGoalRow(
+    data as GoalRow,
+  )
+}
+
+export async function updateGoal(
+  goalId: string,
+  input: UpdateGoalInput,
+): Promise<Goal> {
+  const updates: Record<
+    string,
+    unknown
+  > = {
+    updated_at:
+      new Date().toISOString(),
+  }
+
+  if (input.title !== undefined) {
+    updates.title = input.title.trim()
+  }
+
+  if (input.year !== undefined) {
+    updates.year = input.year
+  }
+
+  if (input.completed !== undefined) {
+    updates.completed =
+      input.completed
+  }
+
+  if (input.completedAt !== undefined) {
+    updates.completed_at =
+      input.completedAt
+  }
+
+  if (input.order !== undefined) {
+    updates.goal_order = input.order
+  }
+
+  const { data, error } = await supabase
+    .from('goals')
+    .update(updates)
+    .eq('id', goalId)
+    .select(GOAL_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapGoalRow(
+    data as GoalRow,
+  )
+}
+
+export async function deleteGoal(
+  goalId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('goals')
+    .delete()
+    .eq('id', goalId)
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function toggleGoal(
+  goal: Goal,
+): Promise<Goal> {
+  const nextCompleted =
+    !goal.completed
+
+  return updateGoal(goal.id, {
+    completed: nextCompleted,
+    completedAt: nextCompleted
+      ? new Date().toISOString()
+      : null,
+  })
+}
+
+export async function reorderGoals(
+  goals: Goal[],
+): Promise<void> {
+  const results = await Promise.all(
+    goals.map((goal, index) =>
+      supabase
+        .from('goals')
+        .update({
+          goal_order: index,
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq('id', goal.id),
+    ),
+  )
+
+  const failedResult =
+    results.find(
+      ({ error }) => error,
+    )
+
+  if (failedResult?.error) {
+    throw failedResult.error
+  }
+}===== SESSION SERVICE =====
+src/services/pomodoroSessionsService.ts
+import { supabase } from '@/lib/supabase'
+
+import type {
+  PomodoroSession,
+  SessionType,
+} from '@/types'
+
+interface PomodoroSessionRow {
+  id: string
+  type: SessionType
+  project_id: string | null
+  task_id: string | null
+  duration_minutes: number
+  completed_at: string
+  session_date: string
+}
+
+export interface CreatePomodoroSessionInput {
+  type: SessionType
+  projectId?: string
+  taskId?: string
+  durationMinutes: number
+  completedAt?: string
+  date?: string
+}
+
+const POMODORO_SESSION_SELECT = `
+  id,
+  type,
+  project_id,
+  task_id,
+  duration_minutes,
+  completed_at,
+  session_date
+`
+
+function mapPomodoroSessionRow(
+  row: PomodoroSessionRow,
+): PomodoroSession {
+  return {
+    id: row.id,
+    type: row.type,
+    projectId: row.project_id ?? undefined,
+    taskId: row.task_id ?? undefined,
+    durationMinutes: row.duration_minutes,
+    completedAt: row.completed_at,
+    date: row.session_date,
+  }
+}
+
+export async function getPomodoroSessions(): Promise<
+  PomodoroSession[]
+> {
+  const { data, error } = await supabase
+    .from('pomodoro_sessions')
+    .select(POMODORO_SESSION_SELECT)
+    .order('completed_at', {
+      ascending: false,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return (data as PomodoroSessionRow[]).map(
+    mapPomodoroSessionRow,
+  )
+}
+
+export async function createPomodoroSession(
+  input: CreatePomodoroSessionInput,
+): Promise<PomodoroSession> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError) {
+    throw userError
+  }
+
+  if (!user) {
+    throw new Error(
+      'You must be authenticated to create a pomodoro session.',
+    )
+  }
+
+  const completedAt =
+    input.completedAt ?? new Date().toISOString()
+
+  const date =
+    input.date ?? completedAt.split('T')[0]
+
+  const { data, error } = await supabase
+    .from('pomodoro_sessions')
+    .insert({
+      user_id: user.id,
+      type: input.type,
+      project_id: input.projectId || null,
+      task_id: input.taskId || null,
+      duration_minutes:
+        input.durationMinutes,
+      completed_at: completedAt,
+      session_date: date,
+    })
+    .select(POMODORO_SESSION_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapPomodoroSessionRow(
+    data as PomodoroSessionRow,
+  )
+}
+
+export async function deletePomodoroSession(
+  sessionId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('pomodoro_sessions')
+    .delete()
+    .eq('id', sessionId)
+
+  if (error) {
+    throw error
+  }
+}===== SUPABASE MIGRATIONS =====
+supabase/migrations/20260907073000_task_categories_and_trash.sql
+supabase/migrations/20260907080000_project_completion_status.sql

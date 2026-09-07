@@ -593,7 +593,7 @@ export function SettingsPage() {
         <motion.button
           type="button"
           onClick={() =>
-            navigate('/settings/focusme')
+            navigate('/focusme')
           }
           initial={{
             opacity: 0,

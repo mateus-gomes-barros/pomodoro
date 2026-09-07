@@ -10,6 +10,8 @@ import {
   Timer,
   X,
 } from 'lucide-react'
+
+import { FocusMeIcon } from '@/components/icons/FocusMeIcon'
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -300,6 +302,30 @@ export function SidebarMobile({
             pt-3
           "
         >
+          <NavLink
+            to="/focusme"
+            onClick={onClose}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
+                isActive
+                  ? 'bg-emerald-400/[0.10]'
+                  : 'hover:bg-emerald-400/[0.06]',
+              )
+            }
+          >
+            <FocusMeIcon
+              size={19}
+              className="shrink-0 text-emerald-400"
+            />
+
+            <span className="truncate text-sm font-semibold text-emerald-400">
+              FocusMe
+            </span>
+          </NavLink>
+
+          <div className="my-2 h-px bg-white/[0.06]" />
+
           <NavLink
             to="/settings"
             onClick={onClose}
