@@ -18,6 +18,9 @@ import {
 } from 'react-router-dom'
 
 import {
+  FocusHomeSymbolGallery,
+} from '@/components/focusme/FocusHomeSymbolGallery'
+import {
   PageHeader,
 } from '@/components/ui/PageHeader'
 
@@ -281,6 +284,8 @@ export function AboutFocusMePage() {
             </div>
           </div>
         </motion.section>
+
+        <FocusHomeSymbolGallery />
 
         <motion.div
           initial={{

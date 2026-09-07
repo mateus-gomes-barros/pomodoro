@@ -15,6 +15,7 @@ import { ChangesPage } from './pages/ChangesPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { FocusMeHistoryPage } from './pages/FocusMeHistoryPage'
 import { FocusMePage } from './pages/FocusMePage'
+import { FocusMeReportPage } from './pages/FocusMeReportPage'
 import { GoalsPage } from './pages/GoalsPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProjectsPage } from './pages/ProjectsPage'
@@ -55,6 +56,10 @@ function App() {
             <Route
               path="/focusme/history"
               element={<FocusMeHistoryPage />}
+            />
+            <Route
+              path="/focusme/reports/:reportId"
+              element={<FocusMeReportPage />}
             />
             <Route
               path="/settings/focusme"

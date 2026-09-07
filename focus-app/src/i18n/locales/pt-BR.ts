@@ -730,6 +730,26 @@ const ptBR = {
       created: 'criadas',
       completed: 'concluídos',
       topProjects: 'Projetos com mais foco',
+      eligibility: {
+        building: {
+          title:
+            'Sua análise está ganhando forma',
+          description:
+            'Continue usando o Focus naturalmente. Cada sessão e conclusão ajuda a construir uma leitura mais confiável do seu mês.',
+        },
+        ready: {
+          title:
+            'Dados suficientes para sua análise',
+          description:
+            'Seu mês já possui profundidade suficiente. Quando ele terminar, sua análise FocushoMe poderá ser realizada.',
+        },
+        eligible: {
+          title:
+            'Análise FocushoMe disponível',
+          description:
+            'Este mês encerrado possui dados suficientes para revelar ou reavaliar sua FocushoMe.',
+        },
+      },
     },
 
     weeklyReport: {
@@ -823,6 +843,151 @@ const ptBR = {
       },
     },
 
+    symbols: {
+      title: 'As doze FocushoMes',
+      subtitle:
+        'Toque em um símbolo para conhecer a identidade, a potência e o ponto de equilíbrio de cada FocushoMe.',
+      tap: 'Conhecer',
+      open: 'Conhecer a FocushoMe {{name}}',
+      close: 'Fechar',
+      strength: 'Sua potência',
+      balance: 'Ponto de equilíbrio',
+
+      items: {
+        aster: {
+          essence:
+            'A visão que antecede o caminho.',
+          description:
+            'Aster pertence a quem enxerga possibilidades antes de transformá-las em ações. Metas, ideias e planos costumam nascer com facilidade, formando uma visão ampla do que ainda pode ser construído.',
+          strength:
+            'Imaginar futuros possíveis, estabelecer direções e dar significado ao trabalho antes mesmo de ele começar.',
+          balance:
+            'Escolher quais possibilidades realmente merecem avançar, evitando que novos horizontes escondam os caminhos já abertos.',
+        },
+
+        atlas: {
+          essence:
+            'Profundidade para sustentar grandes jornadas.',
+          description:
+            'Atlas concentra energia em projetos importantes e permanece neles por longos períodos. Em vez de distribuir o foco entre muitas frentes, prefere carregar e desenvolver algo significativo.',
+          strength:
+            'Acumular profundidade, domínio e muitas horas de atenção em objetivos que exigem continuidade.',
+          balance:
+            'Reconhecer quando a responsabilidade assumida se tornou pesada demais e quando dividir o caminho pode fortalecer o resultado.',
+        },
+
+        forge: {
+          essence:
+            'Intenção transformada em resultado.',
+          description:
+            'Forge encontra satisfação em concluir. Tarefas abertas, projetos avançando e metas alcançadas formam o combustível de alguém que transforma planejamento em algo concreto.',
+          strength:
+            'Finalizar, resolver pendências e converter esforço em entregas que podem ser vistas e reconhecidas.',
+          balance:
+            'Não transformar toda experiência em obrigação de produzir; algumas ideias precisam de espaço antes de serem levadas ao fogo.',
+        },
+
+        pulse: {
+          essence:
+            'Movimento rápido que mantém o dia vivo.',
+          description:
+            'Pulse trabalha por impulsos curtos e frequentes. Pequenas tarefas, respostas rápidas e decisões imediatas criam uma sensação constante de progresso e movimento.',
+          strength:
+            'Destravar o cotidiano, reduzir pequenas pendências e reagir com agilidade ao que precisa acontecer agora.',
+          balance:
+            'Reservar períodos maiores para trabalhos que não entregam recompensa imediata, mas constroem resultados profundos.',
+        },
+
+        loom: {
+          essence:
+            'Fios diferentes formando uma única história.',
+          description:
+            'Loom conecta tarefas, projetos, metas e sessões de foco. Seu padrão não depende de uma única ferramenta: cada parte do Focus participa de uma estrutura maior.',
+          strength:
+            'Integrar planejamento e execução, mantendo diferentes áreas da vida conectadas sem perder o sentido do conjunto.',
+          balance:
+            'Evitar criar estruturas complexas demais quando uma decisão simples já seria suficiente para continuar.',
+        },
+
+        orbit: {
+          essence:
+            'Constância que cria seu próprio centro.',
+          description:
+            'Orbit retorna ao foco em horários e ciclos reconhecíveis. A força não está necessariamente em grandes picos, mas na capacidade de voltar ao mesmo eixo com regularidade.',
+          strength:
+            'Transformar o foco em rotina confiável, reduzindo a dependência de motivação momentânea.',
+          balance:
+            'Permitir mudanças quando a rotina deixa de servir, sem interpretar adaptação como perda de disciplina.',
+        },
+
+        tide: {
+          essence:
+            'Adaptação sem perder a direção.',
+          description:
+            'Tide muda de intensidade, horário e estratégia conforme o contexto. Seu ritmo pode variar bastante, mas existe inteligência na forma como responde às condições do momento.',
+          strength:
+            'Reorganizar prioridades, encontrar novas janelas de produtividade e continuar mesmo quando o plano original não funciona.',
+          balance:
+            'Criar alguns pontos estáveis para que a adaptação não se transforme em dispersão permanente.',
+        },
+
+        ember: {
+          essence:
+            'Uma intensidade que permanece acesa por dentro.',
+          description:
+            'Ember nem sempre produz o maior volume visível, mas mantém uma atenção profunda e silenciosa. Seu olho representa consciência: observar antes de agir e proteger a energia essencial.',
+          strength:
+            'Sustentar concentração interna, perceber detalhes e preservar motivação mesmo em períodos discretos.',
+          balance:
+            'Permitir que o trabalho interno se torne visível, compartilhando avanços e reconhecendo as próprias conquistas.',
+        },
+
+        nova: {
+          essence:
+            'A energia que inaugura novos caminhos.',
+          description:
+            'Nova aparece onde projetos, tarefas e possibilidades começam com intensidade. Existe entusiasmo em experimentar, iniciar e provocar movimento onde antes havia apenas intenção.',
+          strength:
+            'Dar o primeiro passo, gerar impulso e transformar uma ideia parada em algo que já começou a existir.',
+          balance:
+            'Manter energia depois do brilho inicial, escolhendo quais começos merecem chegar até o fim.',
+        },
+
+        prism: {
+          essence:
+            'Muitas formas de foco atravessando a mesma pessoa.',
+          description:
+            'Prism distribui atenção entre categorias, projetos, horários e formas diferentes de produzir. Sua identidade nasce da variedade e da capacidade de enxergar por vários ângulos.',
+          strength:
+            'Combinar perspectivas, alternar habilidades e encontrar soluções que não surgiriam de uma rotina completamente uniforme.',
+          balance:
+            'Criar prioridade entre tantas possibilidades para que variedade não se transforme em fragmentação.',
+        },
+
+        vanguard: {
+          essence:
+            'Presença firme diante do que não pode esperar.',
+          description:
+            'Vanguard reage com força quando existe prioridade, urgência ou responsabilidade clara. A pressão não paralisa: ela organiza o campo e indica onde a energia deve ser aplicada.',
+          strength:
+            'Tomar decisões, proteger o essencial e avançar em situações que exigem resposta rápida e direção.',
+          balance:
+            'Não depender apenas da urgência para agir e reservar energia para o importante antes que ele se torne emergencial.',
+        },
+
+        verdant: {
+          essence:
+            'Crescimento paciente que se torna duradouro.',
+          description:
+            'Verdant cultiva metas e projetos ao longo do tempo. Pequenos avanços podem parecer discretos isoladamente, mas formam raízes profundas quando observados durante todo o mês.',
+          strength:
+            'Construir resultados sustentáveis, respeitar processos longos e continuar mesmo quando a transformação',
+          balance:
+            'Celebrar etapas intermediárias para que a distância do resultado final não esconda tudo o que já cresceu.',
+        },
+      },
+    },
+
     privacy: {
       title:
         'Sua rotina continua sendo sua',
@@ -852,6 +1017,15 @@ const ptBR = {
     title: 'Histórico de relatórios',
     subtitle:
       'Revisite suas semanas, seus meses e a evolução da sua rotina.',
+    filterLabel: 'Filtrar relatórios',
+    error:
+      'Não foi possível carregar seu histórico.',
+    sessions: 'sessões',
+    tasks: 'tarefas concluídas',
+    types: {
+      weekly: 'Semanal',
+      monthly: 'Mensal',
+    },
     filters: {
       all: 'Todos',
       weekly: 'Semanais',
@@ -865,6 +1039,32 @@ const ptBR = {
       schedule:
         'Semanas fecham na segunda-feira',
     },
+  },
+
+  focusMeReportPage: {
+    back: 'Voltar ao histórico',
+    error:
+      'Este relatório não foi encontrado ou não pôde ser carregado.',
+    types: {
+      weekly: 'Retrospectiva semanal',
+      monthly: 'Retrospectiva mensal',
+    },
+    preserved:
+      'Relatório encerrado e preservado',
+    focusTime: 'Tempo de foco',
+    sessions: 'Sessões',
+    activeDays: 'Dias ativos',
+    tasksCompleted: 'Tarefas concluídas',
+    dailyEvolution: 'Evolução diária',
+    weeklyEvolution: 'Evolução semanal',
+    week: 'S{{number}}',
+    noFocus:
+      'Nenhuma sessão de foco foi concluída neste período.',
+    tasks: 'Tarefas concluídas / criadas',
+    projects: 'Projetos concluídos / criados',
+    goals: 'Metas concluídas / criadas',
+    topProject: 'Projeto em destaque',
+    yourStory: 'A história do seu período',
   },
 
   changesPage: {

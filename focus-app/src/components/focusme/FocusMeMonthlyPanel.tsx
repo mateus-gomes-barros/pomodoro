@@ -17,6 +17,9 @@ import {
 import {
   useFocusMeMonthlyReport,
 } from '@/hooks/focusme/useFocusMeMonthlyReport'
+import {
+  evaluateFocusHomeEligibility,
+} from '@/services/focusMeEligibility'
 
 function formatMinutes(
   minutes: number,
@@ -135,6 +138,11 @@ export function FocusMeMonthlyPanel() {
 
   const current =
     report.current
+
+  const eligibility =
+    evaluateFocusHomeEligibility(
+      current,
+    )
 
   const maxWeekMinutes =
     Math.max(
@@ -277,6 +285,87 @@ export function FocusMeMonthlyPanel() {
                 </div>
               ),
             )}
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section
+        initial={{
+          opacity: 0,
+          y: 8,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className="card p-5"
+      >
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
+            <svg
+              viewBox="0 0 80 80"
+              className="h-20 w-20 -rotate-90"
+              aria-hidden="true"
+            >
+              <circle
+                cx="40"
+                cy="40"
+                r="34"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="5"
+                className="text-white/[0.05]"
+              />
+
+              <circle
+                cx="40"
+                cy="40"
+                r="34"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="5"
+                strokeLinecap="round"
+                pathLength="100"
+                strokeDasharray="100"
+                strokeDashoffset={
+                  100 -
+                  eligibility.progress
+                }
+                className="text-accent-green transition-all duration-500"
+              />
+            </svg>
+
+            <span className="absolute text-sm font-semibold text-accent-white">
+              {eligibility.progress}%
+            </span>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+              FocushoMe
+            </p>
+
+            <h3 className="mt-2 text-base font-semibold text-accent-white">
+              {t(
+                `focusMePage.monthlyReport.eligibility.${eligibility.state}.title`,
+              )}
+            </h3>
+
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-accent-subtle">
+              {t(
+                `focusMePage.monthlyReport.eligibility.${eligibility.state}.description`,
+              )}
+            </p>
+
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.05]">
+              <div
+                className="h-full rounded-full bg-accent-green transition-all duration-500"
+                style={{
+                  width:
+                    `${eligibility.progress}%`,
+                }}
+              />
+            </div>
           </div>
         </div>
       </motion.section>

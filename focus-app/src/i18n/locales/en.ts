@@ -720,6 +720,26 @@ const en = {
       created: 'created',
       completed: 'completed',
       topProjects: 'Most focused projects',
+      eligibility: {
+        building: {
+          title:
+            'Your analysis is taking shape',
+          description:
+            'Keep using Focus naturally. Every session and completion helps build a more reliable understanding of your month.',
+        },
+        ready: {
+          title:
+            'Enough data for your analysis',
+          description:
+            'Your month already has enough depth. When it ends, your FocushoMe analysis can be performed.',
+        },
+        eligible: {
+          title:
+            'FocushoMe analysis available',
+          description:
+            'This closed month contains enough data to reveal or reassess your FocushoMe.',
+        },
+      },
     },
 
     weeklyReport: {
@@ -812,6 +832,151 @@ const en = {
       },
     },
 
+    symbols: {
+      title: 'The twelve FocushoMes',
+      subtitle:
+        'Tap a symbol to discover the identity, strength, and balance point of each FocushoMe.',
+      tap: 'Discover',
+      open: 'Discover the {{name}} FocushoMe',
+      close: 'Close',
+      strength: 'Core strength',
+      balance: 'Balance point',
+
+      items: {
+        aster: {
+          essence:
+            'The vision that comes before the path.',
+          description:
+            'Aster belongs to those who see possibilities before turning them into action. Goals, ideas, and plans emerge naturally, creating a broad view of what could still be built.',
+          strength:
+            'Imagining possible futures, establishing direction, and giving meaning to work before it begins.',
+          balance:
+            'Choosing which possibilities truly deserve progress so new horizons do not hide paths already opened.',
+        },
+
+        atlas: {
+          essence:
+            'Depth to sustain meaningful journeys.',
+          description:
+            'Atlas concentrates energy on important projects and remains with them for long periods. Instead of spreading focus across many fronts, it carries and develops what matters.',
+          strength:
+            'Building depth, mastery, and many hours of attention around goals that require continuity.',
+          balance:
+            'Recognizing when a responsibility has become too heavy and when sharing the path may strengthen the result.',
+        },
+
+        forge: {
+          essence:
+            'Intention transformed into results.',
+          description:
+            'Forge finds satisfaction in completion. Closed tasks, advancing projects, and achieved goals fuel someone who turns planning into something concrete.',
+          strength:
+            'Finishing, resolving open loops, and converting effort into outcomes that can be seen and recognized.',
+          balance:
+            'Not turning every experience into an obligation to produce; some ideas need space before entering the fire.',
+        },
+
+        pulse: {
+          essence:
+            'Fast movement that keeps the day alive.',
+          description:
+            'Pulse works through short and frequent impulses. Small tasks, quick responses, and immediate decisions create a constant sense of progress.',
+          strength:
+            'Unblocking everyday life, reducing small pending items, and responding quickly to what needs attention now.',
+          balance:
+            'Reserving longer periods for work that offers no immediate reward but builds deeper results.',
+        },
+
+        loom: {
+          essence:
+            'Different threads forming one story.',
+          description:
+            'Loom connects tasks, projects, goals, and focus sessions. Its pattern does not depend on a single tool: every part of Focus contributes to a larger structure.',
+          strength:
+            'Integrating planning and execution while keeping different areas connected without losing the whole.',
+          balance:
+            'Avoiding structures that become more complex than the decisions they were meant to support.',
+        },
+
+        orbit: {
+          essence:
+            'Consistency that creates its own center.',
+          description:
+            'Orbit returns to focus through recognizable times and cycles. Its power lies less in dramatic peaks and more in returning to the same axis regularly.',
+          strength:
+            'Turning focus into a reliable routine and reducing dependence on temporary motivation.',
+          balance:
+            'Allowing change when a routine no longer serves, without treating adaptation as lost discipline.',
+        },
+
+        tide: {
+          essence:
+            'Adaptation without losing direction.',
+          description:
+            'Tide changes intensity, timing, and strategy according to context. Its rhythm may vary, but intelligence exists in how it responds to current conditions.',
+          strength:
+            'Reorganizing priorities, finding new productivity windows, and continuing when the original plan fails.',
+          balance:
+            'Creating stable reference points so adaptation does not become permanent dispersion.',
+        },
+
+        ember: {
+          essence:
+            'An intensity that remains lit within.',
+          description:
+            'Ember may not produce the largest visible volume, but it sustains deep and quiet attention. Its eye represents awareness: observing before acting and protecting essential energy.',
+          strength:
+            'Maintaining inner concentration, noticing detail, and preserving motivation through quieter periods.',
+          balance:
+            'Allowing internal work to become visible by sharing progress and recognizing personal achievements.',
+        },
+
+        nova: {
+          essence:
+            'The energy that opens new paths.',
+          description:
+            'Nova appears where projects, tasks, and possibilities begin intensely. It finds excitement in experimenting, initiating, and creating movement.',
+          strength:
+            'Taking the first step, generating momentum, and turning a still idea into something that has begun to exist.',
+          balance:
+            'Maintaining energy after the initial brightness and choosing which beginnings deserve completion.',
+        },
+
+        prism: {
+          essence:
+            'Many forms of focus moving through one person.',
+          description:
+            'Prism distributes attention across categories, projects, times, and ways of working. Its identity comes from variety and seeing through multiple angles.',
+          strength:
+            'Combining perspectives, alternating skills, and finding solutions that uniform routines might never reveal.',
+          balance:
+            'Creating priority among many possibilities so variety does not become fragmentation.',
+        },
+
+        vanguard: {
+          essence:
+            'Firm presence before what cannot wait.',
+          description:
+            'Vanguard responds strongly when priority, urgency, or responsibility is clear. Pressure does not paralyze it; pressure organizes the field.',
+          strength:
+            'Making decisions, protecting what matters, and advancing when situations demand quick response and direction.',
+          balance:
+            'Not depending only on urgency to act and giving energy to important work before it becomes an emergency.',
+        },
+
+        verdant: {
+          essence:
+            'Patient growth that becomes lasting.',
+          description:
+            'Verdant cultivates goals and projects over time. Small advances may seem quiet alone, but they form deep roots when viewed across a full month.',
+          strength:
+            'Building sustainable results, respecting long processes, and continuing when progress is not immediately visible.',
+          balance:
+            'Celebrating intermediate stages so distance from the final result does not hide everything already grown.',
+        },
+      },
+    },
+
     privacy: {
       title:
         'Your routine remains yours',
@@ -841,6 +1006,15 @@ const en = {
     title: 'Report history',
     subtitle:
       'Revisit your weeks, months, and the evolution of your routine.',
+    filterLabel: 'Filter reports',
+    error:
+      'Your report history could not be loaded.',
+    sessions: 'sessions',
+    tasks: 'tasks completed',
+    types: {
+      weekly: 'Weekly',
+      monthly: 'Monthly',
+    },
     filters: {
       all: 'All',
       weekly: 'Weekly',
@@ -854,6 +1028,32 @@ const en = {
       schedule:
         'Weeks close on Monday',
     },
+  },
+
+  focusMeReportPage: {
+    back: 'Back to history',
+    error:
+      'This report was not found or could not be loaded.',
+    types: {
+      weekly: 'Weekly retrospective',
+      monthly: 'Monthly retrospective',
+    },
+    preserved:
+      'Closed and preserved report',
+    focusTime: 'Focus time',
+    sessions: 'Sessions',
+    activeDays: 'Active days',
+    tasksCompleted: 'Tasks completed',
+    dailyEvolution: 'Daily evolution',
+    weeklyEvolution: 'Weekly evolution',
+    week: 'W{{number}}',
+    noFocus:
+      'No focus session was completed during this period.',
+    tasks: 'Tasks completed / created',
+    projects: 'Projects completed / created',
+    goals: 'Goals completed / created',
+    topProject: 'Highlighted project',
+    yourStory: 'The story of your period',
   },
 
   changesPage: {
