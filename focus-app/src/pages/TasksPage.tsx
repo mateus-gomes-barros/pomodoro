@@ -115,6 +115,16 @@ export function TasksPage() {
     setCategoryFilter,
   ] = useState<CategoryFilter>('all')
 
+  const selectableProjects =
+    projects.filter(
+      (project) =>
+        project.status === 'active' ||
+        (
+          editingTaskId !== null &&
+          project.id === projectId
+        ),
+    )
+
   const isCreating =
     createTaskMutation.isPending
   const isEditing =
@@ -795,7 +805,7 @@ export function TasksPage() {
                 )}
               </option>
 
-              {projects.map((project) => (
+              {selectableProjects.map((project) => (
                 <option
                   key={project.id}
                   value={project.id}

@@ -5,10 +5,12 @@ import {
   motion,
 } from 'framer-motion'
 import {
+  CheckCircle2,
   LoaderCircle,
   Palette,
   Pencil,
   Plus,
+  RotateCcw,
   Timer,
   Trash2,
 } from 'lucide-react'
@@ -17,6 +19,7 @@ import {
   useCreateProject,
   useDeleteProject,
   useProjects,
+  useToggleProjectStatus,
   useUpdateProject,
 } from '@/hooks/projects/useProjects'
 
@@ -36,6 +39,7 @@ import {
 
 import type {
   Project,
+  ProjectStatus,
 } from '../types'
 
 interface ProjectForm {
@@ -52,6 +56,14 @@ const EMPTY_FORM: ProjectForm = {
   emoji: PROJECT_EMOJIS[0],
 }
 
+const STATUS_FILTERS: Array<
+  ProjectStatus | 'all'
+> = [
+  'active',
+  'completed',
+  'all',
+]
+
 export function ProjectsPage() {
   const { t } = useTranslation()
 
@@ -67,6 +79,9 @@ export function ProjectsPage() {
 
   const updateProjectMutation =
     useUpdateProject()
+
+  const toggleProjectStatusMutation =
+    useToggleProjectStatus()
 
   const deleteProjectMutation =
     useDeleteProject()
@@ -96,6 +111,28 @@ export function ProjectsPage() {
   ] = useState<ProjectForm>(
     EMPTY_FORM,
   )
+
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<
+    ProjectStatus | 'all'
+  >('active')
+
+  const activeProjectsCount =
+    projects.filter(
+      (project) =>
+        project.status === 'active',
+    ).length
+
+  const visibleProjects =
+    statusFilter === 'all'
+      ? projects
+      : projects.filter(
+          (project) =>
+            project.status ===
+            statusFilter,
+        )
 
   const isSaving =
     createProjectMutation.isPending ||
@@ -176,6 +213,21 @@ export function ProjectsPage() {
     }
   }
 
+  async function handleToggleStatus(
+    project: Project,
+  ) {
+    try {
+      await toggleProjectStatusMutation.mutateAsync(
+        project,
+      )
+    } catch (mutationError) {
+      console.error(
+        'Failed to update project status:',
+        mutationError,
+      )
+    }
+  }
+
   async function handleDelete() {
     if (
       !deleteConfirmId ||
@@ -243,7 +295,7 @@ export function ProjectsPage() {
           'projectsPage.active',
           {
             count:
-              projects.length,
+              activeProjectsCount,
           },
         )}
         action={
@@ -261,14 +313,62 @@ export function ProjectsPage() {
         }
       />
 
+      <div
+        className="card mb-5 grid grid-cols-3 gap-1 p-1"
+        role="group"
+        aria-label={t(
+          'projectsPage.filters.label',
+        )}
+      >
+        {STATUS_FILTERS.map(
+          (filter) => (
+            <button
+              key={filter}
+              type="button"
+              onClick={() =>
+                setStatusFilter(filter)
+              }
+              className={cn(
+                'rounded-xl px-3 py-2.5 text-xs font-medium transition',
+                statusFilter === filter
+                  ? 'bg-white/[0.08] text-accent-white'
+                  : 'text-accent-subtle hover:text-accent-white',
+              )}
+            >
+              {t(
+                `projectsPage.filters.${filter}`,
+              )}
+            </button>
+          ),
+        )}
+      </div>
+
+      {toggleProjectStatusMutation.isError && (
+        <div className="card mb-4 p-4">
+          <p className="text-sm text-red-400">
+            {t(
+              'projectsPage.statusUpdateError',
+            )}
+          </p>
+        </div>
+      )}
+
       {projects.length === 0 ? (
         <EmptyState
           onAdd={openCreate}
         />
+      ) : visibleProjects.length === 0 ? (
+        <div className="card p-10 text-center">
+          <p className="text-sm text-accent-subtle">
+            {t(
+              'projectsPage.filters.empty',
+            )}
+          </p>
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence>
-            {projects.map(
+            {visibleProjects.map(
               (
                 project,
                 index,
@@ -277,6 +377,17 @@ export function ProjectsPage() {
                   key={project.id}
                   project={project}
                   index={index}
+                  isToggling={
+                    toggleProjectStatusMutation.isPending &&
+                    toggleProjectStatusMutation.variables
+                      ?.id ===
+                      project.id
+                  }
+                  onToggle={() => {
+                    void handleToggleStatus(
+                      project,
+                    )
+                  }}
                   onEdit={() =>
                     openEdit(project)
                   }
@@ -635,6 +746,8 @@ export function ProjectsPage() {
 interface ProjectCardProps {
   project: Project
   index: number
+  isToggling: boolean
+  onToggle: () => void
   onEdit: () => void
   onDelete: () => void
 }
@@ -642,10 +755,32 @@ interface ProjectCardProps {
 function ProjectCard({
   project,
   index,
+  isToggling,
+  onToggle,
   onEdit,
   onDelete,
 }: ProjectCardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } =
+    useTranslation()
+
+  const isCompleted =
+    project.status === 'completed'
+
+  const completedDate =
+    project.completedAt
+      ? new Intl.DateTimeFormat(
+          i18n.language,
+          {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          },
+        ).format(
+          new Date(
+            project.completedAt,
+          ),
+        )
+      : null
 
   return (
     <motion.div
@@ -664,10 +799,14 @@ function ProjectCard({
       transition={{
         delay: index * 0.06,
       }}
-      className="card p-5"
+      className={cn(
+        'card p-5 transition',
+        isCompleted &&
+          'border-accent-green/20',
+      )}
     >
-      <div className="flex justify-between">
-        <div>
+      <div className="flex justify-between gap-4">
+        <div className="min-w-0">
           <div
             className="flex h-12 w-12 items-center justify-center rounded-2xl text-2xl"
             style={{
@@ -677,27 +816,79 @@ function ProjectCard({
             {project.emoji}
           </div>
 
-          <h3 className="mt-3 font-semibold text-accent-white">
-            {project.name}
-          </h3>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <h3 className="break-words font-semibold text-accent-white">
+              {project.name}
+            </h3>
+
+            {isCompleted && (
+              <span className="rounded-full border border-accent-green/30 bg-accent-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-green">
+                {t(
+                  'projectsPage.card.completed',
+                )}
+              </span>
+            )}
+          </div>
 
           {project.description && (
-            <p className="text-sm text-accent-subtle">
-              {
-                project.description
-              }
+            <p className="mt-1 break-words text-sm text-accent-subtle">
+              {project.description}
+            </p>
+          )}
+
+          {completedDate && (
+            <p className="mt-2 text-[11px] text-accent-green/80">
+              {t(
+                'projectsPage.card.completedOn',
+                {
+                  date:
+                    completedDate,
+                },
+              )}
             </p>
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-3 text-accent-subtle">
+          <button
+            type="button"
+            onClick={onToggle}
+            disabled={isToggling}
+            aria-label={t(
+              isCompleted
+                ? 'projectsPage.card.reopen'
+                : 'projectsPage.card.complete',
+              {
+                name: project.name,
+              },
+            )}
+            className="transition hover:text-accent-green disabled:opacity-40"
+          >
+            {isToggling ? (
+              <LoaderCircle
+                size={15}
+                className="animate-spin"
+              />
+            ) : isCompleted ? (
+              <RotateCcw size={15} />
+            ) : (
+              <CheckCircle2
+                size={15}
+              />
+            )}
+          </button>
+
           <button
             type="button"
             onClick={onEdit}
+            disabled={isToggling}
             aria-label={t(
               'projectsPage.card.edit',
-              { name: project.name },
+              {
+                name: project.name,
+              },
             )}
+            className="transition hover:text-accent-white disabled:opacity-40"
           >
             <Pencil size={15} />
           </button>
@@ -705,10 +896,14 @@ function ProjectCard({
           <button
             type="button"
             onClick={onDelete}
+            disabled={isToggling}
             aria-label={t(
               'projectsPage.card.delete',
-              { name: project.name },
+              {
+                name: project.name,
+              },
             )}
+            className="transition hover:text-red-400 disabled:opacity-40"
           >
             <Trash2 size={15} />
           </button>

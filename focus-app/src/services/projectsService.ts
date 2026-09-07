@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase'
 
-import type { Project } from '@/types'
+import type {
+  Project,
+  ProjectStatus,
+} from '@/types'
 
 interface ProjectRow {
   id: string
@@ -11,6 +14,8 @@ interface ProjectRow {
   total_sessions: number
   completed_sessions: number
   total_focus_minutes: number
+  status: ProjectStatus
+  completed_at: string | null
   created_at: string
   updated_at: string
 }
@@ -30,6 +35,8 @@ export interface UpdateProjectInput {
   totalSessions?: number
   completedSessions?: number
   totalFocusMinutes?: number
+  status?: ProjectStatus
+  completedAt?: string
 }
 
 const PROJECT_SELECT = `
@@ -41,6 +48,8 @@ const PROJECT_SELECT = `
   total_sessions,
   completed_sessions,
   total_focus_minutes,
+  status,
+  completed_at,
   created_at,
   updated_at
 `
@@ -51,14 +60,20 @@ function mapProjectRow(
   return {
     id: row.id,
     name: row.name,
-    description: row.description ?? '',
-    color: row.color ?? '#10b981',
+    description:
+      row.description ?? '',
+    color:
+      row.color ?? '#10b981',
     emoji: row.emoji,
-    totalSessions: row.total_sessions,
+    totalSessions:
+      row.total_sessions,
     completedSessions:
       row.completed_sessions,
     totalFocusMinutes:
       row.total_focus_minutes,
+    status: row.status,
+    completedAt:
+      row.completed_at ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -107,9 +122,12 @@ export async function createProject(
       user_id: user.id,
       name: input.name.trim(),
       description:
-        input.description.trim() || null,
+        input.description.trim() ||
+        null,
       color: input.color,
       emoji: input.emoji,
+      status: 'active',
+      completed_at: null,
     })
     .select(PROJECT_SELECT)
     .single()
@@ -118,22 +136,30 @@ export async function createProject(
     throw error
   }
 
-  return mapProjectRow(data as ProjectRow)
+  return mapProjectRow(
+    data as ProjectRow,
+  )
 }
 
 export async function updateProject(
   projectId: string,
   input: UpdateProjectInput,
 ): Promise<Project> {
-  const updates: Record<string, unknown> = {}
+  const updates: Record<
+    string,
+    unknown
+  > = {}
 
   if (input.name !== undefined) {
     updates.name = input.name.trim()
   }
 
-  if (input.description !== undefined) {
+  if (
+    input.description !== undefined
+  ) {
     updates.description =
-      input.description.trim() || null
+      input.description.trim() ||
+      null
   }
 
   if (input.color !== undefined) {
@@ -144,23 +170,38 @@ export async function updateProject(
     updates.emoji = input.emoji
   }
 
-  if (input.totalSessions !== undefined) {
+  if (
+    input.totalSessions !== undefined
+  ) {
     updates.total_sessions =
       input.totalSessions
   }
 
   if (
-    input.completedSessions !== undefined
+    input.completedSessions !==
+    undefined
   ) {
     updates.completed_sessions =
       input.completedSessions
   }
 
   if (
-    input.totalFocusMinutes !== undefined
+    input.totalFocusMinutes !==
+    undefined
   ) {
     updates.total_focus_minutes =
       input.totalFocusMinutes
+  }
+
+  if (input.status !== undefined) {
+    updates.status = input.status
+  }
+
+  if (
+    input.completedAt !== undefined
+  ) {
+    updates.completed_at =
+      input.completedAt || null
   }
 
   updates.updated_at =
@@ -177,7 +218,36 @@ export async function updateProject(
     throw error
   }
 
-  return mapProjectRow(data as ProjectRow)
+  return mapProjectRow(
+    data as ProjectRow,
+  )
+}
+
+export async function completeProject(
+  projectId: string,
+): Promise<Project> {
+  return updateProject(projectId, {
+    status: 'completed',
+    completedAt:
+      new Date().toISOString(),
+  })
+}
+
+export async function reopenProject(
+  projectId: string,
+): Promise<Project> {
+  return updateProject(projectId, {
+    status: 'active',
+    completedAt: '',
+  })
+}
+
+export async function toggleProjectStatus(
+  project: Project,
+): Promise<Project> {
+  return project.status === 'completed'
+    ? reopenProject(project.id)
+    : completeProject(project.id)
 }
 
 export async function deleteProject(
@@ -203,6 +273,7 @@ export async function incrementProjectSession(
     completedSessions:
       project.completedSessions + 1,
     totalFocusMinutes:
-      project.totalFocusMinutes + minutes,
+      project.totalFocusMinutes +
+      minutes,
   })
 }

@@ -336,6 +336,18 @@ const en = {
     active_one: '{{count}} active project',
     active_other: '{{count}} active projects',
 
+    statusUpdateError:
+      'Unable to update the project status.',
+
+    filters: {
+      label: 'Filter projects',
+      active: 'Active',
+      completed: 'Completed',
+      all: 'All',
+      empty:
+        'No projects match the selected filter.',
+    },
+
     newProject: 'New Project',
     editProject: 'Edit Project',
     createProject: 'Create Project',

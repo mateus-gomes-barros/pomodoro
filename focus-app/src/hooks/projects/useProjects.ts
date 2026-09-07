@@ -7,6 +7,7 @@ import {
   deleteProject,
   getProjects,
   incrementProjectSession,
+  toggleProjectStatus,
   updateProject,
   type CreateProjectInput,
   type UpdateProjectInput,
@@ -48,6 +49,18 @@ export function useUpdateProject() {
         input,
       }: UpdateProjectVariables) =>
         updateProject(projectId, input),
+    },
+  )
+}
+
+export function useToggleProjectStatus() {
+  return useInvalidateQuery(
+    projectsQueryKey,
+    {
+      mutationFn: (
+        project: Project,
+      ) =>
+        toggleProjectStatus(project),
     },
   )
 }

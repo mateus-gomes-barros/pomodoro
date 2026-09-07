@@ -344,6 +344,18 @@ const ptBR = {
     active_one: '{{count}} projeto ativo',
     active_other: '{{count}} projetos ativos',
 
+    statusUpdateError:
+      'Não foi possível atualizar o estado do projeto.',
+
+    filters: {
+      label: 'Filtrar projetos',
+      active: 'Ativos',
+      completed: 'Concluídos',
+      all: 'Todos',
+      empty:
+        'Nenhum projeto corresponde ao filtro selecionado.',
+    },
+
     newProject: 'Novo projeto',
     editProject: 'Editar projeto',
     createProject: 'Criar projeto',

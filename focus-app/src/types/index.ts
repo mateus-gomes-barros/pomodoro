@@ -11,6 +11,10 @@ export type TaskCategory =
 
 // ─── Project ────────────────────────────────────────────────────────────────────
 
+export type ProjectStatus =
+  | 'active'
+  | 'completed'
+
 export interface Project {
   id: string
   name: string
@@ -20,6 +24,8 @@ export interface Project {
   totalSessions: number
   completedSessions: number
   totalFocusMinutes: number
+  status: ProjectStatus
+  completedAt?: string
   createdAt: string
   updatedAt: string
 }
