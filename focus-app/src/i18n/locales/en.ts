@@ -686,6 +686,42 @@ const en = {
       'A new way to understand your focus journey.',
     coming: 'In development for Focus 4.0',
 
+    view: {
+      week: 'Week',
+      month: 'Month',
+      label: 'Report period',
+    },
+
+    monthlyReport: {
+      eyebrow: 'Your month so far',
+      description:
+        'See how your rhythm is taking shape before the monthly retrospective.',
+      error:
+        'This month’s data could not be prepared.',
+      focusTime: 'Focus time',
+      sessions: 'Sessions',
+      activeDays: 'Active days',
+      tasksCompleted: 'Tasks completed',
+      noComparison: 'No previous month',
+      weeklyEvolution: 'Weekly evolution',
+      week: 'W{{number}}',
+      noFocus:
+        'Weeks will appear as you complete sessions.',
+      timeDistribution: 'When your focus happens',
+      timeBlocks: {
+        morning: 'Morning',
+        afternoon: 'Afternoon',
+        evening: 'Evening',
+        late_night: 'Late night',
+      },
+      tasks: 'Tasks',
+      projects: 'Projects',
+      goals: 'Goals',
+      created: 'created',
+      completed: 'completed',
+      topProjects: 'Most focused projects',
+    },
+
     weeklyReport: {
       available: 'Available now',
       eyebrow: 'Your week so far',

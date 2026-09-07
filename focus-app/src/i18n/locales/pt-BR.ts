@@ -696,6 +696,42 @@ const ptBR = {
       'Uma nova forma de compreender sua jornada de foco.',
     coming: 'Em desenvolvimento no Focus 4.0',
 
+    view: {
+      week: 'Semana',
+      month: 'Mês',
+      label: 'Período do relatório',
+    },
+
+    monthlyReport: {
+      eyebrow: 'Seu mês até agora',
+      description:
+        'Acompanhe como seu ritmo está se formando antes da retrospectiva mensal.',
+      error:
+        'Não foi possível preparar os dados deste mês.',
+      focusTime: 'Tempo de foco',
+      sessions: 'Sessões',
+      activeDays: 'Dias ativos',
+      tasksCompleted: 'Tarefas concluídas',
+      noComparison: 'Sem mês anterior',
+      weeklyEvolution: 'Evolução por semana',
+      week: 'S{{number}}',
+      noFocus:
+        'As semanas aparecerão conforme você concluir sessões.',
+      timeDistribution: 'Quando seu foco acontece',
+      timeBlocks: {
+        morning: 'Manhã',
+        afternoon: 'Tarde',
+        evening: 'Noite',
+        late_night: 'Madrugada',
+      },
+      tasks: 'Tarefas',
+      projects: 'Projetos',
+      goals: 'Metas',
+      created: 'criadas',
+      completed: 'concluídos',
+      topProjects: 'Projetos com mais foco',
+    },
+
     weeklyReport: {
       available: 'Disponível agora',
       eyebrow: 'Sua semana até agora',

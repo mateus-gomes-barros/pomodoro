@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   CalendarDays,
@@ -18,6 +19,9 @@ import {
   useNavigate,
 } from 'react-router-dom'
 
+import {
+  FocusMeMonthlyPanel,
+} from '@/components/focusme/FocusMeMonthlyPanel'
 import {
   FocusMeIcon,
 } from '@/components/icons/FocusMeIcon'
@@ -53,6 +57,13 @@ export function FocusMePage() {
   } = useTranslation()
 
   const navigate = useNavigate()
+
+  const [
+    activeView,
+    setActiveView,
+  ] = useState<
+    'week' | 'month'
+  >('week')
 
   const reportQuery =
     useFocusMeWeeklyReport()
@@ -142,7 +153,38 @@ export function FocusMePage() {
         )}
       />
 
+      <div
+        className="card mb-5 grid grid-cols-2 gap-1 p-1"
+        role="group"
+        aria-label={t(
+          'focusMePage.view.label',
+        )}
+      >
+        {(['week', 'month'] as const).map(
+          (view) => (
+            <button
+              key={view}
+              type="button"
+              onClick={() =>
+                setActiveView(view)
+              }
+              className={
+                activeView === view
+                  ? 'rounded-xl bg-white/[0.08] px-3 py-2.5 text-xs font-semibold text-accent-green'
+                  : 'rounded-xl px-3 py-2.5 text-xs font-medium text-accent-subtle transition hover:text-accent-white'
+              }
+            >
+              {t(
+                `focusMePage.view.${view}`,
+              )}
+            </button>
+          ),
+        )}
+      </div>
+
       <div className="space-y-8">
+        {activeView === 'week' && (
+          <>
         <motion.section
           initial={{
             opacity: 0,
@@ -516,6 +558,13 @@ export function FocusMePage() {
               </div>
             </motion.article>
           </section>
+        )}
+
+          </>
+        )}
+
+        {activeView === 'month' && (
+          <FocusMeMonthlyPanel />
         )}
 
         <motion.button
