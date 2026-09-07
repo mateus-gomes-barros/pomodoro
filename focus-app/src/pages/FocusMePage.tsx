@@ -23,6 +23,9 @@ import {
   FocusMeMonthlyPanel,
 } from '@/components/focusme/FocusMeMonthlyPanel'
 import {
+  FocusMeWeeklyNarrativeCard,
+} from '@/components/focusme/FocusMeWeeklyNarrativeCard'
+import {
   FocusHomeIdentityHeader,
 } from '@/components/focusme/FocusHomeIdentityHeader'
 import {
@@ -561,6 +564,12 @@ export function FocusMePage() {
         )}
 
           </>
+        )}
+
+        {activeView === 'week' && report && (
+          <FocusMeWeeklyNarrativeCard
+            report={report}
+          />
         )}
 
         {activeView === 'month' && (

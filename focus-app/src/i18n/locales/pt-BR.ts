@@ -688,6 +688,48 @@ const ptBR = {
     sessionNumber: 'Sessão {{current}} de {{total}}',
   },
 
+  focusHomeRetest: {
+    title: 'Realizar novo teste de classe',
+    action: 'Realizar novo teste de classe',
+    back: 'Voltar para Sobre o FocusMe',
+    unavailable:
+      'Ainda não existe um novo relatório mensal elegível para esta análise.',
+    analyzing: 'Analisando...',
+    error:
+      'Não foi possível concluir o novo teste.',
+
+    states: {
+      loading:
+        'Verificando seus relatórios mensais...',
+      first:
+        'Sua primeira FocushoMe será revelada pela página principal quando houver um mês elegível.',
+      waiting:
+        'Um novo teste ficará disponível depois de outro mês completo com dados suficientes.',
+      available:
+        'Um novo relatório mensal está pronto. Você pode solicitar uma nova leitura da sua classe.',
+    },
+
+    confirm: {
+      title: 'Realizar uma nova leitura?',
+      description:
+        'O Focus utilizará somente o novo mês encerrado. O resultado pode confirmar sua identidade atual ou revelar outra FocushoMe.',
+      warning:
+        'Depois da análise, será necessário aguardar outro relatório mensal elegível para testar novamente.',
+    },
+
+    result: {
+      remained:
+        'Sua essência permaneceu',
+      remainedDescription:
+        'O novo mês trouxe outras nuances, mas sua estrutura principal continua pertencendo à mesma FocushoMe.',
+      changed:
+        'Uma nova identidade foi revelada',
+      changedDescription:
+        'Seu mês mais recente apresentou uma mudança profunda e consistente na maneira como você utiliza o Focus.',
+      finish: 'Continuar no FocusMe',
+    },
+  },
+
   focusHomeReveal: {
     back: 'Voltar ao FocusMe',
     unavailable:
@@ -878,6 +920,10 @@ const ptBR = {
       historyTitle: 'Histórico de relatórios',
       historyDescription:
         'Consulte suas retrospectivas semanais e mensais preservadas ao longo do tempo.',
+      narrativeTitle:
+        'A história da sua semana',
+      narrativeDescription:
+        'Uma leitura construída somente a partir das suas ações no Focus.',
     },
 
 
@@ -1158,6 +1204,10 @@ const ptBR = {
     goals: 'Metas concluídas / criadas',
     topProject: 'Projeto em destaque',
     yourStory: 'A história do seu período',
+    monthlyNarrativeTitle:
+      'A história do seu mês',
+    monthlyNarrativeDescription:
+      'Uma leitura editorial construída sem enviar nomes ou conteúdos pessoais.',
   },
 
   changesPage: {

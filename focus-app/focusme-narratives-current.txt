@@ -1,0 +1,5575 @@
+===== WEEKLY ENGINE =====
+import { supabase } from '@/lib/supabase'
+
+import type {
+  TaskCategory,
+} from '@/types'
+
+interface ActivityEventRow {
+  event_type: string
+  entity_id: string | null
+  occurred_at: string
+  local_date: string
+  local_hour: number
+  metadata: Record<string, unknown>
+}
+
+interface TaskMetricRow {
+  id: string
+  category: TaskCategory
+}
+
+interface ProjectMetricRow {
+  id: string
+  name: string
+  emoji: string
+  color: string | null
+}
+
+interface PomodoroMetricRow {
+  id: string
+  type:
+    | 'work'
+    | 'short_break'
+    | 'long_break'
+  project_id: string | null
+  duration_minutes: number
+  completed_at: string
+}
+
+export interface FocusMeDayMetric {
+  date: string
+  weekday: number
+  focusMinutes: number
+  sessions: number
+}
+
+export interface FocusMeCategoryMetric {
+  category: TaskCategory
+  created: number
+  completed: number
+}
+
+export interface FocusMeTopProject {
+  id: string
+  name: string
+  emoji: string
+  color: string
+  focusMinutes: number
+  sessions: number
+}
+
+export interface FocusMeWeeklyReport {
+  period: {
+    start: string
+    end: string
+  }
+
+  focus: {
+    totalMinutes: number
+    completedSessions: number
+    activeDays: number
+    averageMinutesPerActiveDay: number
+    bestDay: FocusMeDayMetric | null
+    leastFocusedActiveDay:
+      FocusMeDayMetric | null
+    days: FocusMeDayMetric[]
+    morningMinutes: number
+    afternoonMinutes: number
+    eveningMinutes: number
+    lateNightMinutes: number
+  }
+
+  tasks: {
+    created: number
+    completed: number
+    reopened: number
+    deleted: number
+    restored: number
+    categories:
+      FocusMeCategoryMetric[]
+  }
+
+  projects: {
+    created: number
+    completed: number
+    reopened: number
+    topProject:
+      FocusMeTopProject | null
+  }
+
+  goals: {
+    created: number
+    completed: number
+    reopened: number
+  }
+
+  rhythm: {
+    starts: number
+    pauses: number
+    resumes: number
+    abandoned: number
+    completionRate: number
+  }
+
+  activityEvents: number
+}
+
+const TASK_CATEGORIES:
+  TaskCategory[] = [
+    'quick',
+    'planned',
+    'urgent',
+    'long_term',
+  ]
+
+function pad(
+  value: number,
+): string {
+  return String(value).padStart(2, '0')
+}
+
+function toLocalDate(
+  date: Date,
+): string {
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join('-')
+}
+
+function getWeekRange(
+  referenceDate = new Date(),
+) {
+  const start =
+    new Date(referenceDate)
+
+  start.setHours(0, 0, 0, 0)
+
+  const daysSinceMonday =
+    (start.getDay() + 6) % 7
+
+  start.setDate(
+    start.getDate() -
+      daysSinceMonday,
+  )
+
+  const end = new Date(start)
+  end.setDate(end.getDate() + 7)
+
+  return {
+    start,
+    end,
+    startDate:
+      toLocalDate(start),
+    endDate: toLocalDate(end),
+  }
+}
+
+function countEvent(
+  events: ActivityEventRow[],
+  eventType: string,
+): number {
+  return events.filter(
+    (event) =>
+      event.event_type === eventType,
+  ).length
+}
+
+function getEventMetadataString(
+  event: ActivityEventRow,
+  key: string,
+): string | null {
+  const value =
+    event.metadata[key]
+
+  return typeof value === 'string'
+    ? value
+    : null
+}
+
+function mergeEntityCategories(
+  rows: TaskMetricRow[],
+  events: ActivityEventRow[],
+  eventType: string,
+): Map<string, TaskCategory> {
+  const result = new Map<
+    string,
+    TaskCategory
+  >()
+
+  rows.forEach((row) => {
+    result.set(row.id, row.category)
+  })
+
+  events
+    .filter(
+      (event) =>
+        event.event_type ===
+          eventType &&
+        event.entity_id,
+    )
+    .forEach((event) => {
+      const category =
+        getEventMetadataString(
+          event,
+          'category',
+        )
+
+      if (
+        category &&
+        TASK_CATEGORIES.includes(
+          category as TaskCategory,
+        )
+      ) {
+        result.set(
+          event.entity_id as string,
+          category as TaskCategory,
+        )
+      }
+    })
+
+  return result
+}
+
+export async function getFocusMeWeeklyReport(
+  referenceDate = new Date(),
+): Promise<FocusMeWeeklyReport> {
+  const {
+    start,
+    end,
+    startDate,
+    endDate,
+  } = getWeekRange(referenceDate)
+
+  const startIso =
+    start.toISOString()
+  const endIso =
+    end.toISOString()
+
+  const [
+    eventsResult,
+    sessionsResult,
+    createdTasksResult,
+    completedTasksResult,
+    createdProjectsResult,
+    completedProjectsResult,
+    projectsResult,
+    createdGoalsResult,
+    completedGoalsResult,
+  ] = await Promise.all([
+    supabase
+      .from('activity_events')
+      .select(`
+        event_type,
+        entity_id,
+        occurred_at,
+        local_date,
+        local_hour,
+        metadata
+      `)
+      .gte('occurred_at', startIso)
+      .lt('occurred_at', endIso)
+      .order('occurred_at', {
+        ascending: true,
+      })
+      .limit(5000),
+
+    supabase
+      .from('pomodoro_sessions')
+      .select(`
+        id,
+        type,
+        project_id,
+        duration_minutes,
+        completed_at
+      `)
+      .gte('completed_at', startIso)
+      .lt('completed_at', endIso)
+      .order('completed_at', {
+        ascending: true,
+      }),
+
+    supabase
+      .from('tasks')
+      .select('id, category')
+      .gte('created_at', startIso)
+      .lt('created_at', endIso),
+
+    supabase
+      .from('tasks')
+      .select('id, category')
+      .gte('completed_at', startIso)
+      .lt('completed_at', endIso),
+
+    supabase
+      .from('projects')
+      .select('id')
+      .gte('created_at', startIso)
+      .lt('created_at', endIso),
+
+    supabase
+      .from('projects')
+      .select('id')
+      .gte('completed_at', startIso)
+      .lt('completed_at', endIso),
+
+    supabase
+      .from('projects')
+      .select(`
+        id,
+        name,
+        emoji,
+        color
+      `),
+
+    supabase
+      .from('goals')
+      .select('id')
+      .gte('created_at', startIso)
+      .lt('created_at', endIso),
+
+    supabase
+      .from('goals')
+      .select('id')
+      .gte('completed_at', startIso)
+      .lt('completed_at', endIso),
+  ])
+
+  const results = [
+    eventsResult,
+    sessionsResult,
+    createdTasksResult,
+    completedTasksResult,
+    createdProjectsResult,
+    completedProjectsResult,
+    projectsResult,
+    createdGoalsResult,
+    completedGoalsResult,
+  ]
+
+  const failedResult =
+    results.find(
+      (result) => result.error,
+    )
+
+  if (failedResult?.error) {
+    throw failedResult.error
+  }
+
+  const events =
+    (eventsResult.data ??
+      []) as ActivityEventRow[]
+
+  const sessions =
+    (sessionsResult.data ??
+      []) as PomodoroMetricRow[]
+
+  const createdTasks =
+    (createdTasksResult.data ??
+      []) as TaskMetricRow[]
+
+  const completedTasks =
+    (completedTasksResult.data ??
+      []) as TaskMetricRow[]
+
+  const projects =
+    (projectsResult.data ??
+      []) as ProjectMetricRow[]
+
+  const workSessions =
+    sessions.filter(
+      (session) =>
+        session.type === 'work',
+    )
+
+  const completionEvents =
+    new Map(
+      events
+        .filter(
+          (event) =>
+            event.event_type ===
+              'pomodoro_completed' &&
+            event.entity_id,
+        )
+        .map((event) => [
+          event.entity_id as string,
+          event,
+        ]),
+    )
+
+  const dayMap = new Map<
+    string,
+    FocusMeDayMetric
+  >()
+
+  for (
+    let index = 0;
+    index < 7;
+    index += 1
+  ) {
+    const date = new Date(start)
+    date.setDate(
+      start.getDate() + index,
+    )
+
+    const localDate =
+      toLocalDate(date)
+
+    dayMap.set(localDate, {
+      date: localDate,
+      weekday: date.getDay(),
+      focusMinutes: 0,
+      sessions: 0,
+    })
+  }
+
+  let morningMinutes = 0
+  let afternoonMinutes = 0
+  let eveningMinutes = 0
+  let lateNightMinutes = 0
+
+  const projectTotals = new Map<
+    string,
+    {
+      focusMinutes: number
+      sessions: number
+    }
+  >()
+
+  workSessions.forEach((session) => {
+    const event =
+      completionEvents.get(session.id)
+
+    const completedDate =
+      new Date(session.completed_at)
+
+    const localDate =
+      event?.local_date ??
+      toLocalDate(completedDate)
+
+    const localHour =
+      event?.local_hour ??
+      completedDate.getHours()
+
+    const day =
+      dayMap.get(localDate)
+
+    if (day) {
+      day.focusMinutes +=
+        session.duration_minutes
+      day.sessions += 1
+    }
+
+    if (
+      localHour >= 5 &&
+      localHour < 12
+    ) {
+      morningMinutes +=
+        session.duration_minutes
+    } else if (
+      localHour >= 12 &&
+      localHour < 18
+    ) {
+      afternoonMinutes +=
+        session.duration_minutes
+    } else if (
+      localHour >= 18 &&
+      localHour < 23
+    ) {
+      eveningMinutes +=
+        session.duration_minutes
+    } else {
+      lateNightMinutes +=
+        session.duration_minutes
+    }
+
+    if (session.project_id) {
+      const current =
+        projectTotals.get(
+          session.project_id,
+        ) ?? {
+          focusMinutes: 0,
+          sessions: 0,
+        }
+
+      current.focusMinutes +=
+        session.duration_minutes
+      current.sessions += 1
+
+      projectTotals.set(
+        session.project_id,
+        current,
+      )
+    }
+  })
+
+  const days = [
+    ...dayMap.values(),
+  ]
+
+  const activeDays =
+    days.filter(
+      (day) => day.focusMinutes > 0,
+    )
+
+  const bestDay =
+    activeDays.length > 0
+      ? [...activeDays].sort(
+          (first, second) =>
+            second.focusMinutes -
+            first.focusMinutes,
+        )[0]
+      : null
+
+  const leastFocusedActiveDay =
+    activeDays.length > 0
+      ? [...activeDays].sort(
+          (first, second) =>
+            first.focusMinutes -
+            second.focusMinutes,
+        )[0]
+      : null
+
+  const totalMinutes =
+    workSessions.reduce(
+      (total, session) =>
+        total +
+        session.duration_minutes,
+      0,
+    )
+
+  const createdCategoryMap =
+    mergeEntityCategories(
+      createdTasks,
+      events,
+      'task_created',
+    )
+
+  const completedCategoryMap =
+    mergeEntityCategories(
+      completedTasks,
+      events,
+      'task_completed',
+    )
+
+  const categories =
+    TASK_CATEGORIES.map(
+      (category) => ({
+        category,
+        created: [
+          ...createdCategoryMap.values(),
+        ].filter(
+          (value) =>
+            value === category,
+        ).length,
+        completed: [
+          ...completedCategoryMap.values(),
+        ].filter(
+          (value) =>
+            value === category,
+        ).length,
+      }),
+    )
+
+  const createdProjectIds =
+    new Set(
+      (
+        createdProjectsResult.data ??
+        []
+      ).map((project) => project.id),
+    )
+
+  const completedProjectIds =
+    new Set(
+      (
+        completedProjectsResult.data ??
+        []
+      ).map((project) => project.id),
+    )
+
+  const createdGoalIds =
+    new Set(
+      (
+        createdGoalsResult.data ??
+        []
+      ).map((goal) => goal.id),
+    )
+
+  const completedGoalIds =
+    new Set(
+      (
+        completedGoalsResult.data ??
+        []
+      ).map((goal) => goal.id),
+    )
+
+  events.forEach((event) => {
+    if (!event.entity_id) {
+      return
+    }
+
+    if (
+      event.event_type ===
+      'project_created'
+    ) {
+      createdProjectIds.add(
+        event.entity_id,
+      )
+    }
+
+    if (
+      event.event_type ===
+      'project_completed'
+    ) {
+      completedProjectIds.add(
+        event.entity_id,
+      )
+    }
+
+    if (
+      event.event_type ===
+      'goal_created'
+    ) {
+      createdGoalIds.add(
+        event.entity_id,
+      )
+    }
+
+    if (
+      event.event_type ===
+      'goal_completed'
+    ) {
+      completedGoalIds.add(
+        event.entity_id,
+      )
+    }
+  })
+
+  const rankedProjects = [
+    ...projectTotals.entries(),
+  ].sort(
+    (first, second) =>
+      second[1].focusMinutes -
+      first[1].focusMinutes,
+  )
+
+  let topProject:
+    FocusMeTopProject | null = null
+
+  const topProjectEntry =
+    rankedProjects[0]
+
+  if (topProjectEntry) {
+    const [
+      projectId,
+      totals,
+    ] = topProjectEntry
+
+    const project =
+      projects.find(
+        (item) =>
+          item.id === projectId,
+      )
+
+    if (project) {
+      topProject = {
+        id: project.id,
+        name: project.name,
+        emoji: project.emoji,
+        color:
+          project.color ??
+          '#10b981',
+        focusMinutes:
+          totals.focusMinutes,
+        sessions:
+          totals.sessions,
+      }
+    }
+  }
+
+  const starts = countEvent(
+    events,
+    'pomodoro_started',
+  )
+
+  const completedSessions =
+    workSessions.length
+
+  return {
+    period: {
+      start: startDate,
+      end: endDate,
+    },
+
+    focus: {
+      totalMinutes,
+      completedSessions,
+      activeDays:
+        activeDays.length,
+      averageMinutesPerActiveDay:
+        activeDays.length > 0
+          ? Math.round(
+              totalMinutes /
+                activeDays.length,
+            )
+          : 0,
+      bestDay,
+      leastFocusedActiveDay,
+      days,
+      morningMinutes,
+      afternoonMinutes,
+      eveningMinutes,
+      lateNightMinutes,
+    },
+
+    tasks: {
+      created:
+        createdCategoryMap.size,
+      completed:
+        completedCategoryMap.size,
+      reopened: countEvent(
+        events,
+        'task_reopened',
+      ),
+      deleted: countEvent(
+        events,
+        'task_deleted',
+      ),
+      restored: countEvent(
+        events,
+        'task_restored',
+      ),
+      categories,
+    },
+
+    projects: {
+      created:
+        createdProjectIds.size,
+      completed:
+        completedProjectIds.size,
+      reopened: countEvent(
+        events,
+        'project_reopened',
+      ),
+      topProject,
+    },
+
+    goals: {
+      created:
+        createdGoalIds.size,
+      completed:
+        completedGoalIds.size,
+      reopened: countEvent(
+        events,
+        'goal_reopened',
+      ),
+    },
+
+    rhythm: {
+      starts,
+      pauses: countEvent(
+        events,
+        'pomodoro_paused',
+      ),
+      resumes: countEvent(
+        events,
+        'pomodoro_resumed',
+      ),
+      abandoned: countEvent(
+        events,
+        'pomodoro_abandoned',
+      ),
+      completionRate:
+        starts > 0
+          ? Math.min(
+              100,
+              Math.round(
+                (
+                  completedSessions /
+                  starts
+                ) * 100,
+              ),
+            )
+          : 0,
+    },
+
+    activityEvents:
+      events.length,
+  }
+}
+===== MONTHLY ENGINE =====
+import { supabase } from '@/lib/supabase'
+
+import type {
+  TaskCategory,
+} from '@/types'
+
+export type TimeBlock =
+  | 'morning'
+  | 'afternoon'
+  | 'evening'
+  | 'late_night'
+
+interface ActivityEventRow {
+  event_type: string
+  entity_id: string | null
+  occurred_at: string
+  local_date: string
+  local_hour: number
+  metadata: Record<string, unknown>
+}
+
+interface SessionRow {
+  id: string
+  type:
+    | 'work'
+    | 'short_break'
+    | 'long_break'
+  project_id: string | null
+  duration_minutes: number
+  completed_at: string
+}
+
+interface TaskCreatedRow {
+  id: string
+  category: TaskCategory
+  created_at: string
+}
+
+interface TaskCompletedRow {
+  id: string
+  category: TaskCategory
+  completed_at: string
+}
+
+interface ProjectRow {
+  id: string
+  name: string
+  emoji: string
+  color: string | null
+  created_at: string
+  completed_at: string | null
+}
+
+interface GoalRow {
+  id: string
+  created_at: string
+  completed_at: string | null
+}
+
+interface MonthlySourceData {
+  events: ActivityEventRow[]
+  sessions: SessionRow[]
+  createdTasks: TaskCreatedRow[]
+  completedTasks: TaskCompletedRow[]
+  projects: ProjectRow[]
+  goals: GoalRow[]
+}
+
+export interface FocusMeMonthlyCategory {
+  category: TaskCategory
+  created: number
+  completed: number
+}
+
+export interface FocusMeMonthlyWeek {
+  week: number
+  focusMinutes: number
+  sessions: number
+}
+
+export interface FocusMeMonthlyTopProject {
+  id: string
+  name: string
+  emoji: string
+  color: string
+  focusMinutes: number
+  sessions: number
+}
+
+export interface FocusMeBehaviorSignals {
+  planningTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  executionTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  taskCreationTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  taskCompletionTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  projectCreationTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  goalCreationTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  categoryDiversity: number
+  focusTimeDiversity: number
+  projectFocusShare: number
+  strongestWeekShare: number
+  completionBalance: number
+  abandonmentRate: number
+  recoveryActions: number
+}
+
+export interface FocusMeMonthlyMetrics {
+  focusMinutes: number
+  completedSessions: number
+  activeDays: number
+  averageMinutesPerActiveDay: number
+  weeks: FocusMeMonthlyWeek[]
+
+  timeBlocks: Record<
+    TimeBlock,
+    number
+  >
+
+  dominantTimeBlock:
+    TimeBlock | null
+
+  tasks: {
+    created: number
+    completed: number
+    reopened: number
+    deleted: number
+    restored: number
+    categories:
+      FocusMeMonthlyCategory[]
+  }
+
+  projects: {
+    created: number
+    completed: number
+    reopened: number
+    topProjects:
+      FocusMeMonthlyTopProject[]
+  }
+
+  goals: {
+    created: number
+    completed: number
+    reopened: number
+  }
+
+  rhythm: {
+    starts: number
+    pauses: number
+    resumes: number
+    abandoned: number
+  }
+
+  behavior:
+    FocusMeBehaviorSignals
+
+  coverage: {
+    meaningfulActions: number
+    featureAreasUsed: number
+    activityEvents: number
+  }
+}
+
+export interface FocusMeMonthlyReport {
+  period: {
+    start: string
+    end: string
+    month: number
+    year: number
+  }
+
+  current:
+    FocusMeMonthlyMetrics
+
+  previous:
+    FocusMeMonthlyMetrics
+
+  comparison: {
+    focusMinutesPercent:
+      number | null
+    sessionsPercent:
+      number | null
+    tasksCompletedPercent:
+      number | null
+    activeDaysPercent:
+      number | null
+  }
+}
+
+const CATEGORIES:
+  TaskCategory[] = [
+    'quick',
+    'planned',
+    'urgent',
+    'long_term',
+  ]
+
+const TIME_BLOCKS:
+  TimeBlock[] = [
+    'morning',
+    'afternoon',
+    'evening',
+    'late_night',
+  ]
+
+function pad(
+  value: number,
+): string {
+  return String(value).padStart(2, '0')
+}
+
+function localDate(
+  date: Date,
+): string {
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join('-')
+}
+
+function inPeriod(
+  value: string,
+  start: Date,
+  end: Date,
+): boolean {
+  const timestamp =
+    new Date(value).getTime()
+
+  return (
+    timestamp >= start.getTime() &&
+    timestamp < end.getTime()
+  )
+}
+
+function countEvent(
+  events: ActivityEventRow[],
+  eventType: string,
+): number {
+  return events.filter(
+    (event) =>
+      event.event_type === eventType,
+  ).length
+}
+
+function eventCategory(
+  event: ActivityEventRow,
+): TaskCategory | null {
+  const category =
+    event.metadata.category
+
+  return (
+    typeof category === 'string' &&
+    CATEGORIES.includes(
+      category as TaskCategory,
+    )
+  )
+    ? category as TaskCategory
+    : null
+}
+
+function emptyTimeBlocks(): Record<
+  TimeBlock,
+  number
+> {
+  return {
+    morning: 0,
+    afternoon: 0,
+    evening: 0,
+    late_night: 0,
+  }
+}
+
+function countEventTimeBlocks(
+  events: ActivityEventRow[],
+  eventTypes: string[],
+): Record<TimeBlock, number> {
+  const result =
+    emptyTimeBlocks()
+
+  events
+    .filter(
+      (event) =>
+        eventTypes.includes(
+          event.event_type,
+        ),
+    )
+    .forEach((event) => {
+      const block =
+        getTimeBlock(
+          event.local_hour,
+        )
+
+      result[block] += 1
+    })
+
+  return result
+}
+
+function getTimeBlock(
+  hour: number,
+): TimeBlock {
+  if (hour >= 5 && hour < 12) {
+    return 'morning'
+  }
+
+  if (hour >= 12 && hour < 18) {
+    return 'afternoon'
+  }
+
+  if (hour >= 18 && hour < 23) {
+    return 'evening'
+  }
+
+  return 'late_night'
+}
+
+function percentageChange(
+  current: number,
+  previous: number,
+): number | null {
+  if (previous === 0) {
+    return null
+  }
+
+  return Math.round(
+    (
+      (current - previous) /
+      previous
+    ) * 100,
+  )
+}
+
+function calculateMetrics(
+  source: MonthlySourceData,
+  start: Date,
+  end: Date,
+): FocusMeMonthlyMetrics {
+  const events =
+    source.events.filter(
+      (event) =>
+        inPeriod(
+          event.occurred_at,
+          start,
+          end,
+        ),
+    )
+
+  const sessions =
+    source.sessions.filter(
+      (session) =>
+        inPeriod(
+          session.completed_at,
+          start,
+          end,
+        ),
+    )
+
+  const workSessions =
+    sessions.filter(
+      (session) =>
+        session.type === 'work',
+    )
+
+  const completionEvents =
+    new Map(
+      events
+        .filter(
+          (event) =>
+            event.event_type ===
+              'pomodoro_completed' &&
+            event.entity_id,
+        )
+        .map((event) => [
+          event.entity_id as string,
+          event,
+        ]),
+    )
+
+  const activeDates =
+    new Set<string>()
+
+  const weeks = new Map<
+    number,
+    FocusMeMonthlyWeek
+  >()
+
+  const timeBlocks =
+    emptyTimeBlocks()
+
+  const projectTotals = new Map<
+    string,
+    {
+      focusMinutes: number
+      sessions: number
+    }
+  >()
+
+  workSessions.forEach((session) => {
+    const event =
+      completionEvents.get(session.id)
+
+    const completedDate =
+      new Date(session.completed_at)
+
+    const date =
+      event?.local_date ??
+      localDate(completedDate)
+
+    const hour =
+      event?.local_hour ??
+      completedDate.getHours()
+
+    activeDates.add(date)
+
+    const dayOfMonth =
+      Number(date.slice(8, 10))
+
+    const weekNumber =
+      Math.floor(
+        (dayOfMonth - 1) / 7,
+      ) + 1
+
+    const week =
+      weeks.get(weekNumber) ?? {
+        week: weekNumber,
+        focusMinutes: 0,
+        sessions: 0,
+      }
+
+    week.focusMinutes +=
+      session.duration_minutes
+    week.sessions += 1
+
+    weeks.set(
+      weekNumber,
+      week,
+    )
+
+    const block =
+      getTimeBlock(hour)
+
+    timeBlocks[block] +=
+      session.duration_minutes
+
+    if (session.project_id) {
+      const project =
+        projectTotals.get(
+          session.project_id,
+        ) ?? {
+          focusMinutes: 0,
+          sessions: 0,
+        }
+
+      project.focusMinutes +=
+        session.duration_minutes
+      project.sessions += 1
+
+      projectTotals.set(
+        session.project_id,
+        project,
+      )
+    }
+  })
+
+  const createdTaskMap = new Map<
+    string,
+    TaskCategory
+  >()
+
+  source.createdTasks
+    .filter(
+      (task) =>
+        inPeriod(
+          task.created_at,
+          start,
+          end,
+        ),
+    )
+    .forEach((task) => {
+      createdTaskMap.set(
+        task.id,
+        task.category,
+      )
+    })
+
+  const completedTaskMap = new Map<
+    string,
+    TaskCategory
+  >()
+
+  source.completedTasks
+    .filter(
+      (task) =>
+        inPeriod(
+          task.completed_at,
+          start,
+          end,
+        ),
+    )
+    .forEach((task) => {
+      completedTaskMap.set(
+        task.id,
+        task.category,
+      )
+    })
+
+  events.forEach((event) => {
+    if (!event.entity_id) {
+      return
+    }
+
+    const category =
+      eventCategory(event)
+
+    if (
+      category &&
+      event.event_type ===
+        'task_created'
+    ) {
+      createdTaskMap.set(
+        event.entity_id,
+        category,
+      )
+    }
+
+    if (
+      category &&
+      event.event_type ===
+        'task_completed'
+    ) {
+      completedTaskMap.set(
+        event.entity_id,
+        category,
+      )
+    }
+  })
+
+  const categories =
+    CATEGORIES.map(
+      (category) => ({
+        category,
+        created: [
+          ...createdTaskMap.values(),
+        ].filter(
+          (value) =>
+            value === category,
+        ).length,
+        completed: [
+          ...completedTaskMap.values(),
+        ].filter(
+          (value) =>
+            value === category,
+        ).length,
+      }),
+    )
+
+  const createdProjects =
+    new Set(
+      source.projects
+        .filter(
+          (project) =>
+            inPeriod(
+              project.created_at,
+              start,
+              end,
+            ),
+        )
+        .map(
+          (project) => project.id,
+        ),
+    )
+
+  const completedProjects =
+    new Set(
+      source.projects
+        .filter(
+          (project) =>
+            project.completed_at &&
+            inPeriod(
+              project.completed_at,
+              start,
+              end,
+            ),
+        )
+        .map(
+          (project) => project.id,
+        ),
+    )
+
+  const createdGoals =
+    new Set(
+      source.goals
+        .filter(
+          (goal) =>
+            inPeriod(
+              goal.created_at,
+              start,
+              end,
+            ),
+        )
+        .map((goal) => goal.id),
+    )
+
+  const completedGoals =
+    new Set(
+      source.goals
+        .filter(
+          (goal) =>
+            goal.completed_at &&
+            inPeriod(
+              goal.completed_at,
+              start,
+              end,
+            ),
+        )
+        .map((goal) => goal.id),
+    )
+
+  events.forEach((event) => {
+    if (!event.entity_id) {
+      return
+    }
+
+    if (
+      event.event_type ===
+      'project_created'
+    ) {
+      createdProjects.add(
+        event.entity_id,
+      )
+    }
+
+    if (
+      event.event_type ===
+      'project_completed'
+    ) {
+      completedProjects.add(
+        event.entity_id,
+      )
+    }
+
+    if (
+      event.event_type ===
+      'goal_created'
+    ) {
+      createdGoals.add(
+        event.entity_id,
+      )
+    }
+
+    if (
+      event.event_type ===
+      'goal_completed'
+    ) {
+      completedGoals.add(
+        event.entity_id,
+      )
+    }
+  })
+
+  const topProjects =
+    [...projectTotals.entries()]
+      .sort(
+        (first, second) =>
+          second[1].focusMinutes -
+          first[1].focusMinutes,
+      )
+      .slice(0, 3)
+      .flatMap(
+        ([
+          projectId,
+          totals,
+        ]) => {
+          const project =
+            source.projects.find(
+              (item) =>
+                item.id ===
+                projectId,
+            )
+
+          return project
+            ? [{
+                id: project.id,
+                name: project.name,
+                emoji: project.emoji,
+                color:
+                  project.color ??
+                  '#10b981',
+                focusMinutes:
+                  totals.focusMinutes,
+                sessions:
+                  totals.sessions,
+              }]
+            : []
+        },
+      )
+
+  const focusMinutes =
+    workSessions.reduce(
+      (total, session) =>
+        total +
+        session.duration_minutes,
+      0,
+    )
+
+  const dominantTimeBlock =
+    focusMinutes > 0
+      ? TIME_BLOCKS.reduce(
+          (dominant, block) =>
+            timeBlocks[block] >
+            timeBlocks[dominant]
+              ? block
+              : dominant,
+          TIME_BLOCKS[0],
+        )
+      : null
+
+  const featureAreas = [
+    workSessions.length > 0,
+    createdTaskMap.size > 0 ||
+      completedTaskMap.size > 0,
+    createdProjects.size > 0 ||
+      completedProjects.size > 0 ||
+      projectTotals.size > 0,
+    createdGoals.size > 0 ||
+      completedGoals.size > 0,
+  ].filter(Boolean).length
+
+  const meaningfulActions =
+    workSessions.length +
+    completedTaskMap.size +
+    completedProjects.size +
+    completedGoals.size
+
+  const planningTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      [
+        'task_created',
+        'project_created',
+        'goal_created',
+      ],
+    )
+
+  const executionTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      [
+        'task_completed',
+        'project_completed',
+        'goal_completed',
+      ],
+    )
+
+  const taskCreationTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      ['task_created'],
+    )
+
+  const taskCompletionTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      ['task_completed'],
+    )
+
+  const projectCreationTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      ['project_created'],
+    )
+
+  const goalCreationTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      ['goal_created'],
+    )
+
+  const categoryDiversity =
+    categories.filter(
+      (category) =>
+        category.created > 0 ||
+        category.completed > 0,
+    ).length
+
+  const focusTimeDiversity =
+    TIME_BLOCKS.filter(
+      (block) =>
+        timeBlocks[block] > 0,
+    ).length
+
+  const topProjectMinutes =
+    topProjects[0]
+      ?.focusMinutes ?? 0
+
+  const projectFocusShare =
+    focusMinutes > 0
+      ? Math.round(
+          (
+            topProjectMinutes /
+            focusMinutes
+          ) * 100,
+        )
+      : 0
+
+  const strongestWeekMinutes =
+    Math.max(
+      ...[...weeks.values()].map(
+        (week) =>
+          week.focusMinutes,
+      ),
+      0,
+    )
+
+  const strongestWeekShare =
+    focusMinutes > 0
+      ? Math.round(
+          (
+            strongestWeekMinutes /
+            focusMinutes
+          ) * 100,
+        )
+      : 0
+
+  const completionBalance =
+    createdTaskMap.size > 0
+      ? Math.round(
+          (
+            completedTaskMap.size /
+            createdTaskMap.size
+          ) * 100,
+        )
+      : completedTaskMap.size > 0
+        ? 100
+        : 0
+
+  const starts =
+    countEvent(
+      events,
+      'pomodoro_started',
+    )
+
+  const abandoned =
+    countEvent(
+      events,
+      'pomodoro_abandoned',
+    )
+
+  const abandonmentRate =
+    starts > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (
+              abandoned /
+              starts
+            ) * 100,
+          ),
+        )
+      : 0
+
+  const recoveryActions =
+    countEvent(
+      events,
+      'pomodoro_resumed',
+    ) +
+    countEvent(
+      events,
+      'task_restored',
+    ) +
+    countEvent(
+      events,
+      'task_reopened',
+    ) +
+    countEvent(
+      events,
+      'project_reopened',
+    ) +
+    countEvent(
+      events,
+      'goal_reopened',
+    )
+
+  return {
+    focusMinutes,
+    completedSessions:
+      workSessions.length,
+    activeDays:
+      activeDates.size,
+    averageMinutesPerActiveDay:
+      activeDates.size > 0
+        ? Math.round(
+            focusMinutes /
+            activeDates.size,
+          )
+        : 0,
+    weeks: [...weeks.values()]
+      .sort(
+        (first, second) =>
+          first.week -
+          second.week,
+      ),
+    timeBlocks,
+    dominantTimeBlock,
+
+    tasks: {
+      created:
+        createdTaskMap.size,
+      completed:
+        completedTaskMap.size,
+      reopened: countEvent(
+        events,
+        'task_reopened',
+      ),
+      deleted: countEvent(
+        events,
+        'task_deleted',
+      ),
+      restored: countEvent(
+        events,
+        'task_restored',
+      ),
+      categories,
+    },
+
+    projects: {
+      created:
+        createdProjects.size,
+      completed:
+        completedProjects.size,
+      reopened: countEvent(
+        events,
+        'project_reopened',
+      ),
+      topProjects,
+    },
+
+    goals: {
+      created:
+        createdGoals.size,
+      completed:
+        completedGoals.size,
+      reopened: countEvent(
+        events,
+        'goal_reopened',
+      ),
+    },
+
+    rhythm: {
+      starts: countEvent(
+        events,
+        'pomodoro_started',
+      ),
+      pauses: countEvent(
+        events,
+        'pomodoro_paused',
+      ),
+      resumes: countEvent(
+        events,
+        'pomodoro_resumed',
+      ),
+      abandoned: countEvent(
+        events,
+        'pomodoro_abandoned',
+      ),
+    },
+
+    behavior: {
+      planningTimeBlocks,
+      executionTimeBlocks,
+      taskCreationTimeBlocks,
+      taskCompletionTimeBlocks,
+      projectCreationTimeBlocks,
+      goalCreationTimeBlocks,
+      categoryDiversity,
+      focusTimeDiversity,
+      projectFocusShare,
+      strongestWeekShare,
+      completionBalance,
+      abandonmentRate,
+      recoveryActions,
+    },
+
+    coverage: {
+      meaningfulActions,
+      featureAreasUsed:
+        featureAreas,
+      activityEvents:
+        events.length,
+    },
+  }
+}
+
+export async function getFocusMeMonthlyReport(
+  referenceDate = new Date(),
+): Promise<FocusMeMonthlyReport> {
+  const currentStart =
+    new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth(),
+      1,
+    )
+
+  const currentEnd =
+    new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth() + 1,
+      1,
+    )
+
+  const previousStart =
+    new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth() - 1,
+      1,
+    )
+
+  const firstIso =
+    previousStart.toISOString()
+
+  const finalIso =
+    currentEnd.toISOString()
+
+  const [
+    eventsResult,
+    sessionsResult,
+    createdTasksResult,
+    completedTasksResult,
+    projectsResult,
+    goalsResult,
+  ] = await Promise.all([
+    supabase
+      .from('activity_events')
+      .select(`
+        event_type,
+        entity_id,
+        occurred_at,
+        local_date,
+        local_hour,
+        metadata
+      `)
+      .gte('occurred_at', firstIso)
+      .lt('occurred_at', finalIso)
+      .order('occurred_at', {
+        ascending: true,
+      })
+      .limit(10000),
+
+    supabase
+      .from('pomodoro_sessions')
+      .select(`
+        id,
+        type,
+        project_id,
+        duration_minutes,
+        completed_at
+      `)
+      .gte('completed_at', firstIso)
+      .lt('completed_at', finalIso),
+
+    supabase
+      .from('tasks')
+      .select(`
+        id,
+        category,
+        created_at
+      `)
+      .gte('created_at', firstIso)
+      .lt('created_at', finalIso),
+
+    supabase
+      .from('tasks')
+      .select(`
+        id,
+        category,
+        completed_at
+      `)
+      .gte('completed_at', firstIso)
+      .lt('completed_at', finalIso),
+
+    supabase
+      .from('projects')
+      .select(`
+        id,
+        name,
+        emoji,
+        color,
+        created_at,
+        completed_at
+      `),
+
+    supabase
+      .from('goals')
+      .select(`
+        id,
+        created_at,
+        completed_at
+      `),
+  ])
+
+  const results = [
+    eventsResult,
+    sessionsResult,
+    createdTasksResult,
+    completedTasksResult,
+    projectsResult,
+    goalsResult,
+  ]
+
+  const failed =
+    results.find(
+      (result) => result.error,
+    )
+
+  if (failed?.error) {
+    throw failed.error
+  }
+
+  const source: MonthlySourceData = {
+    events:
+      (eventsResult.data ??
+        []) as ActivityEventRow[],
+    sessions:
+      (sessionsResult.data ??
+        []) as SessionRow[],
+    createdTasks:
+      (createdTasksResult.data ??
+        []) as TaskCreatedRow[],
+    completedTasks:
+      (completedTasksResult.data ??
+        []) as TaskCompletedRow[],
+    projects:
+      (projectsResult.data ??
+        []) as ProjectRow[],
+    goals:
+      (goalsResult.data ??
+        []) as GoalRow[],
+  }
+
+  const current =
+    calculateMetrics(
+      source,
+      currentStart,
+      currentEnd,
+    )
+
+  const previous =
+    calculateMetrics(
+      source,
+      previousStart,
+      currentStart,
+    )
+
+  return {
+    period: {
+      start:
+        localDate(currentStart),
+      end:
+        localDate(currentEnd),
+      month:
+        currentStart.getMonth() + 1,
+      year:
+        currentStart.getFullYear(),
+    },
+
+    current,
+    previous,
+
+    comparison: {
+      focusMinutesPercent:
+        percentageChange(
+          current.focusMinutes,
+          previous.focusMinutes,
+        ),
+      sessionsPercent:
+        percentageChange(
+          current.completedSessions,
+          previous.completedSessions,
+        ),
+      tasksCompletedPercent:
+        percentageChange(
+          current.tasks.completed,
+          previous.tasks.completed,
+        ),
+      activeDaysPercent:
+        percentageChange(
+          current.activeDays,
+          previous.activeDays,
+        ),
+    },
+  }
+}
+===== REPORT DETAIL PAGE =====
+src/pages/FocusMeReportPage.tsx
+import {
+  ArrowLeft,
+  BarChart3,
+  CalendarDays,
+  CheckSquare2,
+  FolderOpen,
+  LoaderCircle,
+  Play,
+  Target,
+  Timer,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+import {
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
+
+import {
+  FocusMeIcon,
+} from '@/components/icons/FocusMeIcon'
+import {
+  PageHeader,
+} from '@/components/ui/PageHeader'
+import {
+  useFocusMeReport,
+} from '@/hooks/focusme/useFocusMeReports'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+import type {
+  FocusMeWeeklyReport,
+} from '@/services/focusMeService'
+
+function formatMinutes(
+  minutes: number,
+): string {
+  if (minutes < 60) {
+    return `${minutes} min`
+  }
+
+  const hours =
+    Math.floor(minutes / 60)
+
+  const remainder =
+    minutes % 60
+
+  return remainder > 0
+    ? `${hours}h ${remainder}min`
+    : `${hours}h`
+}
+
+export function FocusMeReportPage() {
+  const {
+    t,
+    i18n,
+  } = useTranslation()
+
+  const navigate = useNavigate()
+
+  const {
+    reportId,
+  } = useParams<{
+    reportId: string
+  }>()
+
+  const reportQuery =
+    useFocusMeReport(reportId)
+
+  const report =
+    reportQuery.data
+
+  const locale =
+    i18n.resolvedLanguage === 'pt-BR'
+      ? 'pt-BR'
+      : 'en-US'
+
+  function formatPeriod(
+    startValue: string,
+    endValue: string,
+    type: 'weekly' | 'monthly',
+  ): string {
+    const start = new Date(
+      `${startValue}T12:00:00`,
+    )
+
+    const end = new Date(
+      `${endValue}T12:00:00`,
+    )
+
+    end.setDate(
+      end.getDate() - 1,
+    )
+
+    if (type === 'monthly') {
+      return new Intl.DateTimeFormat(
+        locale,
+        {
+          month: 'long',
+          year: 'numeric',
+        },
+      ).format(start)
+    }
+
+    const formatter =
+      new Intl.DateTimeFormat(
+        locale,
+        {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        },
+      )
+
+    return (
+      `${formatter.format(start)} – ` +
+      formatter.format(end)
+    )
+  }
+
+  if (reportQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <LoaderCircle
+          size={30}
+          className="animate-spin text-accent-green"
+        />
+      </div>
+    )
+  }
+
+  if (
+    reportQuery.isError ||
+    !report
+  ) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 pb-12 lg:px-10">
+        <button
+          type="button"
+          onClick={() =>
+            navigate(
+              '/focusme/history',
+            )
+          }
+          className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition hover:text-accent-white"
+        >
+          <ArrowLeft size={17} />
+
+          {t(
+            'focusMeReportPage.back',
+          )}
+        </button>
+
+        <div className="card p-6 text-sm text-red-300">
+          {t(
+            'focusMeReportPage.error',
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const isWeekly =
+    report.type === 'weekly'
+
+  const weekly = isWeekly
+    ? report.metrics as
+        FocusMeWeeklyReport
+    : null
+
+  const monthly = !isWeekly
+    ? report.metrics as
+        FocusMeMonthlyReport
+    : null
+
+  const focusMinutes =
+    weekly
+      ? weekly.focus.totalMinutes
+      : monthly?.current
+          .focusMinutes ?? 0
+
+  const sessions =
+    weekly
+      ? weekly.focus
+          .completedSessions
+      : monthly?.current
+          .completedSessions ?? 0
+
+  const activeDays =
+    weekly
+      ? weekly.focus.activeDays
+      : monthly?.current
+          .activeDays ?? 0
+
+  const tasksCreated =
+    weekly
+      ? weekly.tasks.created
+      : monthly?.current.tasks
+          .created ?? 0
+
+  const tasksCompleted =
+    weekly
+      ? weekly.tasks.completed
+      : monthly?.current.tasks
+          .completed ?? 0
+
+  const projectsCreated =
+    weekly
+      ? weekly.projects.created
+      : monthly?.current.projects
+          .created ?? 0
+
+  const projectsCompleted =
+    weekly
+      ? weekly.projects.completed
+      : monthly?.current.projects
+          .completed ?? 0
+
+  const goalsCreated =
+    weekly
+      ? weekly.goals.created
+      : monthly?.current.goals
+          .created ?? 0
+
+  const goalsCompleted =
+    weekly
+      ? weekly.goals.completed
+      : monthly?.current.goals
+          .completed ?? 0
+
+  const graphItems = weekly
+    ? weekly.focus.days.map(
+        (day, index) => ({
+          key: day.date,
+          label:
+            new Intl.DateTimeFormat(
+              locale,
+              {
+                weekday: 'short',
+              },
+            )
+              .format(
+                new Date(
+                  `${day.date}T12:00:00`,
+                ),
+              )
+              .slice(0, 3),
+          minutes:
+            day.focusMinutes,
+          order: index + 1,
+        }),
+      )
+    : (
+        monthly?.current.weeks ??
+        []
+      ).map((week) => ({
+        key: String(week.week),
+        label: t(
+          'focusMeReportPage.week',
+          {
+            number: week.week,
+          },
+        ),
+        minutes:
+          week.focusMinutes,
+        order: week.week,
+      }))
+
+  const maxGraphMinutes =
+    Math.max(
+      ...graphItems.map(
+        (item) => item.minutes,
+      ),
+      1,
+    )
+
+  const topProject =
+    weekly
+      ? weekly.projects.topProject
+      : monthly?.current.projects
+          .topProjects[0] ?? null
+
+  const summaryItems = [
+    {
+      key: 'focus',
+      label: t(
+        'focusMeReportPage.focusTime',
+      ),
+      value:
+        formatMinutes(focusMinutes),
+      icon: Timer,
+    },
+    {
+      key: 'sessions',
+      label: t(
+        'focusMeReportPage.sessions',
+      ),
+      value: sessions,
+      icon: Play,
+    },
+    {
+      key: 'days',
+      label: t(
+        'focusMeReportPage.activeDays',
+      ),
+      value: activeDays,
+      icon: CalendarDays,
+    },
+    {
+      key: 'tasks',
+      label: t(
+        'focusMeReportPage.tasksCompleted',
+      ),
+      value: tasksCompleted,
+      icon: CheckSquare2,
+    },
+  ]
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 pb-12 lg:px-10 lg:pb-16">
+      <button
+        type="button"
+        onClick={() =>
+          navigate('/focusme/history')
+        }
+        className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition hover:text-accent-white"
+      >
+        <ArrowLeft size={17} />
+
+        {t(
+          'focusMeReportPage.back',
+        )}
+      </button>
+
+      <PageHeader
+        title={formatPeriod(
+          report.periodStart,
+          report.periodEnd,
+          report.type,
+        )}
+        subtitle={t(
+          `focusMeReportPage.types.${report.type}`,
+        )}
+      />
+
+      <div className="space-y-4">
+        <section className="card relative overflow-hidden p-5 sm:p-7">
+          <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-accent-green/[0.08] blur-3xl" />
+
+          <div className="relative">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-green/10 text-accent-green">
+                <FocusMeIcon
+                  size={25}
+                />
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+                  FocusMe
+                </p>
+
+                <p className="mt-1 text-xs text-accent-subtle">
+                  {t(
+                    'focusMeReportPage.preserved',
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {summaryItems.map(
+                ({
+                  key,
+                  label,
+                  value,
+                  icon: Icon,
+                }) => (
+                  <div
+                    key={key}
+                    className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4"
+                  >
+                    <Icon
+                      size={17}
+                      className="text-accent-green"
+                    />
+
+                    <p className="mt-4 text-xl font-semibold text-accent-white">
+                      {value}
+                    </p>
+
+                    <p className="mt-1 text-xs text-accent-subtle">
+                      {label}
+                    </p>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="card p-5">
+          <div className="flex items-center gap-3">
+            <BarChart3
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h2 className="text-sm font-semibold text-accent-white">
+              {isWeekly
+                ? t(
+                    'focusMeReportPage.dailyEvolution',
+                  )
+                : t(
+                    'focusMeReportPage.weeklyEvolution',
+                  )}
+            </h2>
+          </div>
+
+          {graphItems.length > 0 ? (
+            <div
+              className="mt-6 grid h-40 items-end gap-2"
+              style={{
+                gridTemplateColumns:
+                  `repeat(${graphItems.length}, minmax(0, 1fr))`,
+              }}
+            >
+              {graphItems.map(
+                (item) => {
+                  const height =
+                    item.minutes > 0
+                      ? Math.max(
+                          8,
+                          (
+                            item.minutes /
+                            maxGraphMinutes
+                          ) * 100,
+                        )
+                      : 3
+
+                  return (
+                    <div
+                      key={item.key}
+                      className="flex h-full min-w-0 flex-col items-center justify-end gap-2"
+                    >
+                      <span className="hidden text-[10px] text-accent-subtle sm:block">
+                        {item.minutes > 0
+                          ? formatMinutes(
+                              item.minutes,
+                            )
+                          : ''}
+                      </span>
+
+                      <div className="flex h-24 w-full items-end justify-center">
+                        <div
+                          className="w-full max-w-9 rounded-t-lg bg-gradient-to-t from-emerald-500/55 to-emerald-300"
+                          style={{
+                            height: `${height}%`,
+                          }}
+                        />
+                      </div>
+
+                      <span className="truncate text-[10px] capitalize text-accent-subtle">
+                        {item.label}
+                      </span>
+                    </div>
+                  )
+                },
+              )}
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-accent-subtle">
+              {t(
+                'focusMeReportPage.noFocus',
+              )}
+            </p>
+          )}
+        </section>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <section className="card p-5">
+            <CheckSquare2
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h2 className="mt-4 text-sm font-semibold text-accent-white">
+              {t(
+                'focusMeReportPage.tasks',
+              )}
+            </h2>
+
+            <p className="mt-3 text-xl font-semibold text-accent-white">
+              {tasksCompleted}
+              <span className="ml-2 text-xs font-normal text-accent-subtle">
+                /
+                {' '}
+                {tasksCreated}
+              </span>
+            </p>
+          </section>
+
+          <section className="card p-5">
+            <FolderOpen
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h2 className="mt-4 text-sm font-semibold text-accent-white">
+              {t(
+                'focusMeReportPage.projects',
+              )}
+            </h2>
+
+            <p className="mt-3 text-xl font-semibold text-accent-white">
+              {projectsCompleted}
+              <span className="ml-2 text-xs font-normal text-accent-subtle">
+                /
+                {' '}
+                {projectsCreated}
+              </span>
+            </p>
+          </section>
+
+          <section className="card p-5">
+            <Target
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h2 className="mt-4 text-sm font-semibold text-accent-white">
+              {t(
+                'focusMeReportPage.goals',
+              )}
+            </h2>
+
+            <p className="mt-3 text-xl font-semibold text-accent-white">
+              {goalsCompleted}
+              <span className="ml-2 text-xs font-normal text-accent-subtle">
+                /
+                {' '}
+                {goalsCreated}
+              </span>
+            </p>
+          </section>
+        </div>
+
+        {topProject && (
+          <section className="card p-5">
+            <p className="text-xs text-accent-subtle">
+              {t(
+                'focusMeReportPage.topProject',
+              )}
+            </p>
+
+            <p className="mt-2 text-sm font-semibold text-accent-white">
+              {topProject.emoji}
+              {' '}
+              {topProject.name}
+              {' · '}
+              {formatMinutes(
+                topProject.focusMinutes,
+              )}
+            </p>
+          </section>
+        )}
+
+        {report.narrative && (
+          <section className="card p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+              {t(
+                'focusMeReportPage.yourStory',
+              )}
+            </p>
+
+            <p className="mt-4 whitespace-pre-line text-sm leading-7 text-accent-subtle">
+              {report.narrative}
+            </p>
+          </section>
+        )}
+      </div>
+    </div>
+  )
+}
+===== FOCUSME COMPONENTS =====
+src/components/focusme/FocusHomeSymbolGallery.tsx
+import {
+  useEffect,
+  useState,
+} from 'react'
+import {
+  AnimatePresence,
+  motion,
+} from 'framer-motion'
+import {
+  Sparkles,
+  X,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+
+import {
+  FOCUS_HOME_COLORS,
+  FOCUS_HOME_KEYS,
+  FocusHomeSymbol,
+  type FocusHomeKey,
+} from '@/components/focusme/FocusHomeSymbol'
+
+export function FocusHomeSymbolGallery() {
+  const { t } = useTranslation()
+
+  const [
+    selected,
+    setSelected,
+  ] = useState<
+    FocusHomeKey | null
+  >(null)
+
+  useEffect(() => {
+    if (!selected) {
+      return
+    }
+
+    const previousOverflow =
+      document.body.style.overflow
+
+    document.body.style.overflow =
+      'hidden'
+
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === 'Escape') {
+        setSelected(null)
+      }
+    }
+
+    window.addEventListener(
+      'keydown',
+      handleKeyDown,
+    )
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow
+
+      window.removeEventListener(
+        'keydown',
+        handleKeyDown,
+      )
+    }
+  }, [selected])
+
+  return (
+    <section>
+      <div className="mb-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+          FocushoMe
+        </p>
+
+        <h2 className="mt-2 font-semibold text-accent-white">
+          {t(
+            'focusMePage.symbols.title',
+          )}
+        </h2>
+
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-accent-subtle">
+          {t(
+            'focusMePage.symbols.subtitle',
+          )}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {FOCUS_HOME_KEYS.map(
+          (key, index) => (
+            <motion.button
+              key={key}
+              type="button"
+              onClick={() =>
+                setSelected(key)
+              }
+              initial={{
+                opacity: 0,
+                y: 8,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                delay:
+                  index * 0.025,
+              }}
+              className="card group flex min-h-40 flex-col items-center justify-center p-4 text-center transition hover:border-white/[0.12] hover:bg-white/[0.025]"
+              aria-label={t(
+                'focusMePage.symbols.open',
+                {
+                  name: key,
+                },
+              )}
+            >
+              <div className="relative flex h-24 w-24 items-center justify-center transition duration-300 group-hover:scale-105">
+                <div
+                  className="absolute inset-3 rounded-full blur-2xl"
+                  style={{
+                    backgroundColor:
+                      `${FOCUS_HOME_COLORS[key]}18`,
+                  }}
+                />
+
+                <div className="relative">
+                  <FocusHomeSymbol
+                    type={key}
+                    size={88}
+                  />
+                </div>
+              </div>
+
+              <h3
+                className="mt-3 text-sm font-semibold capitalize"
+                style={{
+                  color:
+                    FOCUS_HOME_COLORS[key],
+                }}
+              >
+                {key}
+              </h3>
+
+              <span className="mt-1 text-[10px] text-accent-subtle">
+                {t(
+                  'focusMePage.symbols.tap',
+                )}
+              </span>
+            </motion.button>
+          ),
+        )}
+      </div>
+
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            onClick={() =>
+              setSelected(null)
+            }
+            className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="focushome-dialog-title"
+              initial={{
+                opacity: 0,
+                y: 24,
+                scale: 0.98,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+              }}
+              exit={{
+                opacity: 0,
+                y: 24,
+                scale: 0.98,
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 320,
+                damping: 30,
+              }}
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+              className="relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/[0.09] bg-[#111111] p-6 shadow-2xl sm:rounded-3xl sm:p-7"
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setSelected(null)
+                }
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-accent-subtle transition hover:text-accent-white"
+                aria-label={t(
+                  'focusMePage.symbols.close',
+                )}
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex flex-col items-center text-center">
+                <div className="relative flex h-32 w-32 items-center justify-center">
+                  <div
+                    className="absolute inset-5 rounded-full blur-3xl"
+                    style={{
+                      backgroundColor:
+                        `${FOCUS_HOME_COLORS[selected]}28`,
+                    }}
+                  />
+
+                  <div className="relative">
+                    <FocusHomeSymbol
+                      type={selected}
+                      size={118}
+                    />
+                  </div>
+                </div>
+
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent-subtle">
+                  FocushoMe
+                </p>
+
+                <h2
+                  id="focushome-dialog-title"
+                  className="mt-2 text-2xl font-semibold capitalize"
+                  style={{
+                    color:
+                      FOCUS_HOME_COLORS[
+                        selected
+                      ],
+                  }}
+                >
+                  {selected}
+                </h2>
+
+                <p className="mt-3 text-sm font-medium text-accent-white">
+                  {t(
+                    `focusMePage.symbols.items.${selected}.essence`,
+                  )}
+                </p>
+              </div>
+
+              <div className="mt-7 space-y-5 border-t border-white/[0.07] pt-6">
+                <p className="text-sm leading-7 text-accent-subtle">
+                  {t(
+                    `focusMePage.symbols.items.${selected}.description`,
+                  )}
+                </p>
+
+                <div className="rounded-2xl bg-white/[0.03] p-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles
+                      size={15}
+                      style={{
+                        color:
+                          FOCUS_HOME_COLORS[
+                            selected
+                          ],
+                      }}
+                    />
+
+                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-accent-white">
+                      {t(
+                        'focusMePage.symbols.strength',
+                      )}
+                    </h3>
+                  </div>
+
+                  <p className="mt-3 text-sm leading-relaxed text-accent-subtle">
+                    {t(
+                      `focusMePage.symbols.items.${selected}.strength`,
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/[0.06] p-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-accent-white">
+                    {t(
+                      'focusMePage.symbols.balance',
+                    )}
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-relaxed text-accent-subtle">
+                    {t(
+                      `focusMePage.symbols.items.${selected}.balance`,
+                    )}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  )
+}
+src/components/focusme/FocusHomeIdentityHeader.tsx
+import {
+  LoaderCircle,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+
+import {
+  FocusHomeSymbol,
+} from '@/components/focusme/FocusHomeSymbol'
+import {
+  FocusMeIcon,
+} from '@/components/icons/FocusMeIcon'
+import {
+  useFocusHomeProfile,
+} from '@/hooks/focusme/useFocusHomeProfile'
+
+export function FocusHomeIdentityHeader() {
+  const { t } = useTranslation()
+
+  const profileQuery =
+    useFocusHomeProfile()
+
+  const profile =
+    profileQuery.data
+
+  return (
+    <header className="mb-8 flex min-w-0 items-start justify-between gap-4 sm:gap-8">
+      <div className="min-w-0 flex-1 pt-1">
+        <div className="flex items-center gap-2">
+          <FocusMeIcon
+            size={22}
+            className="shrink-0 text-accent-green"
+          />
+
+          <h1 className="text-2xl font-bold tracking-tight text-accent-white sm:text-3xl">
+            FocusMe
+          </h1>
+        </div>
+
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-accent-subtle">
+          {t(
+            'focusMePage.reportsSubtitle',
+          )}
+        </p>
+      </div>
+
+      <div className="flex min-w-[104px] shrink-0 flex-col items-center text-center sm:min-w-[150px]">
+        {profileQuery.isLoading ? (
+          <div className="flex h-20 w-20 items-center justify-center sm:h-24 sm:w-24">
+            <LoaderCircle
+              size={24}
+              className="animate-spin text-accent-green"
+            />
+          </div>
+        ) : profile ? (
+          <>
+            <div className="relative flex h-20 w-20 items-center justify-center sm:h-24 sm:w-24">
+              <div className="absolute inset-3 rounded-full bg-white/[0.025] blur-xl" />
+
+              <div className="relative">
+                <FocusHomeSymbol
+                  type={
+                    profile.focusHome
+                  }
+                  size={88}
+                  className="sm:h-24 sm:w-24"
+                />
+              </div>
+            </div>
+
+            <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-accent-subtle">
+              {t(
+                'focusHomeIdentity.current',
+              )}
+            </span>
+
+            <strong className="mt-1 text-sm font-semibold capitalize text-accent-white">
+              {profile.focusHome}
+            </strong>
+
+            <span className="mt-1 max-w-[150px] text-[10px] leading-relaxed text-accent-subtle">
+              {t(
+                `focusHomeIdentity.archetypes.${profile.archetype}`,
+              )}
+              {' · '}
+              {t(
+                `focusHomeIdentity.temporal.${profile.temporalExpression}`,
+              )}
+            </span>
+          </>
+        ) : (
+          <>
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02] text-white/20 sm:h-24 sm:w-24">
+              <FocusMeIcon
+                size={62}
+              />
+            </div>
+
+            <span className="mt-2 max-w-[130px] text-[10px] font-medium leading-relaxed text-accent-subtle">
+              {t(
+                'focusHomeIdentity.locked',
+              )}
+            </span>
+          </>
+        )}
+      </div>
+    </header>
+  )
+}
+src/components/focusme/FocusMeMonthlyPanel.tsx
+import { motion } from 'framer-motion'
+import {
+  BarChart3,
+  CalendarDays,
+  CheckSquare2,
+  Clock3,
+  FolderOpen,
+  Target,
+  Timer,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+
+import {
+  useFocusMeMonthlyReport,
+} from '@/hooks/focusme/useFocusMeMonthlyReport'
+import {
+  evaluateFocusHomeEligibility,
+} from '@/services/focusMeEligibility'
+
+function formatMinutes(
+  minutes: number,
+): string {
+  if (minutes < 60) {
+    return `${minutes} min`
+  }
+
+  const hours =
+    Math.floor(minutes / 60)
+
+  const remainder =
+    minutes % 60
+
+  return remainder > 0
+    ? `${hours}h ${remainder}min`
+    : `${hours}h`
+}
+
+interface ComparisonProps {
+  value: number | null
+}
+
+function Comparison({
+  value,
+}: ComparisonProps) {
+  const { t } = useTranslation()
+
+  if (value === null) {
+    return (
+      <span className="text-[10px] text-accent-subtle">
+        {t(
+          'focusMePage.monthlyReport.noComparison',
+        )}
+      </span>
+    )
+  }
+
+  const positive = value >= 0
+  const Icon = positive
+    ? TrendingUp
+    : TrendingDown
+
+  return (
+    <span
+      className={
+        positive
+          ? 'inline-flex items-center gap-1 text-[10px] text-accent-green'
+          : 'inline-flex items-center gap-1 text-[10px] text-orange-300'
+      }
+    >
+      <Icon size={12} />
+      {value > 0 ? '+' : ''}
+      {value}%
+    </span>
+  )
+}
+
+export function FocusMeMonthlyPanel() {
+  const {
+    t,
+    i18n,
+  } = useTranslation()
+
+  const reportQuery =
+    useFocusMeMonthlyReport()
+
+  const report =
+    reportQuery.data
+
+  const locale =
+    i18n.resolvedLanguage === 'pt-BR'
+      ? 'pt-BR'
+      : 'en-US'
+
+  if (reportQuery.isLoading) {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        {[0, 1, 2, 3].map(
+          (item) => (
+            <div
+              key={item}
+              className="card h-32 animate-pulse bg-white/[0.025]"
+            />
+          ),
+        )}
+      </div>
+    )
+  }
+
+  if (
+    reportQuery.isError ||
+    !report
+  ) {
+    return (
+      <div className="card p-5 text-sm text-red-300">
+        {t(
+          'focusMePage.monthlyReport.error',
+        )}
+      </div>
+    )
+  }
+
+  const monthName =
+    new Intl.DateTimeFormat(
+      locale,
+      {
+        month: 'long',
+        year: 'numeric',
+      },
+    ).format(
+      new Date(
+        `${report.period.start}T12:00:00`,
+      ),
+    )
+
+  const current =
+    report.current
+
+  const eligibility =
+    evaluateFocusHomeEligibility(
+      current,
+    )
+
+  const maxWeekMinutes =
+    Math.max(
+      ...current.weeks.map(
+        (week) =>
+          week.focusMinutes,
+      ),
+      1,
+    )
+
+  const maxTimeBlock =
+    Math.max(
+      ...Object.values(
+        current.timeBlocks,
+      ),
+      1,
+    )
+
+  const metrics = [
+    {
+      key: 'focus',
+      label: t(
+        'focusMePage.monthlyReport.focusTime',
+      ),
+      value: formatMinutes(
+        current.focusMinutes,
+      ),
+      comparison:
+        report.comparison
+          .focusMinutesPercent,
+      icon: Timer,
+    },
+    {
+      key: 'sessions',
+      label: t(
+        'focusMePage.monthlyReport.sessions',
+      ),
+      value:
+        current.completedSessions,
+      comparison:
+        report.comparison
+          .sessionsPercent,
+      icon: Clock3,
+    },
+    {
+      key: 'days',
+      label: t(
+        'focusMePage.monthlyReport.activeDays',
+      ),
+      value: current.activeDays,
+      comparison:
+        report.comparison
+          .activeDaysPercent,
+      icon: CalendarDays,
+    },
+    {
+      key: 'tasks',
+      label: t(
+        'focusMePage.monthlyReport.tasksCompleted',
+      ),
+      value:
+        current.tasks.completed,
+      comparison:
+        report.comparison
+          .tasksCompletedPercent,
+      icon: CheckSquare2,
+    },
+  ]
+
+  const timeBlocks = [
+    'morning',
+    'afternoon',
+    'evening',
+    'late_night',
+  ] as const
+
+  return (
+    <div className="space-y-4">
+      <motion.section
+        initial={{
+          opacity: 0,
+          y: 8,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className="card relative overflow-hidden p-5 sm:p-7"
+      >
+        <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-accent-green/[0.08] blur-3xl" />
+
+        <div className="relative">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+            {t(
+              'focusMePage.monthlyReport.eyebrow',
+            )}
+          </p>
+
+          <h2 className="mt-2 text-2xl font-semibold capitalize text-accent-white sm:text-3xl">
+            {monthName}
+          </h2>
+
+          <p className="mt-2 text-sm text-accent-subtle">
+            {t(
+              'focusMePage.monthlyReport.description',
+            )}
+          </p>
+
+          <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {metrics.map(
+              ({
+                key,
+                label,
+                value,
+                comparison,
+                icon: Icon,
+              }) => (
+                <div
+                  key={key}
+                  className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4"
+                >
+                  <Icon
+                    size={17}
+                    className="text-accent-green"
+                  />
+
+                  <p className="mt-4 text-xl font-semibold text-accent-white">
+                    {value}
+                  </p>
+
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-1">
+                    <p className="text-xs text-accent-subtle">
+                      {label}
+                    </p>
+
+                    <Comparison
+                      value={comparison}
+                    />
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section
+        initial={{
+          opacity: 0,
+          y: 8,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className="card p-5"
+      >
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
+            <svg
+              viewBox="0 0 80 80"
+              className="h-20 w-20 -rotate-90"
+              aria-hidden="true"
+            >
+              <circle
+                cx="40"
+                cy="40"
+                r="34"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="5"
+                className="text-white/[0.05]"
+              />
+
+              <circle
+                cx="40"
+                cy="40"
+                r="34"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="5"
+                strokeLinecap="round"
+                pathLength="100"
+                strokeDasharray="100"
+                strokeDashoffset={
+                  100 -
+                  eligibility.progress
+                }
+                className="text-accent-green transition-all duration-500"
+              />
+            </svg>
+
+            <span className="absolute text-sm font-semibold text-accent-white">
+              {eligibility.progress}%
+            </span>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+              FocushoMe
+            </p>
+
+            <h3 className="mt-2 text-base font-semibold text-accent-white">
+              {t(
+                `focusMePage.monthlyReport.eligibility.${eligibility.state}.title`,
+              )}
+            </h3>
+
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-accent-subtle">
+              {t(
+                `focusMePage.monthlyReport.eligibility.${eligibility.state}.description`,
+              )}
+            </p>
+
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.05]">
+              <div
+                className="h-full rounded-full bg-accent-green transition-all duration-500"
+                style={{
+                  width:
+                    `${eligibility.progress}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card p-5"
+        >
+          <div className="flex items-center gap-3">
+            <BarChart3
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h3 className="text-sm font-semibold text-accent-white">
+              {t(
+                'focusMePage.monthlyReport.weeklyEvolution',
+              )}
+            </h3>
+          </div>
+
+          {current.weeks.length > 0 ? (
+            <div className="mt-6 grid h-36 grid-cols-5 items-end gap-3">
+              {[1, 2, 3, 4, 5].map(
+                (weekNumber) => {
+                  const week =
+                    current.weeks.find(
+                      (item) =>
+                        item.week ===
+                        weekNumber,
+                    )
+
+                  const minutes =
+                    week?.focusMinutes ?? 0
+
+                  const height =
+                    minutes > 0
+                      ? Math.max(
+                          8,
+                          (
+                            minutes /
+                            maxWeekMinutes
+                          ) * 100,
+                        )
+                      : 3
+
+                  return (
+                    <div
+                      key={weekNumber}
+                      className="flex h-full flex-col items-center justify-end gap-2"
+                    >
+                      <span className="hidden text-[10px] text-accent-subtle sm:block">
+                        {minutes > 0
+                          ? formatMinutes(
+                              minutes,
+                            )
+                          : ''}
+                      </span>
+
+                      <div className="flex h-24 w-full items-end justify-center">
+                        <div
+                          className="w-full max-w-9 rounded-t-lg bg-gradient-to-t from-emerald-500/55 to-emerald-300"
+                          style={{
+                            height: `${height}%`,
+                          }}
+                        />
+                      </div>
+
+                      <span className="text-[10px] text-accent-subtle">
+                        {t(
+                          'focusMePage.monthlyReport.week',
+                          {
+                            number:
+                              weekNumber,
+                          },
+                        )}
+                      </span>
+                    </div>
+                  )
+                },
+              )}
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-accent-subtle">
+              {t(
+                'focusMePage.monthlyReport.noFocus',
+              )}
+            </p>
+          )}
+        </motion.section>
+
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card p-5"
+        >
+          <div className="flex items-center gap-3">
+            <Clock3
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h3 className="text-sm font-semibold text-accent-white">
+              {t(
+                'focusMePage.monthlyReport.timeDistribution',
+              )}
+            </h3>
+          </div>
+
+          <div className="mt-6 space-y-4">
+            {timeBlocks.map(
+              (block) => {
+                const minutes =
+                  current.timeBlocks[
+                    block
+                  ]
+
+                const width =
+                  (
+                    minutes /
+                    maxTimeBlock
+                  ) * 100
+
+                return (
+                  <div key={block}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-accent-subtle">
+                        {t(
+                          `focusMePage.monthlyReport.timeBlocks.${block}`,
+                        )}
+                      </span>
+
+                      <span className="text-xs font-medium text-accent-white">
+                        {formatMinutes(
+                          minutes,
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.05]">
+                      <div
+                        className="h-full rounded-full bg-accent-green"
+                        style={{
+                          width: `${width}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              },
+            )}
+          </div>
+        </motion.section>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <section className="card p-5">
+          <CheckSquare2
+            size={18}
+            className="text-accent-green"
+          />
+
+          <h3 className="mt-4 text-sm font-semibold text-accent-white">
+            {t(
+              'focusMePage.monthlyReport.tasks',
+            )}
+          </h3>
+
+          <p className="mt-3 text-2xl font-semibold text-accent-white">
+            {current.tasks.completed}
+            <span className="ml-2 text-xs font-normal text-accent-subtle">
+              /
+              {' '}
+              {current.tasks.created}
+              {' '}
+              {t(
+                'focusMePage.monthlyReport.created',
+              )}
+            </span>
+          </p>
+        </section>
+
+        <section className="card p-5">
+          <FolderOpen
+            size={18}
+            className="text-accent-green"
+          />
+
+          <h3 className="mt-4 text-sm font-semibold text-accent-white">
+            {t(
+              'focusMePage.monthlyReport.projects',
+            )}
+          </h3>
+
+          <p className="mt-3 text-2xl font-semibold text-accent-white">
+            {current.projects.completed}
+            <span className="ml-2 text-xs font-normal text-accent-subtle">
+              {t(
+                'focusMePage.monthlyReport.completed',
+              )}
+            </span>
+          </p>
+        </section>
+
+        <section className="card p-5">
+          <Target
+            size={18}
+            className="text-accent-green"
+          />
+
+          <h3 className="mt-4 text-sm font-semibold text-accent-white">
+            {t(
+              'focusMePage.monthlyReport.goals',
+            )}
+          </h3>
+
+          <p className="mt-3 text-2xl font-semibold text-accent-white">
+            {current.goals.completed}
+            <span className="ml-2 text-xs font-normal text-accent-subtle">
+              {t(
+                'focusMePage.monthlyReport.completed',
+              )}
+            </span>
+          </p>
+        </section>
+      </div>
+
+      {current.projects.topProjects.length > 0 && (
+        <section className="card p-5">
+          <h3 className="text-sm font-semibold text-accent-white">
+            {t(
+              'focusMePage.monthlyReport.topProjects',
+            )}
+          </h3>
+
+          <div className="mt-4 space-y-3">
+            {current.projects.topProjects.map(
+              (project, index) => (
+                <div
+                  key={project.id}
+                  className="flex items-center gap-3 rounded-xl bg-white/[0.025] p-3"
+                >
+                  <span className="w-5 text-xs text-accent-subtle">
+                    {index + 1}
+                  </span>
+
+                  <span className="text-lg">
+                    {project.emoji}
+                  </span>
+
+                  <span className="min-w-0 flex-1 truncate text-sm text-accent-white">
+                    {project.name}
+                  </span>
+
+                  <span className="text-xs font-medium text-accent-green">
+                    {formatMinutes(
+                      project.focusMinutes,
+                    )}
+                  </span>
+                </div>
+              ),
+            )}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}
+src/components/focusme/FocusHomeRevealInvitation.tsx
+import {
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+import {
+  useNavigate,
+} from 'react-router-dom'
+
+import {
+  useFocusHomeProfile,
+} from '@/hooks/focusme/useFocusHomeProfile'
+import {
+  useFocusMeReports,
+} from '@/hooks/focusme/useFocusMeReports'
+import {
+  evaluateFocusHomeEligibility,
+} from '@/services/focusMeEligibility'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+
+export function FocusHomeRevealInvitation() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+
+  const profileQuery =
+    useFocusHomeProfile()
+
+  const reportsQuery =
+    useFocusMeReports()
+
+  if (
+    profileQuery.isLoading ||
+    reportsQuery.isLoading ||
+    profileQuery.data
+  ) {
+    return null
+  }
+
+  const eligibleReport =
+    reportsQuery.data?.find(
+      (report) => {
+        if (
+          report.type !== 'monthly' ||
+          report.schemaVersion < 2
+        ) {
+          return false
+        }
+
+        const metrics =
+          report.metrics as
+            FocusMeMonthlyReport
+
+        return evaluateFocusHomeEligibility(
+          metrics.current,
+          true,
+        ).eligible
+      },
+    )
+
+  if (!eligibleReport) {
+    return null
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        navigate(
+          `/focusme/reveal/${eligibleReport.id}`,
+        )
+      }
+      className="card relative mb-5 flex w-full items-center gap-4 overflow-hidden p-5 text-left transition hover:border-accent-green/30 hover:bg-accent-green/[0.035]"
+    >
+      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-accent-green/10 blur-3xl" />
+
+      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent-green/10 text-accent-green">
+        <Sparkles size={21} />
+      </div>
+
+      <div className="relative min-w-0 flex-1">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent-green">
+          FocushoMe
+        </span>
+
+        <h2 className="mt-1 text-sm font-semibold text-accent-white">
+          {t(
+            'focusHomeReveal.invitation.title',
+          )}
+        </h2>
+
+        <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
+          {t(
+            'focusHomeReveal.invitation.description',
+          )}
+        </p>
+      </div>
+
+      <ChevronRight
+        size={18}
+        className="relative shrink-0 text-accent-green"
+      />
+    </button>
+  )
+}
+src/components/focusme/FocusHomeRetestControl.tsx
+import {
+  LoaderCircle,
+  RefreshCw,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+import {
+  useNavigate,
+} from 'react-router-dom'
+
+import {
+  useFocusHomeAssessmentReportId,
+  useFocusHomeProfile,
+} from '@/hooks/focusme/useFocusHomeProfile'
+import {
+  useFocusMeReports,
+} from '@/hooks/focusme/useFocusMeReports'
+import {
+  evaluateFocusHomeEligibility,
+} from '@/services/focusMeEligibility'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+
+export function FocusHomeRetestControl() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+
+  const profileQuery =
+    useFocusHomeProfile()
+
+  const reportsQuery =
+    useFocusMeReports()
+
+  const profile =
+    profileQuery.data
+
+  const assessmentReportQuery =
+    useFocusHomeAssessmentReportId(
+      profile?.currentAssessmentId,
+    )
+
+  const loading =
+    profileQuery.isLoading ||
+    reportsQuery.isLoading ||
+    (
+      Boolean(profile) &&
+      assessmentReportQuery.isLoading
+    )
+
+  const reports =
+    reportsQuery.data ?? []
+
+  const currentReport =
+    reports.find(
+      (report) =>
+        report.id ===
+        assessmentReportQuery.data,
+    )
+
+  const newerReports =
+    reports.filter(
+      (report) =>
+        report.type === 'monthly' &&
+        report.schemaVersion >= 2 &&
+        (
+          !currentReport ||
+          report.periodStart >
+            currentReport.periodStart
+        ),
+    )
+
+  const eligibleReport =
+    newerReports.find(
+      (report) => {
+        const metrics =
+          report.metrics as
+            FocusMeMonthlyReport
+
+        return evaluateFocusHomeEligibility(
+          metrics.current,
+          true,
+        ).eligible
+      },
+    )
+
+  let state:
+    | 'loading'
+    | 'first'
+    | 'waiting'
+    | 'available'
+
+  if (loading) {
+    state = 'loading'
+  } else if (!profile) {
+    state = 'first'
+  } else if (eligibleReport) {
+    state = 'available'
+  } else {
+    state = 'waiting'
+  }
+
+  return (
+    <section className="rounded-2xl border border-accent-green/30 bg-accent-green/[0.025] p-5 sm:p-6">
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-green/10 text-accent-green">
+          {state === 'loading' ? (
+            <LoaderCircle
+              size={19}
+              className="animate-spin"
+            />
+          ) : (
+            <RefreshCw size={19} />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-accent-white">
+            {t(
+              'focusHomeRetest.title',
+            )}
+          </h2>
+
+          <p className="mt-2 text-sm leading-relaxed text-accent-subtle">
+            {t(
+              `focusHomeRetest.states.${state}`,
+            )}
+          </p>
+
+          <button
+            type="button"
+            disabled={
+              state !== 'available'
+            }
+            onClick={() => {
+              if (eligibleReport) {
+                navigate(
+                  `/focusme/retest/${eligibleReport.id}`,
+                )
+              }
+            }}
+            className="mt-5 rounded-xl border border-accent-green/60 px-4 py-2.5 text-xs font-semibold text-accent-green transition hover:bg-accent-green/10 disabled:cursor-not-allowed disabled:border-white/[0.08] disabled:text-accent-subtle disabled:opacity-60"
+          >
+            {t(
+              'focusHomeRetest.action',
+            )}
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+src/components/focusme/FocusHomeSymbol.tsx
+import type {
+  SVGProps,
+} from 'react'
+
+export const FOCUS_HOME_KEYS = [
+  'aster',
+  'atlas',
+  'forge',
+  'pulse',
+  'loom',
+  'orbit',
+  'tide',
+  'ember',
+  'nova',
+  'prism',
+  'vanguard',
+  'verdant',
+] as const
+
+export type FocusHomeKey =
+  typeof FOCUS_HOME_KEYS[number]
+
+export const FOCUS_HOME_COLORS: Record<
+  FocusHomeKey,
+  string
+> = {
+  aster: '#A78BFA',
+  atlas: '#4F8EF7',
+  forge: '#F59E0B',
+  pulse: '#FB7185',
+  loom: '#22D3EE',
+  orbit: '#818CF8',
+  tide: '#2DD4BF',
+  ember: '#F97316',
+  nova: '#FBBF24',
+  prism: '#E879F9',
+  vanguard: '#F43F5E',
+  verdant: '#34D399',
+}
+
+interface FocusHomeSymbolProps
+  extends SVGProps<SVGSVGElement> {
+  type: FocusHomeKey
+  size?: number
+  compact?: boolean
+  colored?: boolean
+}
+
+function SymbolCore({
+  type,
+}: {
+  type: FocusHomeKey
+}) {
+  switch (type) {
+    case 'aster':
+      return (
+        <g>
+          <circle
+            cx="32"
+            cy="32"
+            r="3.5"
+          />
+          <path d="M32 28.5C31 22 33 17 38 13" />
+          <path d="M28.8 30C23 26 18 26 13 29" />
+          <path d="M29.5 35C25 40 24 45 26 51" />
+          <path d="M35 34C40 38 45 38 51 35" />
+          <path d="M34.5 29C39 25 43 21 44 16" />
+        </g>
+      )
+
+    case 'atlas':
+      return (
+        <g>
+          <path d="M14 43L24 29L32 39L40 23L51 43" />
+          <path d="M18 47H47" />
+          <path d="M21 21C28 16 38 16 45 21" />
+          <path d="M26 43V38M38 43V35" />
+        </g>
+      )
+
+    case 'forge':
+      return (
+        <g>
+          <path d="M32 20L42 31L32 43L22 31Z" />
+          <path d="M12 20L24 28" />
+          <path d="M52 20L40 28" />
+          <path d="M12 43L24 35" />
+          <path d="M52 43L40 35" />
+          <circle
+            cx="32"
+            cy="31.5"
+            r="3"
+          />
+        </g>
+      )
+
+    case 'pulse':
+      return (
+        <g>
+          <path d="M11 34H20L25 23L31 44L37 18L42 34H53" />
+          <path d="M15 41C22 48 42 49 49 40" />
+        </g>
+      )
+
+    case 'loom':
+      return (
+        <g>
+          <path d="M18 16C18 28 46 35 46 48" />
+          <path d="M46 16C46 28 18 35 18 48" />
+          <path d="M14 24H50" />
+          <path d="M14 40H50" />
+          <circle
+            cx="32"
+            cy="32"
+            r="3"
+          />
+        </g>
+      )
+
+    case 'orbit':
+      return (
+        <g>
+          <ellipse
+            cx="32"
+            cy="32"
+            rx="20"
+            ry="9"
+            transform="rotate(-18 32 32)"
+          />
+          <ellipse
+            cx="32"
+            cy="32"
+            rx="9"
+            ry="20"
+            transform="rotate(28 32 32)"
+          />
+          <circle
+            cx="32"
+            cy="32"
+            r="3.5"
+          />
+          <circle
+            cx="48"
+            cy="24"
+            r="2"
+            fill="currentColor"
+            stroke="none"
+          />
+        </g>
+      )
+
+    case 'tide':
+      return (
+        <g>
+          <path d="M11 26C18 18 25 18 32 26C39 34 46 34 53 26" />
+          <path d="M11 35C18 27 25 27 32 35C39 43 46 43 53 35" />
+          <path d="M16 44C22 39 27 39 32 44C37 49 42 49 48 44" />
+        </g>
+      )
+
+    case 'ember':
+      return (
+        <g>
+          <path d="M32 12C35 22 44 25 43 36C42 46 36 51 32 52C24 50 19 44 20 36C21 28 27 25 27 18C30 20 32 24 32 28C36 25 36 19 32 12Z" />
+          <path d="M23 36C27 31 37 31 41 36C37 41 27 41 23 36Z" />
+          <circle
+            cx="32"
+            cy="36"
+            r="2.7"
+          />
+          <circle
+            cx="32"
+            cy="36"
+            r="1"
+            fill="currentColor"
+            stroke="none"
+          />
+        </g>
+      )
+
+    case 'nova':
+      return (
+        <g>
+          <circle
+            cx="32"
+            cy="32"
+            r="7"
+          />
+          <path d="M32 11V20" />
+          <path d="M32 44V53" />
+          <path d="M11 32H20" />
+          <path d="M44 32H53" />
+          <path d="M17 17L23 23" />
+          <path d="M41 41L47 47" />
+          <path d="M47 17L41 23" />
+          <path d="M23 41L17 47" />
+        </g>
+      )
+
+    case 'prism':
+      return (
+        <g>
+          <path d="M32 12L51 45H13Z" />
+          <path d="M32 12L32 45" />
+          <path d="M20 33L44 33" />
+          <path d="M32 45L43 33L32 24L20 33Z" />
+        </g>
+      )
+
+    case 'vanguard':
+      return (
+        <g>
+          <path d="M17 14H47V30C47 40 41 48 32 52C23 48 17 40 17 30Z" />
+          <path d="M22 34L32 24L42 34" />
+          <path d="M32 24V44" />
+        </g>
+      )
+
+    case 'verdant':
+      return (
+        <g>
+          <path d="M32 51V18" />
+          <path d="M32 29C26 23 21 22 16 24C18 30 23 33 32 33" />
+          <path d="M32 39C39 32 45 31 50 34C47 41 41 44 32 44" />
+          <path d="M32 23C35 18 38 15 43 14C44 20 40 24 32 27" />
+          <circle
+            cx="32"
+            cy="52"
+            r="2"
+            fill="currentColor"
+            stroke="none"
+          />
+        </g>
+      )
+  }
+}
+
+export function FocusHomeSymbol({
+  type,
+  size = 88,
+  compact = false,
+  colored = true,
+  className,
+  style,
+  ...props
+}: FocusHomeSymbolProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={{
+        color: colored
+          ? FOCUS_HOME_COLORS[type]
+          : undefined,
+        ...style,
+      }}
+      aria-hidden="true"
+      {...props}
+    >
+      {!compact && (
+        <g>
+          <path
+            d="M13 10.5C5.5 17.4 2.8 27.8 4.9 38.2C7.5 51.2 18.6 59.2 31.4 60.5C44.9 61.9 56.9 54.1 60.2 41.5C61.1 38.1 61.4 34.8 61 31.6"
+            strokeWidth="1.45"
+            opacity="0.72"
+          />
+
+          <path
+            d="M9 35C7.5 22 15 11 26 7C39 3 52 8 58 20C64 32 60 47 50 55"
+            strokeWidth="1.15"
+            opacity="0.34"
+          />
+        </g>
+      )}
+
+      <g
+        strokeWidth={
+          compact ? 2.2 : 1.8
+        }
+      >
+        <SymbolCore type={type} />
+      </g>
+    </svg>
+  )
+}
+===== FOCUSME TRANSLATIONS PT-BR =====
+816-
+817-    temporal: {
+818-      aurora: 'Aurora',
+819-      solaris: 'Solaris',
+820-      vesper: 'Vesper',
+821-      lunaris: 'Lunaris',
+822-      equinox: 'Equinox',
+823-    },
+824-  },
+825-
+826:  focusMePage: {
+827-    back: 'Voltar para Configurações',
+828-    reportsSubtitle:
+829-      'Seus relatórios, padrões e descobertas reunidos em um só lugar.',
+830-    subtitle:
+831-      'Uma nova forma de compreender sua jornada de foco.',
+832-    coming: 'Em desenvolvimento no Focus 4.0',
+833-
+834-    view: {
+835-      week: 'Semana',
+836-      month: 'Mês',
+837-      label: 'Período do relatório',
+838-    },
+839-
+840-    monthlyReport: {
+841-      eyebrow: 'Seu mês até agora',
+842-      description:
+843-        'Acompanhe como seu ritmo está se formando antes da retrospectiva mensal.',
+844-      error:
+845-        'Não foi possível preparar os dados deste mês.',
+846-      focusTime: 'Tempo de foco',
+847-      sessions: 'Sessões',
+848-      activeDays: 'Dias ativos',
+849-      tasksCompleted: 'Tarefas concluídas',
+850-      noComparison: 'Sem mês anterior',
+851-      weeklyEvolution: 'Evolução por semana',
+852-      week: 'S{{number}}',
+853-      noFocus:
+854-        'As semanas aparecerão conforme você concluir sessões.',
+855-      timeDistribution: 'Quando seu foco acontece',
+856-      timeBlocks: {
+857-        morning: 'Manhã',
+858-        afternoon: 'Tarde',
+859-        evening: 'Noite',
+860-        late_night: 'Madrugada',
+861-      },
+862-      tasks: 'Tarefas',
+863-      projects: 'Projetos',
+864-      goals: 'Metas',
+865-      created: 'criadas',
+866-      completed: 'concluídos',
+867-      topProjects: 'Projetos com mais foco',
+868-      eligibility: {
+869-        building: {
+870-          title:
+871-            'Sua análise está ganhando forma',
+872-          description:
+873-            'Continue usando o Focus naturalmente. Cada sessão e conclusão ajuda a construir uma leitura mais confiável do seu mês.',
+874-        },
+875-        ready: {
+876-          title:
+877-            'Dados suficientes para sua análise',
+878-          description:
+879-            'Seu mês já possui profundidade suficiente. Quando ele terminar, sua análise FocushoMe poderá ser realizada.',
+880-        },
+881-        eligible: {
+882-          title:
+883-            'Análise FocushoMe disponível',
+884-          description:
+885-            'Este mês encerrado possui dados suficientes para revelar ou reavaliar sua FocushoMe.',
+886-        },
+887-      },
+888-    },
+889-
+890-    weeklyReport: {
+891-      available: 'Disponível agora',
+892-      eyebrow: 'Sua semana até agora',
+893-      title:
+894-        'O que seu foco já conta sobre você',
+895-      loading:
+896-        'Reunindo os dados da sua semana...',
+897-      error:
+898-        'Não foi possível preparar seu resumo agora.',
+899-      focusTime: 'Tempo de foco',
+900-      sessions: 'Sessões',
+901-      activeDays: 'Dias ativos',
+902-      tasksCompleted: 'Tarefas concluídas',
+903-      dailyRhythm: 'Ritmo diário',
+904-      bestDay: 'Dia com mais foco',
+905-      noFocus:
+906-        'Conclua uma sessão para começar a formar seu relatório.',
+907-      tasksTitle: 'Planejamento e execução',
+908-      created: 'Criadas',
+909-      completed: 'Concluídas',
+910-      rhythmTitle: 'Continuidade',
+911-      starts: 'Inícios',
+912-      pauses: 'Pausas',
+913-      resumes: 'Retomadas',
+914-      abandoned: 'Interrompidas',
+915-      topProject: 'Projeto em destaque',
+916-      noProject:
+917-        'Nenhum projeto recebeu sessões nesta semana.',
+918-      currentWeek:
+919-        'Este resumo evolui conforme você usa o Focus.',
+920-      historyTitle: 'Histórico de relatórios',
+921-      historyDescription:
+922-        'Consulte suas retrospectivas semanais e mensais preservadas ao longo do tempo.',
+923-    },
+924-
+925-
+926-    hero: {
+927-      title:
+928-        'Seu foco conta uma história.',
+929-      description:
+930-        'O FocusMe reunirá suas sessões, tarefas, metas, projetos e conquistas para mostrar não apenas quanto você produziu, mas como sua rotina realmente aconteceu.',
+931-    },
+932-
+933-    experience: {
+934-      title: 'Uma retrospectiva só sua',
+935-      subtitle:
+936-        'Cada parte do Focus ajudará a construir uma visão mais completa da sua jornada.',
+937-
+938-      items: {
+939-        weekly: {
+940-          title: 'Sua semana',
+941-          description:
+942-            'Entenda seus dias mais focados, tarefas concluídas, projetos em destaque e mudanças no seu ritmo.',
+943-        },
+944-
+945-        monthly: {
+946-          title: 'Seu mês',
+947-          description:
+948-            'Receba uma retrospectiva profunda, escrita de forma humana a partir de métricas calculadas pelo Focus.',
+949-        },
+950-
+951-        focusHome: {
+952-          title: 'Sua FocushoMe',
+953-          description:
+954-            'Descubra uma classe rara baseada na maneira como você planeja, executa, conclui e mantém seu foco.',
+955-        },
+956-
+957-        sharing: {
+958-          title: 'Sua história em uma imagem',
+959-          description:
+960-            'Transforme seus resultados em um recap personalizado pronto para compartilhar.',
+961-        },
+962-      },
+963-    },
+964-
+965-    focusHome: {
+966-      title:
+967-        'Mais do que uma insígnia',
+968-      description:
+969-        'Sua FocushoMe será uma identidade construída a partir do uso real do aplicativo. Ela não será definida apenas pelo horário em que você trabalha nem por deixar o timer rodando.',
+970-
+971-      items: {
+972-        rare:
+973-          'Conquistada somente depois de um mês com dados suficientes.',
+974-        complete:
+975-          'Baseada em sessões, tarefas, metas, projetos e padrões de conclusão.',
+976-        permanent:
+977-          'Permanece com você e só muda quando um novo teste mensal for solicitado.',
+978-      },
+979-    },
+980-
+981-    symbols: {
+982-      title: 'As doze FocushoMes',
+983-      subtitle:
+984-        'Toque em um símbolo para conhecer a identidade, a potência e o ponto de equilíbrio de cada FocushoMe.',
+985-      tap: 'Conhecer',
+986-      open: 'Conhecer a FocushoMe {{name}}',
+987-      close: 'Fechar',
+988-      strength: 'Sua potência',
+989-      balance: 'Ponto de equilíbrio',
+990-
+991-      items: {
+992-        aster: {
+993-          essence:
+994-            'A visão que antecede o caminho.',
+995-          description:
+996-            'Aster pertence a quem enxerga possibilidades antes de transformá-las em ações. Metas, ideias e planos costumam nascer com facilidade, formando uma visão ampla do que ainda pode ser construído.',
+997-          strength:
+998-            'Imaginar futuros possíveis, estabelecer direções e dar significado ao trabalho antes mesmo de ele começar.',
+999-          balance:
+1000-            'Escolher quais possibilidades realmente merecem avançar, evitando que novos horizontes escondam os caminhos já abertos.',
+1001-        },
+1002-
+1003-        atlas: {
+1004-          essence:
+1005-            'Profundidade para sustentar grandes jornadas.',
+1006-          description:
+1007-            'Atlas concentra energia em projetos importantes e permanece neles por longos períodos. Em vez de distribuir o foco entre muitas frentes, prefere carregar e desenvolver algo significativo.',
+1008-          strength:
+1009-            'Acumular profundidade, domínio e muitas horas de atenção em objetivos que exigem continuidade.',
+1010-          balance:
+1011-            'Reconhecer quando a responsabilidade assumida se tornou pesada demais e quando dividir o caminho pode fortalecer o resultado.',
+1012-        },
+1013-
+1014-        forge: {
+1015-          essence:
+1016-            'Intenção transformada em resultado.',
+1017-          description:
+1018-            'Forge encontra satisfação em concluir. Tarefas abertas, projetos avançando e metas alcançadas formam o combustível de alguém que transforma planejamento em algo concreto.',
+1019-          strength:
+1020-            'Finalizar, resolver pendências e converter esforço em entregas que podem ser vistas e reconhecidas.',
+1021-          balance:
+1022-            'Não transformar toda experiência em obrigação de produzir; algumas ideias precisam de espaço antes de serem levadas ao fogo.',
+1023-        },
+1024-
+1025-        pulse: {
+1026-          essence:
+1027-            'Movimento rápido que mantém o dia vivo.',
+1028-          description:
+1029-            'Pulse trabalha por impulsos curtos e frequentes. Pequenas tarefas, respostas rápidas e decisões imediatas criam uma sensação constante de progresso e movimento.',
+1030-          strength:
+1031-            'Destravar o cotidiano, reduzir pequenas pendências e reagir com agilidade ao que precisa acontecer agora.',
+1032-          balance:
+1033-            'Reservar períodos maiores para trabalhos que não entregam recompensa imediata, mas constroem resultados profundos.',
+1034-        },
+1035-
+1036-        loom: {
+1037-          essence:
+1038-            'Fios diferentes formando uma única história.',
+1039-          description:
+1040-            'Loom conecta tarefas, projetos, metas e sessões de foco. Seu padrão não depende de uma única ferramenta: cada parte do Focus participa de uma estrutura maior.',
+1041-          strength:
+1042-            'Integrar planejamento e execução, mantendo diferentes áreas da vida conectadas sem perder o sentido do conjunto.',
+1043-          balance:
+1044-            'Evitar criar estruturas complexas demais quando uma decisão simples já seria suficiente para continuar.',
+1045-        },
+1046-
+1047-        orbit: {
+1048-          essence:
+1049-            'Constância que cria seu próprio centro.',
+1050-          description:
+1051-            'Orbit retorna ao foco em horários e ciclos reconhecíveis. A força não está necessariamente em grandes picos, mas na capacidade de voltar ao mesmo eixo com regularidade.',
+1052-          strength:
+1053-            'Transformar o foco em rotina confiável, reduzindo a dependência de motivação momentânea.',
+1054-          balance:
+1055-            'Permitir mudanças quando a rotina deixa de servir, sem interpretar adaptação como perda de disciplina.',
+1056-        },
+1057-
+1058-        tide: {
+1059-          essence:
+1060-            'Adaptação sem perder a direção.',
+1061-          description:
+1062-            'Tide muda de intensidade, horário e estratégia conforme o contexto. Seu ritmo pode variar bastante, mas existe inteligência na forma como responde às condições do momento.',
+1063-          strength:
+1064-            'Reorganizar prioridades, encontrar novas janelas de produtividade e continuar mesmo quando o plano original não funciona.',
+1065-          balance:
+1066-            'Criar alguns pontos estáveis para que a adaptação não se transforme em dispersão permanente.',
+1067-        },
+1068-
+1069-        ember: {
+1070-          essence:
+1071-            'Uma intensidade que permanece acesa por dentro.',
+1072-          description:
+1073-            'Ember nem sempre produz o maior volume visível, mas mantém uma atenção profunda e silenciosa. Seu olho representa consciência: observar antes de agir e proteger a energia essencial.',
+1074-          strength:
+1075-            'Sustentar concentração interna, perceber detalhes e preservar motivação mesmo em períodos discretos.',
+1076-          balance:
+1077-            'Permitir que o trabalho interno se torne visível, compartilhando avanços e reconhecendo as próprias conquistas.',
+1078-        },
+1079-
+1080-        nova: {
+1081-          essence:
+1082-            'A energia que inaugura novos caminhos.',
+1083-          description:
+1084-            'Nova aparece onde projetos, tarefas e possibilidades começam com intensidade. Existe entusiasmo em experimentar, iniciar e provocar movimento onde antes havia apenas intenção.',
+1085-          strength:
+1086-            'Dar o primeiro passo, gerar impulso e transformar uma ideia parada em algo que já começou a existir.',
+1087-          balance:
+1088-            'Manter energia depois do brilho inicial, escolhendo quais começos merecem chegar até o fim.',
+1089-        },
+1090-
+1091-        prism: {
+1092-          essence:
+1093-            'Muitas formas de foco atravessando a mesma pessoa.',
+1094-          description:
+1095-            'Prism distribui atenção entre categorias, projetos, horários e formas diferentes de produzir. Sua identidade nasce da variedade e da capacidade de enxergar por vários ângulos.',
+1096-          strength:
+1097-            'Combinar perspectivas, alternar habilidades e encontrar soluções que não surgiriam de uma rotina completamente uniforme.',
+1098-          balance:
+1099-            'Criar prioridade entre tantas possibilidades para que variedade não se transforme em fragmentação.',
+1100-        },
+1101-
+1102-        vanguard: {
+1103-          essence:
+1104-            'Presença firme diante do que não pode esperar.',
+1105-          description:
+1106-            'Vanguard reage com força quando existe prioridade, urgência ou responsabilidade clara. A pressão não paralisa: ela organiza o campo e indica onde a energia deve ser aplicada.',
+1107-          strength:
+1108-            'Tomar decisões, proteger o essencial e avançar em situações que exigem resposta rápida e direção.',
+1109-          balance:
+1110-            'Não depender apenas da urgência para agir e reservar energia para o importante antes que ele se torne emergencial.',
+1111-        },
+1112-
+1113-        verdant: {
+1114-          essence:
+1115-            'Crescimento paciente que se torna duradouro.',
+1116-          description:
+1117-            'Verdant cultiva metas e projetos ao longo do tempo. Pequenos avanços podem parecer discretos isoladamente, mas formam raízes profundas quando observados durante todo o mês.',
+1118-          strength:
+1119-            'Construir resultados sustentáveis, respeitar processos longos e continuar mesmo quando a transformação',
+1120-          balance:
+1121-            'Celebrar etapas intermediárias para que a distância do resultado final não esconda tudo o que já cresceu.',
+1122-        },
+1123-      },
+1124-    },
+1125-
+1126-    privacy: {
+1127-      title:
+1128-        'Sua rotina continua sendo sua',
+1129-      description:
+1130-        'O FocusMe utilizará somente as ações registradas dentro do Focus. Nenhum monitoramento constante será necessário.',
+1131-
+1132-      items: {
+1133-        location:
+1134-          'Sem acesso à sua localização.',
+1135-        apps:
+1136-          'Sem acesso à atividade de outros aplicativos.',
+1137-        device:
+1138-          'Sem monitoramento permanente do dispositivo.',
+1139-      },
+1140-    },
+1141-
+1142-    development: {
+1143-      title:
+1144-        'O FocusMe está em desenvolvimento',
+1145-      description:
+1146-        'Esta página será atualizada conforme os recursos do Focus 4.0 forem concluídos.',
+1147-    },
+1148-  },
+1149-
+1150-  focusMeHistoryPage: {
+1151-    back: 'Voltar para o FocusMe',
+1152-    title: 'Histórico de relatórios',
+1153-    subtitle:
+1154-      'Revisite suas semanas, seus meses e a evolução da sua rotina.',
+1155-    filterLabel: 'Filtrar relatórios',
+1156-    error:
+1157-      'Não foi possível carregar seu histórico.',
+1158-    sessions: 'sessões',
+1159-    tasks: 'tarefas concluídas',
+1160-    types: {
+1161-      weekly: 'Semanal',
+1162-      monthly: 'Mensal',
+1163-    },
+1164-    filters: {
+1165-      all: 'Todos',
+1166-      weekly: 'Semanais',
+1167-      monthly: 'Mensais',
+1168-    },
+1169-    empty: {
+1170-      title:
+1171-        'Seus relatórios aparecerão aqui',
+1172-      description:
+1173-        'Quando uma semana ou um mês for encerrado, o FocusMe preservará a retrospectiva para que ela não mude com o tempo.',
+1174-      schedule:
+1175-        'Semanas fecham na segunda-feira',
+1176-    },
+1177-  },
+1178-
+1179-  focusMeReportPage: {
+1180-    back: 'Voltar ao histórico',
+1181-    error:
+1182-      'Este relatório não foi encontrado ou não pôde ser carregado.',
+1183-    types: {
+1184-      weekly: 'Retrospectiva semanal',
+1185-      monthly: 'Retrospectiva mensal',
+1186-    },
+1187-    preserved:
+1188-      'Relatório encerrado e preservado',
+1189-    focusTime: 'Tempo de foco',
+1190-    sessions: 'Sessões',
+1191-    activeDays: 'Dias ativos',
+1192-    tasksCompleted: 'Tarefas concluídas',
+1193-    dailyEvolution: 'Evolução diária',
+1194-    weeklyEvolution: 'Evolução semanal',
+1195-    week: 'S{{number}}',
+1196-    noFocus:
+1197-      'Nenhuma sessão de foco foi concluída neste período.',
+1198-    tasks: 'Tarefas concluídas / criadas',
+1199-    projects: 'Projetos concluídos / criados',
+1200-    goals: 'Metas concluídas / criadas',
+1201-    topProject: 'Projeto em destaque',
+1202-    yourStory: 'A história do seu período',
+1203-  },
+1204-
+1205-  changesPage: {
+1206-    back: 'Voltar para Configurações',
+1207-    title: 'Mudanças e novidades',
+1208-    subtitle:
+1209-      'Acompanhe tudo o que evoluiu no Focus e o que estamos preparando.',
+1210-    currentVersion: 'Versão atual',
+1211-    currentDescription:
+1212-      'Uma nova geração do Focus, com tarefas mais inteligentes, projetos concluíveis e a fundação do FocusMe.',
+1213-    new: 'Novo',
+1214-
+1215-    recent: {
+1216-      title: 'Novidades recentes',
+1217-      subtitle:
+1218-        'As melhorias mais novas disponíveis no aplicativo.',
+1219-
+1220-      items: {
+1221-        taskCategories: {
+1222-          title: 'Nova experiência de tarefas',
+1223-          description:
+1224-            'As tarefas agora possuem categorias, filtros combináveis, projeto associado e estimativa de Pomodoros.',
+1225-        },
+1226-
+1227-        taskTrash: {
+1228-          title: 'Lixeira de tarefas',
+1229-          description:
+1230-            'Tarefas removidas podem ser restauradas durante 30 dias antes da exclusão definitiva.',
+1231-        },
+1232-
+1233-        projectLifecycle: {
+1234-          title: 'Conclusão de projetos',
+1235-          description:
+1236-            'Projetos agora podem ser concluídos, consultados separadamente e reabertos sem perder seu histórico.',
+1237-        },
+1238-
+1239-        focusMePreview: {
+1240-          title: 'Conheça o FocusMe',
+1241-          description:
+1242-            'Uma nova página apresenta as retrospectivas, a FocushoMe e a visão do Focus para análises pessoais.',
+1243-        },
+1244-
+1245-        taskEditing: {
+1246-          title: 'Edição de tarefas',
+1247-          description:
+1248-            'Agora você pode corrigir ou atualizar o nome de uma tarefa sem precisar excluí-la e criar outra.',
+1249-        },
+1250-        responsive: {
+1251-          title: 'Melhorias de responsividade',
+1252-          description:
+1253-            'Textos, cabeçalhos e espaçamentos foram refinados para oferecer uma experiência melhor em celulares e tablets.',
+1254-        },
+1255-        changesCenter: {
+1256-          title: 'Central de mudanças',
+1257-          description:
+1258-            'Este novo espaço reúne o histórico do Focus, as novidades recentes e os próximos recursos.',
+1259-        },
+1260-      },
+1261-    },
+1262-
+1263-    history: {
+1264-      title: 'Histórico de versões',
+1265-      subtitle:
+1266-        'Veja como o Focus evoluiu desde sua primeira versão.',
+1267-      current: 'Atual',
+1268-
+1269-      versions: {
+1270-        v4: {
+1271-          description:
+1272-            'O Focus começou uma nova fase, conectando organização diária, conclusão e compreensão da rotina.',
+1273-          items: {
+1274-            taskEditing:
+1275-              'Edição completa de tarefas sem precisar excluí-las.',
+1276-            taskCategories:
+1277-              'Categorias Rápida, Planejada, Urgente e Longo prazo, com filtros e identificação visual minimalista.',
+1278-            taskTrash:
+1279-              'Lixeira com restauração por 30 dias e exclusão definitiva.',
+1280-            projectLifecycle:
+1281-              'Conclusão, reabertura e filtros de projetos, preservando horas, tarefas e sessões.',
+1282-            focusMePreview:
+1283-              'Apresentação do FocusMe, da FocushoMe, das futuras retrospectivas e da política de privacidade.',
+1284-          },
+1285-        },
+1286-
+1287-        v3: {
+1288-          description:
+1289-            'O Focus se tornou uma experiência verdadeiramente multiplataforma e bilíngue.',
+1290-          items: {
+1291-            languages:
+1292-              'Aplicativo completo em português e inglês.',
+1293-            androidWidgets:
+1294-              'Novos widgets para dispositivos Android.',
+1295-            autoStart:
+1296-              'Opções para iniciar pausas e sessões de foco automaticamente.',
+1297-            widgetImprovements:
+1298-              'Melhorias de layout, sincronização e responsividade dos widgets.',
+1299-          },
+1300-        },
+1301-
+1302-        v2: {
+1303-          description:
+1304-            'A experiência móvel ganhou recursos nativos e maior integração com o sistema.',
+1305-          items: {
+1306-            android:
+1307-              'Versão nativa do Focus para Android.',
+1308-            liveNotifications:
+1309-              'Timer visível em notificações ao vivo durante as sessões.',
+1310-            appleExperience:
+1311-              'Live Activity, Dynamic Island e widgets no iPhone.',
+1312-            tabletSupport:
+1313-              'Layouts e widgets adaptados para iPad.',
+1314-          },
+1315-        },
+1316-
+1317-        v1: {
+1318-          description:
+1319-            'A base do Focus nasceu com as ferramentas essenciais para organizar tempo e progresso.',
+1320-          items: {
+1321-            pomodoro:
+1322-              'Timer Pomodoro com durações personalizáveis.',
+1323-            organization:
+1324-              'Tarefas, projetos e metas anuais.',
+1325-            progress:
+1326-              'Sequências, insígnias, análises e histórico de foco.',
+1327-            accounts:
+1328-              'Conta Google com sincronização e modo visitante.',
+1329-          },
+1330-        },
+1331-      },
+1332-    },
+1333-
+1334-    roadmap: {
+1335-      title: 'Ainda chegando no Focus 4.0',
+1336-      subtitle:
+1337-        'A base já está disponível. Agora estamos construindo a experiência completa do FocusMe.',
+1338-
+1339-      status: {
+1340-        development: 'Em desenvolvimento',
+1341-        planned: 'Planejado',
+1342-      },
+1343-
+1344-      items: {
+1345-        taskExperience: {
+1346-          title: 'Nova experiência de tarefas',
+1347-          description:
+1348-            'Uma tela reorganizada, mais completa e ainda fiel ao minimalismo do Focus.',
+1349-        },
+1350-
+1351-        categories: {
+1352-          title: 'Categorias de tarefas',
+1353-          description:
+1354-            'Tarefas rápidas, planejadas, urgentes e de longo prazo com filtros e identificação visual discreta.',
+1355-        },
+1356-
+1357-        trash: {
+1358-          title: 'Lixeira de tarefas',
+1359-          description:
+1360-            'Recupere tarefas removidas durante 30 dias antes da exclusão definitiva.',
+1361-        },
+1362-
+1363-        weeklyRecaps: {
+1364-          title: 'Recaps semanais',
+1365-          description:
+1366-            'Um resumo completo dos seus dias, sessões, tarefas, metas, projetos e conquistas.',
+1367-        },
+1368-
+1369-        monthlyRecaps: {
+1370-          title: 'Retrospectivas mensais',
+1371-          description:
+1372-            'Uma visão profunda do mês com métricas, padrões, comparações e uma narrativa pessoal.',
+1373-        },
+1374-
+1375-        focusHome: {
+1376-          title: 'FocushoMe',
+1377-          description:
+1378-            'Uma classe rara e permanente baseada na forma como você planeja, executa e conclui.',
+1379-        },
+1380-
+1381-        sharing: {
+1382-          title: 'Relatórios compartilháveis',
+1383-          description:
+1384-            'Recaps personalizados em PNG para compartilhar seus resultados e sua FocushoMe.',
+1385-        },
+1386-
+1387-        history: {
+1388-          title: 'Histórico do FocusMe',
+1389-          description:
+1390-            'Consulte recaps semanais, retrospectivas mensais e análises anteriores.',
+1391-        },
+1392-
+1393-        notifications: {
+1394-          title: 'Novos relatórios disponíveis',
+1395-          description:
+1396-            'Receba um aviso opcional quando sua semana, seu mês ou sua FocushoMe estiverem prontos.',
+1397-        },
+1398-      },
+1399-
+1400-      disclaimer:
+1401-        'Os recursos restantes serão adicionados progressivamente durante a evolução do Focus 4.0.',
+1402-    },
+1403-  },
+1404-
+1405-  settings: {
+1406-    title: 'Configurações',
+1407-    subtitle:
+1408-      'Personalize sua experiência de foco',
+1409-
+1410-    language: {
+1411-      title: 'Idioma',
+1412-      description:
+1413-        'Escolha o idioma usado em todo o Focus.',
+1414-      english: 'English',
+1415-      portugueseBrazil:
+1416-        'Português (Brasil)',
+1417-    },
+1418-
+1419-    account: {
+1420-      title: 'Conta',
+1421-      connected: 'Conta conectada',
+1422-      googleConnected:
+1423-        'Conta Google conectada',
+1424-      displayName:
+1425-        'Nome de exibição',
+1426-      displayNameDescription:
+1427-        'Este nome aparecerá na saudação do Dashboard.',
+1428-      placeholder: 'Seu nome',
+1429-      saving: 'Salvando...',
+1430-      save: 'Salvar nome',
+1431-      saved: 'Nome salvo.',
+1432-      signOut: 'Sair',
+1433-      signingOut: 'Saindo...',
+1434-      guestMode:
+1435-        'Modo visitante',
+1436-      guestDescription:
+1437-        'Você está usando o Focus sem uma conta. Seus dados são armazenados apenas neste dispositivo.',
+1438-      continueGoogle:
+1439-        'Continuar com Google',
+1440-      redirecting:
+1441-        'Redirecionando...',
+1442-      exitGuest:
+1443-        'Sair do modo visitante',
+1444-      noAccount:
+1445-        'Nenhuma conta conectada',
+1446-      noAccountDescription:
+1447-        'Conecte sua conta Google para sincronizar seus dados do Focus.',
+1448-    },
+1449-
+1450-    timer: {
+1451-      title: 'Duração do timer',
+1452-      focus: 'Sessão de foco',
+1453-      shortBreak: 'Pausa curta',
+1454-      longBreak: 'Pausa longa',
+1455-      sessionsUntilLongBreak:
+1456-        'Sessões até a pausa longa',
+1457-      minutes: 'min',
+1458-    },
+1459-
+1460-    preferences: {
+1461-      title: 'Preferências',
+1462-      sound:
+1463-        'Notificações sonoras',
+1464-      autoBreak:
+1465-        'Iniciar pausas automaticamente',
+1466-      autoWork:
+1467-        'Iniciar sessões de foco automaticamente',
+1468-    },
+1469-
+1470-    focusMe: {
+1471-      title: 'Sobre o FocusMe',
+1472-      badge: 'Focus 4.0',
+1473-      description:
+1474-        'Descubra como sua atividade será transformada em retrospectivas pessoais.',
+1475-    },
+1476-
+1477-    changes: {
+1478-      title: 'Mudanças e novidades',
+1479-      description:
+1480-        'Conheça a evolução do Focus e veja o que está por vir.',
+1481-    },
+1482-
+1483-    about: {
+1484-      title: 'Sobre',
+1485-      description:
+1486-        'Focus v4.0 — Um aplicativo minimalista de Pomodoro e produtividade. Dados do modo visitante são armazenados localmente no dispositivo.',
+1487-    },
+1488-  },
+1489-}
+1490-
+1491-export default ptBR
+===== FOCUSME TRANSLATIONS EN =====
+806-
+807-    temporal: {
+808-      aurora: 'Aurora',
+809-      solaris: 'Solaris',
+810-      vesper: 'Vesper',
+811-      lunaris: 'Lunaris',
+812-      equinox: 'Equinox',
+813-    },
+814-  },
+815-
+816:  focusMePage: {
+817-    back: 'Back to Settings',
+818-    reportsSubtitle:
+819-      'Your reports, patterns, and discoveries gathered in one place.',
+820-    subtitle:
+821-      'A new way to understand your focus journey.',
+822-    coming: 'In development for Focus 4.0',
+823-
+824-    view: {
+825-      week: 'Week',
+826-      month: 'Month',
+827-      label: 'Report period',
+828-    },
+829-
+830-    monthlyReport: {
+831-      eyebrow: 'Your month so far',
+832-      description:
+833-        'See how your rhythm is taking shape before the monthly retrospective.',
+834-      error:
+835-        'This month’s data could not be prepared.',
+836-      focusTime: 'Focus time',
+837-      sessions: 'Sessions',
+838-      activeDays: 'Active days',
+839-      tasksCompleted: 'Tasks completed',
+840-      noComparison: 'No previous month',
+841-      weeklyEvolution: 'Weekly evolution',
+842-      week: 'W{{number}}',
+843-      noFocus:
+844-        'Weeks will appear as you complete sessions.',
+845-      timeDistribution: 'When your focus happens',
+846-      timeBlocks: {
+847-        morning: 'Morning',
+848-        afternoon: 'Afternoon',
+849-        evening: 'Evening',
+850-        late_night: 'Late night',
+851-      },
+852-      tasks: 'Tasks',
+853-      projects: 'Projects',
+854-      goals: 'Goals',
+855-      created: 'created',
+856-      completed: 'completed',
+857-      topProjects: 'Most focused projects',
+858-      eligibility: {
+859-        building: {
+860-          title:
+861-            'Your analysis is taking shape',
+862-          description:
+863-            'Keep using Focus naturally. Every session and completion helps build a more reliable understanding of your month.',
+864-        },
+865-        ready: {
+866-          title:
+867-            'Enough data for your analysis',
+868-          description:
+869-            'Your month already has enough depth. When it ends, your FocushoMe analysis can be performed.',
+870-        },
+871-        eligible: {
+872-          title:
+873-            'FocushoMe analysis available',
+874-          description:
+875-            'This closed month contains enough data to reveal or reassess your FocushoMe.',
+876-        },
+877-      },
+878-    },
+879-
+880-    weeklyReport: {
+881-      available: 'Available now',
+882-      eyebrow: 'Your week so far',
+883-      title:
+884-        'What your focus already says about you',
+885-      loading:
+886-        'Bringing your weekly data together...',
+887-      error:
+888-        'Your summary could not be prepared right now.',
+889-      focusTime: 'Focus time',
+890-      sessions: 'Sessions',
+891-      activeDays: 'Active days',
+892-      tasksCompleted: 'Tasks completed',
+893-      dailyRhythm: 'Daily rhythm',
+894-      bestDay: 'Most focused day',
+895-      noFocus:
+896-        'Complete a session to start building your report.',
+897-      tasksTitle: 'Planning and execution',
+898-      created: 'Created',
+899-      completed: 'Completed',
+900-      rhythmTitle: 'Continuity',
+901-      starts: 'Starts',
+902-      pauses: 'Pauses',
+903-      resumes: 'Resumes',
+904-      abandoned: 'Interrupted',
+905-      topProject: 'Highlighted project',
+906-      noProject:
+907-        'No project received focus sessions this week.',
+908-      currentWeek:
+909-        'This summary evolves as you use Focus.',
+910-      historyTitle: 'Report history',
+911-      historyDescription:
+912-        'Review your preserved weekly and monthly retrospectives over time.',
+913-    },
+914-
+915-
+916-    hero: {
+917-      title:
+918-        'Your focus tells a story.',
+919-      description:
+920-        'FocusMe will bring together your sessions, tasks, goals, projects, and achievements to show not only how much you accomplished, but how your routine truly unfolded.',
+921-    },
+922-
+923-    experience: {
+924-      title: 'A retrospective made for you',
+925-      subtitle:
+926-        'Every part of Focus will help build a more complete view of your journey.',
+927-
+928-      items: {
+929-        weekly: {
+930-          title: 'Your week',
+931-          description:
+932-            'Understand your most focused days, completed tasks, highlighted projects, and changes in your rhythm.',
+933-        },
+934-
+935-        monthly: {
+936-          title: 'Your month',
+937-          description:
+938-            'Receive a deep retrospective written in a human way from metrics calculated by Focus.',
+939-        },
+940-
+941-        focusHome: {
+942-          title: 'Your FocushoMe',
+943-          description:
+944-            'Discover a rare class based on how you plan, execute, complete, and maintain your focus.',
+945-        },
+946-
+947-        sharing: {
+948-          title: 'Your story in one image',
+949-          description:
+950-            'Turn your results into a personalized recap ready to share.',
+951-        },
+952-      },
+953-    },
+954-
+955-    focusHome: {
+956-      title: 'More than a badge',
+957-      description:
+958-        'Your FocushoMe will be an identity built from real app usage. It will not be determined only by when you work or by leaving the timer running.',
+959-
+960-      items: {
+961-        rare:
+962-          'Earned only after a month with enough meaningful data.',
+963-        complete:
+964-          'Based on sessions, tasks, goals, projects, and completion patterns.',
+965-        permanent:
+966-          'It stays with you and changes only when you request a new monthly test.',
+967-      },
+968-    },
+969-
+970-    symbols: {
+971-      title: 'The twelve FocushoMes',
+972-      subtitle:
+973-        'Tap a symbol to discover the identity, strength, and balance point of each FocushoMe.',
+974-      tap: 'Discover',
+975-      open: 'Discover the {{name}} FocushoMe',
+976-      close: 'Close',
+977-      strength: 'Core strength',
+978-      balance: 'Balance point',
+979-
+980-      items: {
+981-        aster: {
+982-          essence:
+983-            'The vision that comes before the path.',
+984-          description:
+985-            'Aster belongs to those who see possibilities before turning them into action. Goals, ideas, and plans emerge naturally, creating a broad view of what could still be built.',
+986-          strength:
+987-            'Imagining possible futures, establishing direction, and giving meaning to work before it begins.',
+988-          balance:
+989-            'Choosing which possibilities truly deserve progress so new horizons do not hide paths already opened.',
+990-        },
+991-
+992-        atlas: {
+993-          essence:
+994-            'Depth to sustain meaningful journeys.',
+995-          description:
+996-            'Atlas concentrates energy on important projects and remains with them for long periods. Instead of spreading focus across many fronts, it carries and develops what matters.',
+997-          strength:
+998-            'Building depth, mastery, and many hours of attention around goals that require continuity.',
+999-          balance:
+1000-            'Recognizing when a responsibility has become too heavy and when sharing the path may strengthen the result.',
+1001-        },
+1002-
+1003-        forge: {
+1004-          essence:
+1005-            'Intention transformed into results.',
+1006-          description:
+1007-            'Forge finds satisfaction in completion. Closed tasks, advancing projects, and achieved goals fuel someone who turns planning into something concrete.',
+1008-          strength:
+1009-            'Finishing, resolving open loops, and converting effort into outcomes that can be seen and recognized.',
+1010-          balance:
+1011-            'Not turning every experience into an obligation to produce; some ideas need space before entering the fire.',
+1012-        },
+1013-
+1014-        pulse: {
+1015-          essence:
+1016-            'Fast movement that keeps the day alive.',
+1017-          description:
+1018-            'Pulse works through short and frequent impulses. Small tasks, quick responses, and immediate decisions create a constant sense of progress.',
+1019-          strength:
+1020-            'Unblocking everyday life, reducing small pending items, and responding quickly to what needs attention now.',
+1021-          balance:
+1022-            'Reserving longer periods for work that offers no immediate reward but builds deeper results.',
+1023-        },
+1024-
+1025-        loom: {
+1026-          essence:
+1027-            'Different threads forming one story.',
+1028-          description:
+1029-            'Loom connects tasks, projects, goals, and focus sessions. Its pattern does not depend on a single tool: every part of Focus contributes to a larger structure.',
+1030-          strength:
+1031-            'Integrating planning and execution while keeping different areas connected without losing the whole.',
+1032-          balance:
+1033-            'Avoiding structures that become more complex than the decisions they were meant to support.',
+1034-        },
+1035-
+1036-        orbit: {
+1037-          essence:
+1038-            'Consistency that creates its own center.',
+1039-          description:
+1040-            'Orbit returns to focus through recognizable times and cycles. Its power lies less in dramatic peaks and more in returning to the same axis regularly.',
+1041-          strength:
+1042-            'Turning focus into a reliable routine and reducing dependence on temporary motivation.',
+1043-          balance:
+1044-            'Allowing change when a routine no longer serves, without treating adaptation as lost discipline.',
+1045-        },
+1046-
+1047-        tide: {
+1048-          essence:
+1049-            'Adaptation without losing direction.',
+1050-          description:
+1051-            'Tide changes intensity, timing, and strategy according to context. Its rhythm may vary, but intelligence exists in how it responds to current conditions.',
+1052-          strength:
+1053-            'Reorganizing priorities, finding new productivity windows, and continuing when the original plan fails.',
+1054-          balance:
+1055-            'Creating stable reference points so adaptation does not become permanent dispersion.',
+1056-        },
+1057-
+1058-        ember: {
+1059-          essence:
+1060-            'An intensity that remains lit within.',
+1061-          description:
+1062-            'Ember may not produce the largest visible volume, but it sustains deep and quiet attention. Its eye represents awareness: observing before acting and protecting essential energy.',
+1063-          strength:
+1064-            'Maintaining inner concentration, noticing detail, and preserving motivation through quieter periods.',
+1065-          balance:
+1066-            'Allowing internal work to become visible by sharing progress and recognizing personal achievements.',
+1067-        },
+1068-
+1069-        nova: {
+1070-          essence:
+1071-            'The energy that opens new paths.',
+1072-          description:
+1073-            'Nova appears where projects, tasks, and possibilities begin intensely. It finds excitement in experimenting, initiating, and creating movement.',
+1074-          strength:
+1075-            'Taking the first step, generating momentum, and turning a still idea into something that has begun to exist.',
+1076-          balance:
+1077-            'Maintaining energy after the initial brightness and choosing which beginnings deserve completion.',
+1078-        },
+1079-
+1080-        prism: {
+1081-          essence:
+1082-            'Many forms of focus moving through one person.',
+1083-          description:
+1084-            'Prism distributes attention across categories, projects, times, and ways of working. Its identity comes from variety and seeing through multiple angles.',
+1085-          strength:
+1086-            'Combining perspectives, alternating skills, and finding solutions that uniform routines might never reveal.',
+1087-          balance:
+1088-            'Creating priority among many possibilities so variety does not become fragmentation.',
+1089-        },
+1090-
+1091-        vanguard: {
+1092-          essence:
+1093-            'Firm presence before what cannot wait.',
+1094-          description:
+1095-            'Vanguard responds strongly when priority, urgency, or responsibility is clear. Pressure does not paralyze it; pressure organizes the field.',
+1096-          strength:
+1097-            'Making decisions, protecting what matters, and advancing when situations demand quick response and direction.',
+1098-          balance:
+1099-            'Not depending only on urgency to act and giving energy to important work before it becomes an emergency.',
+1100-        },
+1101-
+1102-        verdant: {
+1103-          essence:
+1104-            'Patient growth that becomes lasting.',
+1105-          description:
+1106-            'Verdant cultivates goals and projects over time. Small advances may seem quiet alone, but they form deep roots when viewed across a full month.',
+1107-          strength:
+1108-            'Building sustainable results, respecting long processes, and continuing when progress is not immediately visible.',
+1109-          balance:
+1110-            'Celebrating intermediate stages so distance from the final result does not hide everything already grown.',
+1111-        },
+1112-      },
+1113-    },
+1114-
+1115-    privacy: {
+1116-      title:
+1117-        'Your routine remains yours',
+1118-      description:
+1119-        'FocusMe will use only actions recorded inside Focus. No constant monitoring will be required.',
+1120-
+1121-      items: {
+1122-        location:
+1123-          'No access to your location.',
+1124-        apps:
+1125-          'No access to activity from other apps.',
+1126-        device:
+1127-          'No permanent device monitoring.',
+1128-      },
+1129-    },
+1130-
+1131-    development: {
+1132-      title:
+1133-        'FocusMe is in development',
+1134-      description:
+1135-        'This page will evolve as Focus 4.0 features are completed.',
+1136-    },
+1137-  },
+1138-
+1139-  focusMeHistoryPage: {
+1140-    back: 'Back to FocusMe',
+1141-    title: 'Report history',
+1142-    subtitle:
+1143-      'Revisit your weeks, months, and the evolution of your routine.',
+1144-    filterLabel: 'Filter reports',
+1145-    error:
+1146-      'Your report history could not be loaded.',
+1147-    sessions: 'sessions',
+1148-    tasks: 'tasks completed',
+1149-    types: {
+1150-      weekly: 'Weekly',
+1151-      monthly: 'Monthly',
+1152-    },
+1153-    filters: {
+1154-      all: 'All',
+1155-      weekly: 'Weekly',
+1156-      monthly: 'Monthly',
+1157-    },
+1158-    empty: {
+1159-      title:
+1160-        'Your reports will appear here',
+1161-      description:
+1162-        'When a week or month ends, FocusMe will preserve the retrospective so it no longer changes over time.',
+1163-      schedule:
+1164-        'Weeks close on Monday',
+1165-    },
+1166-  },
+1167-
+1168-  focusMeReportPage: {
+1169-    back: 'Back to history',
+1170-    error:
+1171-      'This report was not found or could not be loaded.',
+1172-    types: {
+1173-      weekly: 'Weekly retrospective',
+1174-      monthly: 'Monthly retrospective',
+1175-    },
+1176-    preserved:
+1177-      'Closed and preserved report',
+1178-    focusTime: 'Focus time',
+1179-    sessions: 'Sessions',
+1180-    activeDays: 'Active days',
+1181-    tasksCompleted: 'Tasks completed',
+1182-    dailyEvolution: 'Daily evolution',
+1183-    weeklyEvolution: 'Weekly evolution',
+1184-    week: 'W{{number}}',
+1185-    noFocus:
+1186-      'No focus session was completed during this period.',
+1187-    tasks: 'Tasks completed / created',
+1188-    projects: 'Projects completed / created',
+1189-    goals: 'Goals completed / created',
+1190-    topProject: 'Highlighted project',
+1191-    yourStory: 'The story of your period',
+1192-  },
+1193-
+1194-  changesPage: {
+1195-    back: 'Back to Settings',
+1196-    title: 'Changes and updates',
+1197-    subtitle:
+1198-      'Follow everything that has evolved in Focus and what we are preparing next.',
+1199-    currentVersion: 'Current version',
+1200-    currentDescription:
+1201-      'A new generation of Focus, with smarter tasks, completable projects, and the foundation of FocusMe.',
+1202-    new: 'New',
+1203-
+1204-    recent: {
+1205-      title: 'Recent updates',
+1206-      subtitle:
+1207-        'The newest improvements available in the app.',
+1208-
+1209-      items: {
+1210-        taskCategories: {
+1211-          title: 'New task experience',
+1212-          description:
+1213-            'Tasks now include categories, combined filters, linked projects, and Pomodoro estimates.',
+1214-        },
+1215-
+1216-        taskTrash: {
+1217-          title: 'Task trash',
+1218-          description:
+1219-            'Removed tasks can be restored for 30 days before permanent deletion.',
+1220-        },
+1221-
+1222-        projectLifecycle: {
+1223-          title: 'Project completion',
+1224-          description:
+1225-            'Projects can now be completed, viewed separately, and reopened without losing their history.',
+1226-        },
+1227-
+1228-        focusMePreview: {
+1229-          title: 'Meet FocusMe',
+1230-          description:
+1231-            'A new page introduces retrospectives, FocushoMe, and the Focus vision for personal insights.',
+1232-        },
+1233-
+1234-        taskEditing: {
+1235-          title: 'Task editing',
+1236-          description:
+1237-            'You can now correct or update a task name without deleting it and creating another one.',
+1238-        },
+1239-        responsive: {
+1240-          title: 'Responsive improvements',
+1241-          description:
+1242-            'Text, headers, and spacing have been refined for a better experience on phones and tablets.',
+1243-        },
+1244-        changesCenter: {
+1245-          title: 'Changes center',
+1246-          description:
+1247-            'This new space brings together the Focus history, recent updates, and upcoming features.',
+1248-        },
+1249-      },
+1250-    },
+1251-
+1252-    history: {
+1253-      title: 'Version history',
+1254-      subtitle:
+1255-        'See how Focus has evolved since its first version.',
+1256-      current: 'Current',
+1257-
+1258-      versions: {
+1259-        v4: {
+1260-          description:
+1261-            'Focus entered a new phase, connecting daily organization, completion, and understanding of your routine.',
+1262-          items: {
+1263-            taskEditing:
+1264-              'Complete task editing without needing to delete and recreate.',
+1265-            taskCategories:
+1266-              'Quick, Planned, Urgent, and Long-term categories with filters and minimalist visual identification.',
+1267-            taskTrash:
+1268-              'Trash with 30-day restoration and permanent deletion.',
+1269-            projectLifecycle:
+1270-              'Project completion, reopening, and filters while preserving hours, tasks, and sessions.',
+1271-            focusMePreview:
+1272-              'Introduction to FocusMe, FocushoMe, upcoming retrospectives, and privacy principles.',
+1273-          },
+1274-        },
+1275-
+1276-        v3: {
+1277-          description:
+1278-            'Focus became a truly cross-platform and bilingual experience.',
+1279-          items: {
+1280-            languages:
+1281-              'Complete app experience in Portuguese and English.',
+1282-            androidWidgets:
+1283-              'New widgets for Android devices.',
+1284-            autoStart:
+1285-              'Options to automatically start breaks and focus sessions.',
+1286-            widgetImprovements:
+1287-              'Layout, synchronization, and responsiveness improvements for widgets.',
+1288-          },
+1289-        },
+1290-
+1291-        v2: {
+1292-          description:
+1293-            'The mobile experience gained native features and deeper system integration.',
+1294-          items: {
+1295-            android:
+1296-              'Native Focus experience for Android.',
+1297-            liveNotifications:
+1298-              'Timer displayed in live notifications during sessions.',
+1299-            appleExperience:
+1300-              'Live Activity, Dynamic Island, and iPhone widgets.',
+1301-            tabletSupport:
+1302-              'Layouts and widgets adapted for iPad.',
+1303-          },
+1304-        },
+1305-
+1306-        v1: {
+1307-          description:
+1308-            'The foundation of Focus launched with the essential tools for organizing time and progress.',
+1309-          items: {
+1310-            pomodoro:
+1311-              'Pomodoro timer with customizable durations.',
+1312-            organization:
+1313-              'Tasks, projects, and yearly goals.',
+1314-            progress:
+1315-              'Streaks, badges, analytics, and focus history.',
+1316-            accounts:
+1317-              'Google account synchronization and guest mode.',
+1318-          },
+1319-        },
+1320-      },
+1321-    },
+1322-
+1323-    roadmap: {
+1324-      title: 'Still coming to Focus 4.0',
+1325-      subtitle:
+1326-        'The foundation is already available. Now we are building the complete FocusMe experience.',
+1327-
+1328-      status: {
+1329-        development: 'In development',
+1330-        planned: 'Planned',
+1331-      },
+1332-
+1333-      items: {
+1334-        taskExperience: {
+1335-          title: 'New task experience',
+1336-          description:
+1337-            'A reorganized and more complete screen that remains true to the Focus minimalism.',
+1338-        },
+1339-
+1340-        categories: {
+1341-          title: 'Task categories',
+1342-          description:
+1343-            'Quick, planned, urgent, and long-term tasks with filters and subtle visual identification.',
+1344-        },
+1345-
+1346-        trash: {
+1347-          title: 'Task trash',
+1348-          description:
+1349-            'Recover removed tasks for 30 days before permanent deletion.',
+1350-        },
+1351-
+1352-        weeklyRecaps: {
+1353-          title: 'Weekly recaps',
+1354-          description:
+1355-            'A complete summary of your days, sessions, tasks, goals, projects, and achievements.',
+1356-        },
+1357-
+1358-        monthlyRecaps: {
+1359-          title: 'Monthly retrospectives',
+1360-          description:
+1361-            'A deep view of your month with metrics, patterns, comparisons, and a personal narrative.',
+1362-        },
+1363-
+1364-        focusHome: {
+1365-          title: 'FocushoMe',
+1366-          description:
+1367-            'A rare and permanent class based on how you plan, execute, and complete.',
+1368-        },
+1369-
+1370-        sharing: {
+1371-          title: 'Shareable reports',
+1372-          description:
+1373-            'Personalized PNG recaps for sharing your results and your FocushoMe.',
+1374-        },
+1375-
+1376-        history: {
+1377-          title: 'FocusMe history',
+1378-          description:
+1379-            'Browse weekly recaps, monthly retrospectives, and previous analyses.',
+1380-        },
+1381-
+1382-        notifications: {
+1383-          title: 'New reports available',
+1384-          description:
+1385-            'Receive an optional alert when your week, month, or FocushoMe is ready.',
+1386-        },
+1387-      },
+1388-
+1389-      disclaimer:
+1390-        'The remaining features will be added progressively throughout the evolution of Focus 4.0.',
+1391-    },
+1392-  },
+1393-
+1394-  settings: {
+1395-    title: 'Settings',
+1396-    subtitle:
+1397-      'Customize your focus experience',
+1398-
+1399-    language: {
+1400-      title: 'Language',
+1401-      description:
+1402-        'Choose the language used throughout Focus.',
+1403-      english: 'English',
+1404-      portugueseBrazil:
+1405-        'Português (Brasil)',
+1406-    },
+1407-
+1408-    account: {
+1409-      title: 'Account',
+1410-      connected: 'Connected Account',
+1411-      googleConnected:
+1412-        'Google account connected',
+1413-      displayName: 'Display name',
+1414-      displayNameDescription:
+1415-        'This name will appear in your Dashboard greeting.',
+1416-      placeholder: 'Your name',
+1417-      saving: 'Saving...',
+1418-      save: 'Save name',
+1419-      saved: 'Display name saved.',
+1420-      signOut: 'Sign Out',
+1421-      signingOut: 'Signing out...',
+1422-      guestMode: 'Guest Mode',
+1423-      guestDescription:
+1424-        "You're using Focus without an account. Your data is stored only on this device.",
+1425-      continueGoogle:
+1426-        'Continue with Google',
+1427-      redirecting: 'Redirecting...',
+1428-      exitGuest: 'Exit Guest Mode',
+1429-      noAccount:
+1430-        'No Account Connected',
+1431-      noAccountDescription:
+1432-        'Connect your Google account to synchronize your Focus data.',
+1433-    },
+1434-
+1435-    timer: {
+1436-      title: 'Timer Durations',
+1437-      focus: 'Focus session',
+1438-      shortBreak: 'Short break',
+1439-      longBreak: 'Long break',
+1440-      sessionsUntilLongBreak:
+1441-        'Sessions until long break',
+1442-      minutes: 'min',
+1443-    },
+1444-
+1445-    preferences: {
+1446-      title: 'Preferences',
+1447-      sound: 'Sound notifications',
+1448-      autoBreak:
+1449-        'Auto-start breaks',
+1450-      autoWork:
+1451-        'Auto-start work sessions',
+1452-    },
+1453-
+1454-    focusMe: {
+1455-      title: 'About FocusMe',
+1456-      badge: 'Focus 4.0',
+1457-      description:
+1458-        'Discover how your activity will become personal retrospectives.',
+1459-    },
+1460-
+1461-    changes: {
+1462-      title: 'Changes and updates',
+1463-      description:
+1464-        'Explore the evolution of Focus and see what is coming next.',
+1465-    },
+1466-
+1467-    about: {
+1468-      title: 'About',
+1469-      description:
+1470-        'Focus v4.0 — A minimalist Pomodoro and productivity app. Guest data is stored locally on your device.',
+1471-    },
+1472-  },
+1473-}
+1474-
+1475-export default en

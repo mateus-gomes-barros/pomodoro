@@ -678,6 +678,48 @@ const en = {
     sessionNumber: 'Session {{current}} of {{total}}',
   },
 
+  focusHomeRetest: {
+    title: 'Take a new class test',
+    action: 'Take a new class test',
+    back: 'Back to About FocusMe',
+    unavailable:
+      'There is no newer eligible monthly report for this analysis yet.',
+    analyzing: 'Analyzing...',
+    error:
+      'The new test could not be completed.',
+
+    states: {
+      loading:
+        'Checking your monthly reports...',
+      first:
+        'Your first FocushoMe will be revealed from the main page when an eligible month is available.',
+      waiting:
+        'A new test will become available after another complete month with enough data.',
+      available:
+        'A new monthly report is ready. You can request a new reading of your class.',
+    },
+
+    confirm: {
+      title: 'Perform a new reading?',
+      description:
+        'Focus will use only the newly closed month. The result may confirm your current identity or reveal another FocushoMe.',
+      warning:
+        'After this analysis, another eligible monthly report will be required before testing again.',
+    },
+
+    result: {
+      remained:
+        'Your essence remained',
+      remainedDescription:
+        'The new month introduced different nuances, but your central structure still belongs to the same FocushoMe.',
+      changed:
+        'A new identity was revealed',
+      changedDescription:
+        'Your latest month showed a deep and consistent change in how you use Focus.',
+      finish: 'Continue to FocusMe',
+    },
+  },
+
   focusHomeReveal: {
     back: 'Back to FocusMe',
     unavailable:
@@ -868,6 +910,10 @@ const en = {
       historyTitle: 'Report history',
       historyDescription:
         'Review your preserved weekly and monthly retrospectives over time.',
+      narrativeTitle:
+        'The story of your week',
+      narrativeDescription:
+        'An interpretation built only from your actions inside Focus.',
     },
 
 
@@ -1147,6 +1193,10 @@ const en = {
     goals: 'Goals completed / created',
     topProject: 'Highlighted project',
     yourStory: 'The story of your period',
+    monthlyNarrativeTitle:
+      'The story of your month',
+    monthlyNarrativeDescription:
+      'An editorial reading built without sending names or personal content.',
   },
 
   changesPage: {

@@ -1,3 +1,14 @@
+===== SUPABASE STRUCTURE =====
+supabase/migrations/20260907073000_task_categories_and_trash.sql
+supabase/migrations/20260907080000_project_completion_status.sql
+supabase/migrations/20260907084500_focusme_activity_events.sql
+supabase/migrations/20260907094000_focusme_reports.sql
+supabase/migrations/20260907103000_focushome_identity.sql
+supabase/migrations/20260907105500_focushome_award_rpc.sql
+===== SUPABASE CONFIG =====
+config.toml não encontrado
+===== ENV EXAMPLE =====
+===== REPORT SERVICE =====
 import { supabase } from '@/lib/supabase'
 import {
   getFocusMeMonthlyReport,
@@ -487,3 +498,7 @@ export async function getFocusMeReport(
     data as FocusMeReportRow,
   )
 }
+===== SUPABASE PACKAGE STATE =====
+Need to install the following packages:
+supabase@2.116.0
+Ok to proceed? (y) 

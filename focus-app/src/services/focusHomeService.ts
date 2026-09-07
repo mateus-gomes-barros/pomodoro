@@ -115,6 +115,23 @@ export async function getFocusHomeProfile():
     : null
 }
 
+export async function getFocusHomeAssessmentReportId(
+  assessmentId: string,
+): Promise<string | null> {
+  const { data, error } =
+    await supabase
+      .from('focushome_assessments')
+      .select('report_id')
+      .eq('id', assessmentId)
+      .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  return data?.report_id ?? null
+}
+
 export async function assessFocusHome(
   report: FocusMeStoredReport,
   assessmentType:

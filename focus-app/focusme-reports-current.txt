@@ -1,0 +1,2037 @@
+===== REPORTS SERVICE =====
+import { supabase } from '@/lib/supabase'
+import {
+  getFocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+import {
+  getFocusMeWeeklyReport,
+} from '@/services/focusMeService'
+
+export type FocusMeReportType =
+  | 'weekly'
+  | 'monthly'
+
+interface FocusMeReportRow {
+  id: string
+  report_type: FocusMeReportType
+  period_start: string
+  period_end: string
+  metrics: unknown
+  schema_version: number
+  narrative: string | null
+  narrative_locale: string | null
+  focushome_key: string | null
+  focushome_traits: string[]
+  generated_at: string
+  updated_at: string
+}
+
+export interface FocusMeStoredReport {
+  id: string
+  type: FocusMeReportType
+  periodStart: string
+  periodEnd: string
+  metrics: unknown
+  schemaVersion: number
+  narrative?: string
+  narrativeLocale?: string
+  focusHomeKey?: string
+  focusHomeTraits: string[]
+  generatedAt: string
+  updatedAt: string
+}
+
+function mapReport(
+  row: FocusMeReportRow,
+): FocusMeStoredReport {
+  return {
+    id: row.id,
+    type: row.report_type,
+    periodStart: row.period_start,
+    periodEnd: row.period_end,
+    metrics: row.metrics,
+    schemaVersion:
+      row.schema_version,
+    narrative:
+      row.narrative ?? undefined,
+    narrativeLocale:
+      row.narrative_locale ??
+      undefined,
+    focusHomeKey:
+      row.focushome_key ??
+      undefined,
+    focusHomeTraits:
+      row.focushome_traits ?? [],
+    generatedAt:
+      row.generated_at,
+    updatedAt:
+      row.updated_at,
+  }
+}
+
+async function getCurrentUserId():
+  Promise<string | null> {
+  const {
+    data: {
+      session,
+    },
+    error,
+  } =
+    await supabase.auth.getSession()
+
+  if (error) {
+    throw error
+  }
+
+  return session?.user.id ?? null
+}
+
+async function saveSnapshot(
+  type: FocusMeReportType,
+  periodStart: string,
+  periodEnd: string,
+  metrics: unknown,
+): Promise<void> {
+  const userId =
+    await getCurrentUserId()
+
+  if (!userId) {
+    return
+  }
+
+  const { error } = await supabase
+    .from('focusme_reports')
+    .upsert(
+      {
+        user_id: userId,
+        report_type: type,
+        period_start:
+          periodStart,
+        period_end:
+          periodEnd,
+        metrics,
+        schema_version: 2,
+      },
+      {
+        onConflict:
+          'user_id,report_type,period_start,period_end',
+        ignoreDuplicates: true,
+      },
+    )
+
+  if (error) {
+    throw error
+  }
+}
+
+function hasWeeklyActivity(
+  report: Awaited<
+    ReturnType<
+      typeof getFocusMeWeeklyReport
+    >
+  >,
+): boolean {
+  return (
+    report.focus.completedSessions > 0 ||
+    report.tasks.created > 0 ||
+    report.tasks.completed > 0 ||
+    report.projects.created > 0 ||
+    report.projects.completed > 0 ||
+    report.goals.created > 0 ||
+    report.goals.completed > 0 ||
+    report.activityEvents > 0
+  )
+}
+
+function hasMonthlyActivity(
+  report: Awaited<
+    ReturnType<
+      typeof getFocusMeMonthlyReport
+    >
+  >,
+): boolean {
+  const month = report.current
+
+  return (
+    month.completedSessions > 0 ||
+    month.tasks.created > 0 ||
+    month.tasks.completed > 0 ||
+    month.projects.created > 0 ||
+    month.projects.completed > 0 ||
+    month.goals.created > 0 ||
+    month.goals.completed > 0 ||
+    month.coverage.activityEvents > 0
+  )
+}
+
+export async function finalizeLatestFocusMeReports(
+  referenceDate = new Date(),
+): Promise<void> {
+  const previousWeekReference =
+    new Date(referenceDate)
+
+  previousWeekReference.setDate(
+    previousWeekReference.getDate() -
+      7,
+  )
+
+  const previousMonthReference =
+    new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth() - 1,
+      15,
+    )
+
+  const [
+    weeklyReport,
+    monthlyReport,
+  ] = await Promise.all([
+    getFocusMeWeeklyReport(
+      previousWeekReference,
+    ),
+    getFocusMeMonthlyReport(
+      previousMonthReference,
+    ),
+  ])
+
+  const operations:
+    Promise<void>[] = []
+
+  if (
+    hasWeeklyActivity(
+      weeklyReport,
+    )
+  ) {
+    operations.push(
+      saveSnapshot(
+        'weekly',
+        weeklyReport.period.start,
+        weeklyReport.period.end,
+        weeklyReport,
+      ),
+    )
+  }
+
+  if (
+    hasMonthlyActivity(
+      monthlyReport,
+    )
+  ) {
+    operations.push(
+      saveSnapshot(
+        'monthly',
+        monthlyReport.period.start,
+        monthlyReport.period.end,
+        monthlyReport,
+      ),
+    )
+  }
+
+  await Promise.all(operations)
+}
+
+export async function getFocusMeReports(
+  type?: FocusMeReportType,
+): Promise<FocusMeStoredReport[]> {
+  let query = supabase
+    .from('focusme_reports')
+    .select(`
+      id,
+      report_type,
+      period_start,
+      period_end,
+      metrics,
+      schema_version,
+      narrative,
+      narrative_locale,
+      focushome_key,
+      focushome_traits,
+      generated_at,
+      updated_at
+    `)
+    .order('period_start', {
+      ascending: false,
+    })
+
+  if (type) {
+    query = query.eq(
+      'report_type',
+      type,
+    )
+  }
+
+  const { data, error } =
+    await query
+
+  if (error) {
+    throw error
+  }
+
+  return (
+    data as FocusMeReportRow[]
+  ).map(mapReport)
+}
+
+export async function getFocusMeReport(
+  reportId: string,
+): Promise<FocusMeStoredReport> {
+  const { data, error } =
+    await supabase
+      .from('focusme_reports')
+      .select(`
+        id,
+        report_type,
+        period_start,
+        period_end,
+        metrics,
+        schema_version,
+        narrative,
+        narrative_locale,
+        focushome_key,
+        focushome_traits,
+        generated_at,
+        updated_at
+      `)
+      .eq('id', reportId)
+      .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapReport(
+    data as FocusMeReportRow,
+  )
+}
+===== REPORT HOOKS =====
+src/hooks/focusme/useFocusHomeProfile.ts
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+
+import {
+  assessFocusHome,
+  getFocusHomeAssessmentReportId,
+  getFocusHomeProfile,
+  type FocusHomeAssessmentType,
+} from '@/services/focusHomeService'
+import {
+  focusMeReportsQueryKey,
+} from '@/hooks/focusme/useFocusMeReports'
+import type {
+  FocusMeStoredReport,
+} from '@/services/focusMeReportsService'
+
+export const focusHomeProfileQueryKey = [
+  'focusme',
+  'focushome',
+  'profile',
+]
+
+export function useFocusHomeProfile() {
+  return useQuery({
+    queryKey:
+      focusHomeProfileQueryKey,
+    queryFn:
+      getFocusHomeProfile,
+  })
+}
+
+export function useAssessFocusHome() {
+  const queryClient =
+    useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      report,
+      assessmentType,
+    }: {
+      report: FocusMeStoredReport
+      assessmentType:
+        FocusHomeAssessmentType
+    }) =>
+      assessFocusHome(
+        report,
+        assessmentType,
+      ),
+
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey:
+            focusHomeProfileQueryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            focusMeReportsQueryKey,
+        }),
+      ])
+    },
+  })
+}
+
+
+export function useFocusHomeAssessmentReportId(
+  assessmentId?: string,
+) {
+  return useQuery({
+    queryKey: [
+      ...focusHomeProfileQueryKey,
+      'assessment-report',
+      assessmentId,
+    ],
+    queryFn: () =>
+      getFocusHomeAssessmentReportId(
+        assessmentId as string,
+      ),
+    enabled: Boolean(assessmentId),
+  })
+}
+src/hooks/focusme/useFocusMeWeeklyReport.ts
+import {
+  useQuery,
+} from '@tanstack/react-query'
+
+import {
+  getFocusMeWeeklyReport,
+} from '@/services/focusMeService'
+
+export const focusMeWeeklyQueryKey = [
+  'focusme',
+  'weekly',
+]
+
+export function useFocusMeWeeklyReport(
+  referenceDate?: Date,
+) {
+  const referenceKey =
+    referenceDate
+      ? referenceDate
+          .toISOString()
+          .split('T')[0]
+      : new Date()
+          .toISOString()
+          .split('T')[0]
+
+  return useQuery({
+    queryKey: [
+      ...focusMeWeeklyQueryKey,
+      referenceKey,
+    ],
+    queryFn: () =>
+      getFocusMeWeeklyReport(
+        referenceDate,
+      ),
+  })
+}
+src/hooks/focusme/useFocusMeReports.ts
+import {
+  useQuery,
+} from '@tanstack/react-query'
+
+import {
+  finalizeLatestFocusMeReports,
+  getFocusMeReport,
+  getFocusMeReports,
+  type FocusMeReportType,
+} from '@/services/focusMeReportsService'
+
+export const focusMeReportsQueryKey = [
+  'focusme',
+  'reports',
+]
+
+export function useFocusMeReports(
+  type?: FocusMeReportType,
+) {
+  return useQuery({
+    queryKey: [
+      ...focusMeReportsQueryKey,
+      type ?? 'all',
+    ],
+    queryFn: async () => {
+      await finalizeLatestFocusMeReports()
+
+      return getFocusMeReports(type)
+    },
+  })
+}
+
+export function useFocusMeReport(
+  reportId?: string,
+) {
+  return useQuery({
+    queryKey: [
+      ...focusMeReportsQueryKey,
+      'detail',
+      reportId,
+    ],
+    queryFn: () =>
+      getFocusMeReport(
+        reportId as string,
+      ),
+    enabled: Boolean(reportId),
+  })
+}
+src/hooks/focusme/useFocusMeMonthlyReport.ts
+import {
+  useQuery,
+} from '@tanstack/react-query'
+
+import {
+  getFocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+
+export const focusMeMonthlyQueryKey = [
+  'focusme',
+  'monthly',
+]
+
+export function useFocusMeMonthlyReport(
+  referenceDate?: Date,
+) {
+  const referenceKey =
+    referenceDate
+      ? referenceDate
+          .toISOString()
+          .slice(0, 7)
+      : new Date()
+          .toISOString()
+          .slice(0, 7)
+
+  return useQuery({
+    queryKey: [
+      ...focusMeMonthlyQueryKey,
+      referenceKey,
+    ],
+    queryFn: () =>
+      getFocusMeMonthlyReport(
+        referenceDate,
+      ),
+  })
+}
+===== FOCUSME PAGE =====
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import {
+  CalendarDays,
+  CheckSquare2,
+  ChevronRight,
+  Clock3,
+  History,
+  Pause,
+  Play,
+  RotateCcw,
+  Sparkles,
+  Timer,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+import {
+  useNavigate,
+} from 'react-router-dom'
+
+import {
+  FocusMeMonthlyPanel,
+} from '@/components/focusme/FocusMeMonthlyPanel'
+import {
+  FocusHomeIdentityHeader,
+} from '@/components/focusme/FocusHomeIdentityHeader'
+import {
+  FocusHomeRevealInvitation,
+} from '@/components/focusme/FocusHomeRevealInvitation'
+import {
+  FocusMeIcon,
+} from '@/components/icons/FocusMeIcon'
+import {
+  useFocusMeWeeklyReport,
+} from '@/hooks/focusme/useFocusMeWeeklyReport'
+
+function formatMinutes(
+  minutes: number,
+): string {
+  if (minutes < 60) {
+    return `${minutes} min`
+  }
+
+  const hours =
+    Math.floor(minutes / 60)
+
+  const remainingMinutes =
+    minutes % 60
+
+  return remainingMinutes > 0
+    ? `${hours}h ${remainingMinutes}min`
+    : `${hours}h`
+}
+
+export function FocusMePage() {
+  const {
+    t,
+    i18n,
+  } = useTranslation()
+
+  const navigate = useNavigate()
+
+  const [
+    activeView,
+    setActiveView,
+  ] = useState<
+    'week' | 'month'
+  >('week')
+
+  const reportQuery =
+    useFocusMeWeeklyReport()
+
+  const report =
+    reportQuery.data
+
+  const locale =
+    i18n.resolvedLanguage === 'pt-BR'
+      ? 'pt-BR'
+      : 'en-US'
+
+  const formatDay = (
+    date: string,
+    format: 'short' | 'long',
+  ) =>
+    new Intl.DateTimeFormat(
+      locale,
+      {
+        weekday: format,
+      },
+    ).format(
+      new Date(
+        `${date}T12:00:00`,
+      ),
+    )
+
+  const maxDailyMinutes =
+    Math.max(
+      ...(
+        report?.focus.days.map(
+          (day) =>
+            day.focusMinutes,
+        ) ?? [0]
+      ),
+      1,
+    )
+
+  const summaryMetrics = report
+    ? [
+        {
+          key: 'focus',
+          label: t(
+            'focusMePage.weeklyReport.focusTime',
+          ),
+          value: formatMinutes(
+            report.focus.totalMinutes,
+          ),
+          icon: Timer,
+        },
+        {
+          key: 'sessions',
+          label: t(
+            'focusMePage.weeklyReport.sessions',
+          ),
+          value:
+            report.focus.completedSessions,
+          icon: Play,
+        },
+        {
+          key: 'days',
+          label: t(
+            'focusMePage.weeklyReport.activeDays',
+          ),
+          value:
+            report.focus.activeDays,
+          icon: CalendarDays,
+        },
+        {
+          key: 'tasks',
+          label: t(
+            'focusMePage.weeklyReport.tasksCompleted',
+          ),
+          value:
+            report.tasks.completed,
+          icon: CheckSquare2,
+        },
+      ]
+    : []
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 pb-12 lg:px-10 lg:pb-16">
+      <FocusHomeIdentityHeader />
+
+      <FocusHomeRevealInvitation />
+
+      <div
+        className="card mb-5 grid grid-cols-2 gap-1 p-1"
+        role="group"
+        aria-label={t(
+          'focusMePage.view.label',
+        )}
+      >
+        {(['week', 'month'] as const).map(
+          (view) => (
+            <button
+              key={view}
+              type="button"
+              onClick={() =>
+                setActiveView(view)
+              }
+              className={
+                activeView === view
+                  ? 'rounded-xl bg-white/[0.08] px-3 py-2.5 text-xs font-semibold text-accent-green'
+                  : 'rounded-xl px-3 py-2.5 text-xs font-medium text-accent-subtle transition hover:text-accent-white'
+              }
+            >
+              {t(
+                `focusMePage.view.${view}`,
+              )}
+            </button>
+          ),
+        )}
+      </div>
+
+      <div className="space-y-8">
+        {activeView === 'week' && (
+          <>
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card relative overflow-hidden p-5 sm:p-7"
+        >
+          <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-accent-green/[0.08] blur-3xl" />
+
+          <div className="relative">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-accent-green/30 bg-accent-green/[0.08] px-3 py-1 text-xs font-semibold text-accent-green">
+                <FocusMeIcon size={15} />
+
+                {t(
+                  'focusMePage.weeklyReport.available',
+                )}
+              </span>
+
+              <span className="text-xs text-accent-subtle">
+                {t(
+                  'focusMePage.weeklyReport.currentWeek',
+                )}
+              </span>
+            </div>
+
+            <div className="mt-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+                {t(
+                  'focusMePage.weeklyReport.eyebrow',
+                )}
+              </p>
+
+              <h2 className="mt-2 max-w-2xl text-2xl font-semibold leading-tight text-accent-white sm:text-3xl">
+                {t(
+                  'focusMePage.weeklyReport.title',
+                )}
+              </h2>
+            </div>
+
+            {reportQuery.isLoading && (
+              <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[0, 1, 2, 3].map(
+                  (item) => (
+                    <div
+                      key={item}
+                      className="h-24 animate-pulse rounded-2xl bg-white/[0.04]"
+                    />
+                  ),
+                )}
+              </div>
+            )}
+
+            {reportQuery.isError && (
+              <p className="mt-6 rounded-xl border border-red-400/15 bg-red-400/[0.05] p-4 text-sm text-red-300">
+                {t(
+                  'focusMePage.weeklyReport.error',
+                )}
+              </p>
+            )}
+
+            {report && (
+              <>
+                <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  {summaryMetrics.map(
+                    ({
+                      key,
+                      label,
+                      value,
+                      icon: Icon,
+                    }) => (
+                      <div
+                        key={key}
+                        className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4"
+                      >
+                        <Icon
+                          size={17}
+                          className="text-accent-green"
+                        />
+
+                        <p className="mt-4 text-xl font-semibold text-accent-white">
+                          {value}
+                        </p>
+
+                        <p className="mt-1 text-xs text-accent-subtle">
+                          {label}
+                        </p>
+                      </div>
+                    ),
+                  )}
+                </div>
+
+                <div className="mt-7 border-t border-white/[0.06] pt-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold text-accent-white">
+                      {t(
+                        'focusMePage.weeklyReport.dailyRhythm',
+                      )}
+                    </h3>
+
+                    {report.focus.bestDay && (
+                      <p className="text-xs text-accent-subtle">
+                        {t(
+                          'focusMePage.weeklyReport.bestDay',
+                        )}
+                        {': '}
+                        <span className="font-medium text-accent-green">
+                          {formatDay(
+                            report.focus.bestDay.date,
+                            'long',
+                          )}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  {report.focus.totalMinutes > 0 ? (
+                    <div className="mt-5 grid h-32 grid-cols-7 items-end gap-2 sm:gap-3">
+                      {report.focus.days.map(
+                        (day) => {
+                          const height =
+                            day.focusMinutes > 0
+                              ? Math.max(
+                                  10,
+                                  (
+                                    day.focusMinutes /
+                                    maxDailyMinutes
+                                  ) * 100,
+                                )
+                              : 3
+
+                          return (
+                            <div
+                              key={day.date}
+                              className="flex h-full min-w-0 flex-col items-center justify-end gap-2"
+                            >
+                              <span className="hidden text-[10px] text-accent-subtle sm:block">
+                                {day.focusMinutes > 0
+                                  ? formatMinutes(
+                                      day.focusMinutes,
+                                    )
+                                  : ''}
+                              </span>
+
+                              <div className="flex h-20 w-full items-end justify-center">
+                                <div
+                                  className="w-full max-w-8 rounded-t-lg bg-gradient-to-t from-emerald-500/55 to-emerald-300 transition-all"
+                                  style={{
+                                    height: `${height}%`,
+                                  }}
+                                />
+                              </div>
+
+                              <span className="text-[10px] font-medium uppercase text-accent-subtle">
+                                {formatDay(
+                                  day.date,
+                                  'short',
+                                ).slice(0, 3)}
+                              </span>
+                            </div>
+                          )
+                        },
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-5 rounded-xl bg-white/[0.025] p-4 text-sm leading-relaxed text-accent-subtle">
+                      {t(
+                        'focusMePage.weeklyReport.noFocus',
+                      )}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </motion.section>
+
+        {report && (
+          <section className="grid gap-3 md:grid-cols-2">
+            <motion.article
+              initial={{
+                opacity: 0,
+                y: 8,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              className="card p-5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-green/10 text-accent-green">
+                  <CheckSquare2
+                    size={18}
+                  />
+                </div>
+
+                <h2 className="text-sm font-semibold text-accent-white">
+                  {t(
+                    'focusMePage.weeklyReport.tasksTitle',
+                  )}
+                </h2>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-white/[0.025] p-4">
+                  <p className="text-xl font-semibold text-accent-white">
+                    {report.tasks.created}
+                  </p>
+
+                  <p className="mt-1 text-xs text-accent-subtle">
+                    {t(
+                      'focusMePage.weeklyReport.created',
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-white/[0.025] p-4">
+                  <p className="text-xl font-semibold text-accent-green">
+                    {report.tasks.completed}
+                  </p>
+
+                  <p className="mt-1 text-xs text-accent-subtle">
+                    {t(
+                      'focusMePage.weeklyReport.completed',
+                    )}
+                  </p>
+                </div>
+              </div>
+            </motion.article>
+
+            <motion.article
+              initial={{
+                opacity: 0,
+                y: 8,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              className="card p-5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.045] text-accent-white">
+                  <RotateCcw
+                    size={18}
+                  />
+                </div>
+
+                <h2 className="text-sm font-semibold text-accent-white">
+                  {t(
+                    'focusMePage.weeklyReport.rhythmTitle',
+                  )}
+                </h2>
+              </div>
+
+              <div className="mt-5 grid grid-cols-4 gap-2 text-center">
+                {[
+                  {
+                    label: t(
+                      'focusMePage.weeklyReport.starts',
+                    ),
+                    value:
+                      report.rhythm.starts,
+                    icon: Play,
+                  },
+                  {
+                    label: t(
+                      'focusMePage.weeklyReport.pauses',
+                    ),
+                    value:
+                      report.rhythm.pauses,
+                    icon: Pause,
+                  },
+                  {
+                    label: t(
+                      'focusMePage.weeklyReport.resumes',
+                    ),
+                    value:
+                      report.rhythm.resumes,
+                    icon: RotateCcw,
+                  },
+                  {
+                    label: t(
+                      'focusMePage.weeklyReport.abandoned',
+                    ),
+                    value:
+                      report.rhythm.abandoned,
+                    icon: Clock3,
+                  },
+                ].map(
+                  ({
+                    label,
+                    value,
+                    icon: Icon,
+                  }) => (
+                    <div
+                      key={label}
+                      className="min-w-0"
+                    >
+                      <Icon
+                        size={14}
+                        className="mx-auto text-accent-green"
+                      />
+
+                      <p className="mt-2 text-base font-semibold text-accent-white">
+                        {value}
+                      </p>
+
+                      <p className="mt-1 truncate text-[10px] text-accent-subtle">
+                        {label}
+                      </p>
+                    </div>
+                  ),
+                )}
+              </div>
+            </motion.article>
+
+            <motion.article
+              initial={{
+                opacity: 0,
+                y: 8,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              className="card p-5 md:col-span-2"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-green/10 text-accent-green">
+                  <Sparkles size={18} />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-xs text-accent-subtle">
+                    {t(
+                      'focusMePage.weeklyReport.topProject',
+                    )}
+                  </p>
+
+                  {report.projects.topProject ? (
+                    <p className="mt-1 truncate text-sm font-semibold text-accent-white">
+                      {
+                        report.projects
+                          .topProject.emoji
+                      }{' '}
+                      {
+                        report.projects
+                          .topProject.name
+                      }
+                      {' · '}
+                      {formatMinutes(
+                        report.projects
+                          .topProject
+                          .focusMinutes,
+                      )}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-accent-subtle">
+                      {t(
+                        'focusMePage.weeklyReport.noProject',
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </motion.article>
+          </section>
+        )}
+
+          </>
+        )}
+
+        {activeView === 'month' && (
+          <FocusMeMonthlyPanel />
+        )}
+
+        <motion.button
+          type="button"
+          onClick={() =>
+            navigate('/focusme/history')
+          }
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card flex w-full items-center gap-4 p-5 text-left transition hover:border-accent-green/20 hover:bg-accent-green/[0.025]"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-green/10 text-accent-green">
+            <History size={20} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold text-accent-white">
+              {t(
+                'focusMePage.weeklyReport.historyTitle',
+              )}
+            </h2>
+
+            <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
+              {t(
+                'focusMePage.weeklyReport.historyDescription',
+              )}
+            </p>
+          </div>
+
+          <ChevronRight
+            size={18}
+            className="shrink-0 text-accent-subtle"
+          />
+        </motion.button>
+      </div>
+    </div>
+  )
+}
+===== REPORT MIGRATIONS =====
+supabase/migrations/20260907103000_focushome_identity.sql
+begin;
+
+create table if not exists public.focushome_assessments (
+  id uuid primary key default gen_random_uuid(),
+
+  user_id uuid not null
+    references auth.users(id)
+    on delete cascade,
+
+  report_id uuid not null
+    references public.focusme_reports(id)
+    on delete restrict,
+
+  assessment_type text not null,
+
+  focushome_key text not null,
+  archetype text not null,
+  secondary_archetype text not null,
+  temporal_expression text not null,
+
+  traits text[] not null
+    default '{}',
+
+  confidence smallint not null,
+  score_gap smallint not null,
+
+  scores jsonb not null,
+  evidence jsonb not null,
+
+  classifier_version integer not null,
+  eligibility_version integer not null,
+
+  created_at timestamptz not null
+    default now(),
+
+  constraint focushome_assessments_type_check
+    check (
+      assessment_type in (
+        'initial',
+        'retest'
+      )
+    ),
+
+  constraint focushome_assessments_key_check
+    check (
+      focushome_key in (
+        'aster',
+        'atlas',
+        'forge',
+        'pulse',
+        'loom',
+        'orbit',
+        'tide',
+        'ember',
+        'nova',
+        'prism',
+        'vanguard',
+        'verdant'
+      )
+    ),
+
+  constraint focushome_assessments_temporal_check
+    check (
+      temporal_expression in (
+        'aurora',
+        'solaris',
+        'vesper',
+        'lunaris',
+        'equinox'
+      )
+    ),
+
+  constraint focushome_assessments_confidence_check
+    check (
+      confidence between 0 and 100
+    ),
+
+  constraint focushome_assessments_gap_check
+    check (
+      score_gap between 0 and 100
+    ),
+
+  constraint focushome_assessments_unique_report
+    unique (
+      user_id,
+      report_id
+    )
+);
+
+create table if not exists public.focushome_profiles (
+  user_id uuid primary key
+    references auth.users(id)
+    on delete cascade,
+
+  current_assessment_id uuid not null
+    references public.focushome_assessments(id)
+    on delete restrict,
+
+  focushome_key text not null,
+  archetype text not null,
+  secondary_archetype text not null,
+  temporal_expression text not null,
+
+  traits text[] not null
+    default '{}',
+
+  confidence smallint not null,
+
+  first_awarded_at timestamptz not null
+    default now(),
+  last_assessed_at timestamptz not null
+    default now(),
+  updated_at timestamptz not null
+    default now(),
+
+  constraint focushome_profiles_key_check
+    check (
+      focushome_key in (
+        'aster',
+        'atlas',
+        'forge',
+        'pulse',
+        'loom',
+        'orbit',
+        'tide',
+        'ember',
+        'nova',
+        'prism',
+        'vanguard',
+        'verdant'
+      )
+    ),
+
+  constraint focushome_profiles_temporal_check
+    check (
+      temporal_expression in (
+        'aurora',
+        'solaris',
+        'vesper',
+        'lunaris',
+        'equinox'
+      )
+    ),
+
+  constraint focushome_profiles_confidence_check
+    check (
+      confidence between 0 and 100
+    )
+);
+
+alter table public.focushome_assessments
+  enable row level security;
+
+alter table public.focushome_profiles
+  enable row level security;
+
+drop policy if exists
+  "Users can read their FocushoMe assessments"
+on public.focushome_assessments;
+
+create policy
+  "Users can read their FocushoMe assessments"
+on public.focushome_assessments
+for select
+to authenticated
+using (
+  auth.uid() = user_id
+);
+
+drop policy if exists
+  "Users can create their FocushoMe assessments"
+on public.focushome_assessments;
+
+create policy
+  "Users can create their FocushoMe assessments"
+on public.focushome_assessments
+for insert
+to authenticated
+with check (
+  auth.uid() = user_id
+);
+
+drop policy if exists
+  "Users can read their FocushoMe profile"
+on public.focushome_profiles;
+
+create policy
+  "Users can read their FocushoMe profile"
+on public.focushome_profiles
+for select
+to authenticated
+using (
+  auth.uid() = user_id
+);
+
+drop policy if exists
+  "Users can create their FocushoMe profile"
+on public.focushome_profiles;
+
+create policy
+  "Users can create their FocushoMe profile"
+on public.focushome_profiles
+for insert
+to authenticated
+with check (
+  auth.uid() = user_id
+);
+
+drop policy if exists
+  "Users can update their FocushoMe profile"
+on public.focushome_profiles;
+
+create policy
+  "Users can update their FocushoMe profile"
+on public.focushome_profiles
+for update
+to authenticated
+using (
+  auth.uid() = user_id
+)
+with check (
+  auth.uid() = user_id
+);
+
+create index if not exists
+  focushome_assessments_user_date_idx
+on public.focushome_assessments (
+  user_id,
+  created_at desc
+);
+
+create index if not exists
+  focushome_assessments_report_idx
+on public.focushome_assessments (
+  report_id
+);
+
+commit;
+supabase/migrations/20260907105500_focushome_award_rpc.sql
+begin;
+
+drop policy if exists
+  "Users can create their FocushoMe assessments"
+on public.focushome_assessments;
+
+drop policy if exists
+  "Users can create their FocushoMe profile"
+on public.focushome_profiles;
+
+drop policy if exists
+  "Users can update their FocushoMe profile"
+on public.focushome_profiles;
+
+create or replace function public.award_focushome(
+  p_report_id uuid,
+  p_assessment_type text,
+  p_result jsonb,
+  p_classifier_version integer,
+  p_eligibility_version integer
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_report public.focusme_reports%rowtype;
+  v_existing_profile
+    public.focushome_profiles%rowtype;
+  v_previous_period_start date;
+  v_assessment_id uuid;
+  v_traits text[];
+  v_focus_home_key text;
+  v_archetype text;
+  v_secondary_archetype text;
+  v_temporal_expression text;
+  v_confidence integer;
+  v_score_gap integer;
+begin
+  v_user_id := auth.uid();
+
+  if v_user_id is null then
+    raise exception
+      'Authentication required';
+  end if;
+
+  if p_assessment_type not in (
+    'initial',
+    'retest'
+  ) then
+    raise exception
+      'Invalid assessment type';
+  end if;
+
+  select *
+  into v_report
+  from public.focusme_reports
+  where id = p_report_id
+    and user_id = v_user_id
+  for update;
+
+  if not found then
+    raise exception
+      'FocusMe report not found';
+  end if;
+
+  if v_report.report_type <> 'monthly' then
+    raise exception
+      'FocushoMe requires a monthly report';
+  end if;
+
+  if v_report.period_end > current_date then
+    raise exception
+      'The monthly period is not closed';
+  end if;
+
+  if v_report.schema_version < 2 then
+    raise exception
+      'This report does not contain enough behavioral data';
+  end if;
+
+  if
+    coalesce(
+      (
+        v_report.metrics
+          -> 'current'
+          ->> 'activeDays'
+      )::integer,
+      0
+    ) < 8
+    or
+    coalesce(
+      (
+        v_report.metrics
+          -> 'current'
+          ->> 'completedSessions'
+      )::integer,
+      0
+    ) < 12
+    or
+    coalesce(
+      (
+        v_report.metrics
+          -> 'current'
+          ->> 'focusMinutes'
+      )::integer,
+      0
+    ) < 300
+    or
+    coalesce(
+      (
+        v_report.metrics
+          -> 'current'
+          -> 'tasks'
+          ->> 'completed'
+      )::integer,
+      0
+    ) < 6
+    or
+    coalesce(
+      (
+        v_report.metrics
+          -> 'current'
+          -> 'coverage'
+          ->> 'meaningfulActions'
+      )::integer,
+      0
+    ) < 18
+    or
+    coalesce(
+      (
+        v_report.metrics
+          -> 'current'
+          -> 'coverage'
+          ->> 'featureAreasUsed'
+      )::integer,
+      0
+    ) < 2
+    or
+    coalesce(
+      (
+        v_report.metrics
+          -> 'current'
+          -> 'coverage'
+          ->> 'activityEvents'
+      )::integer,
+      0
+    ) < 12
+  then
+    raise exception
+      'This report is not eligible for a FocushoMe assessment';
+  end if;
+
+  v_focus_home_key :=
+    p_result ->> 'focusHome';
+
+  v_archetype :=
+    p_result ->> 'archetype';
+
+  v_secondary_archetype :=
+    p_result ->> 'secondaryArchetype';
+
+  v_temporal_expression :=
+    p_result ->> 'temporalExpression';
+
+  v_confidence :=
+    coalesce(
+      (
+        p_result ->> 'confidence'
+      )::integer,
+      -1
+    );
+
+  v_score_gap :=
+    coalesce(
+      (
+        p_result ->> 'scoreGap'
+      )::integer,
+      -1
+    );
+
+  if v_focus_home_key not in (
+    'aster',
+    'atlas',
+    'forge',
+    'pulse',
+    'loom',
+    'orbit',
+    'tide',
+    'ember',
+    'nova',
+    'prism',
+    'vanguard',
+    'verdant'
+  ) then
+    raise exception
+      'Invalid FocushoMe result';
+  end if;
+
+  if v_archetype not in (
+    'visionary',
+    'builder',
+    'finisher',
+    'executor',
+    'organizer',
+    'rhythmist',
+    'restorer',
+    'planner',
+    'catalyst',
+    'explorer',
+    'strategist',
+    'guardian'
+  ) then
+    raise exception
+      'Invalid primary archetype';
+  end if;
+
+  if v_secondary_archetype not in (
+    'visionary',
+    'builder',
+    'finisher',
+    'executor',
+    'organizer',
+    'rhythmist',
+    'restorer',
+    'planner',
+    'catalyst',
+    'explorer',
+    'strategist',
+    'guardian'
+  ) then
+    raise exception
+      'Invalid secondary archetype';
+  end if;
+
+  if v_temporal_expression not in (
+    'aurora',
+    'solaris',
+    'vesper',
+    'lunaris',
+    'equinox'
+  ) then
+    raise exception
+      'Invalid temporal expression';
+  end if;
+
+  if
+    v_confidence < 0
+    or v_confidence > 100
+    or v_score_gap < 0
+    or v_score_gap > 100
+  then
+    raise exception
+      'Invalid classification confidence';
+  end if;
+
+  select coalesce(
+    array_agg(value),
+    '{}'::text[]
+  )
+  into v_traits
+  from jsonb_array_elements_text(
+    coalesce(
+      p_result -> 'traits',
+      '[]'::jsonb
+    )
+  ) as value;
+
+  select *
+  into v_existing_profile
+  from public.focushome_profiles
+  where user_id = v_user_id
+  for update;
+
+  if
+    p_assessment_type = 'initial'
+    and found
+  then
+    raise exception
+      'The user already has a FocushoMe';
+  end if;
+
+  if
+    p_assessment_type = 'retest'
+    and not found
+  then
+    raise exception
+      'A retest requires an existing FocushoMe';
+  end if;
+
+  if p_assessment_type = 'retest' then
+    select reports.period_start
+    into v_previous_period_start
+    from public.focushome_assessments assessments
+    join public.focusme_reports reports
+      on reports.id =
+        assessments.report_id
+    where assessments.id =
+      v_existing_profile
+        .current_assessment_id;
+
+    if
+      v_previous_period_start is not null
+      and v_report.period_start <=
+        v_previous_period_start
+    then
+      raise exception
+        'A retest requires a newer monthly report';
+    end if;
+  end if;
+
+  insert into public.focushome_assessments (
+    user_id,
+    report_id,
+    assessment_type,
+    focushome_key,
+    archetype,
+    secondary_archetype,
+    temporal_expression,
+    traits,
+    confidence,
+    score_gap,
+    scores,
+    evidence,
+    classifier_version,
+    eligibility_version
+  )
+  values (
+    v_user_id,
+    p_report_id,
+    p_assessment_type,
+    v_focus_home_key,
+    v_archetype,
+    v_secondary_archetype,
+    v_temporal_expression,
+    v_traits,
+    v_confidence,
+    v_score_gap,
+    coalesce(
+      p_result -> 'scores',
+      '[]'::jsonb
+    ),
+    coalesce(
+      p_result -> 'evidence',
+      '[]'::jsonb
+    ),
+    p_classifier_version,
+    p_eligibility_version
+  )
+  returning id
+  into v_assessment_id;
+
+  insert into public.focushome_profiles (
+    user_id,
+    current_assessment_id,
+    focushome_key,
+    archetype,
+    secondary_archetype,
+    temporal_expression,
+    traits,
+    confidence,
+    first_awarded_at,
+    last_assessed_at,
+    updated_at
+  )
+  values (
+    v_user_id,
+    v_assessment_id,
+    v_focus_home_key,
+    v_archetype,
+    v_secondary_archetype,
+    v_temporal_expression,
+    v_traits,
+    v_confidence,
+    now(),
+    now(),
+    now()
+  )
+  on conflict (user_id)
+  do update set
+    current_assessment_id =
+      excluded.current_assessment_id,
+    focushome_key =
+      excluded.focushome_key,
+    archetype =
+      excluded.archetype,
+    secondary_archetype =
+      excluded.secondary_archetype,
+    temporal_expression =
+      excluded.temporal_expression,
+    traits =
+      excluded.traits,
+    confidence =
+      excluded.confidence,
+    last_assessed_at =
+      now(),
+    updated_at =
+      now();
+
+  update public.focusme_reports
+  set
+    focushome_key =
+      v_focus_home_key,
+    focushome_traits =
+      v_traits,
+    updated_at =
+      now()
+  where id = p_report_id
+    and user_id = v_user_id;
+
+  return v_assessment_id;
+end;
+$$;
+
+revoke all
+on function public.award_focushome(
+  uuid,
+  text,
+  jsonb,
+  integer,
+  integer
+)
+from public;
+
+grant execute
+on function public.award_focushome(
+  uuid,
+  text,
+  jsonb,
+  integer,
+  integer
+)
+to authenticated;
+
+commit;
+supabase/migrations/20260907084500_focusme_activity_events.sql
+begin;
+
+create table if not exists public.activity_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null
+    references auth.users(id)
+    on delete cascade,
+
+  event_type text not null,
+  entity_type text not null,
+  entity_id uuid,
+
+  occurred_at timestamptz not null default now(),
+  local_date date not null,
+  local_hour smallint not null,
+  local_weekday smallint not null,
+  timezone text not null,
+  utc_offset_minutes smallint not null,
+  platform text not null,
+
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+
+  constraint activity_events_entity_type_check
+    check (
+      entity_type in (
+        'task',
+        'project',
+        'goal',
+        'pomodoro'
+      )
+    ),
+
+  constraint activity_events_local_hour_check
+    check (local_hour between 0 and 23),
+
+  constraint activity_events_local_weekday_check
+    check (local_weekday between 0 and 6),
+
+  constraint activity_events_utc_offset_check
+    check (
+      utc_offset_minutes between -840 and 840
+    ),
+
+  constraint activity_events_platform_check
+    check (
+      platform in (
+        'web',
+        'ios',
+        'android'
+      )
+    )
+);
+
+alter table public.activity_events
+  enable row level security;
+
+drop policy if exists
+  "Users can read their activity events"
+on public.activity_events;
+
+create policy
+  "Users can read their activity events"
+on public.activity_events
+for select
+to authenticated
+using (
+  auth.uid() = user_id
+);
+
+drop policy if exists
+  "Users can create their activity events"
+on public.activity_events;
+
+create policy
+  "Users can create their activity events"
+on public.activity_events
+for insert
+to authenticated
+with check (
+  auth.uid() = user_id
+);
+
+create index if not exists
+  activity_events_user_occurred_idx
+on public.activity_events (
+  user_id,
+  occurred_at desc
+);
+
+create index if not exists
+  activity_events_user_local_date_idx
+on public.activity_events (
+  user_id,
+  local_date desc
+);
+
+create index if not exists
+  activity_events_user_type_idx
+on public.activity_events (
+  user_id,
+  event_type,
+  occurred_at desc
+);
+
+commit;
+supabase/migrations/20260907094000_focusme_reports.sql
+begin;
+
+create table if not exists public.focusme_reports (
+  id uuid primary key default gen_random_uuid(),
+
+  user_id uuid not null
+    references auth.users(id)
+    on delete cascade,
+
+  report_type text not null,
+  period_start date not null,
+  period_end date not null,
+
+  metrics jsonb not null,
+  schema_version integer not null
+    default 1,
+
+  narrative text,
+  narrative_locale text,
+
+  focushome_key text,
+  focushome_traits text[] not null
+    default '{}',
+
+  generated_at timestamptz not null
+    default now(),
+  updated_at timestamptz not null
+    default now(),
+
+  constraint focusme_reports_type_check
+    check (
+      report_type in (
+        'weekly',
+        'monthly'
+      )
+    ),
+
+  constraint focusme_reports_period_check
+    check (
+      period_end > period_start
+    ),
+
+  constraint focusme_reports_narrative_check
+    check (
+      (
+        narrative is null
+        and narrative_locale is null
+      )
+      or
+      (
+        narrative is not null
+        and narrative_locale is not null
+      )
+    ),
+
+  constraint focusme_reports_unique_period
+    unique (
+      user_id,
+      report_type,
+      period_start,
+      period_end
+    )
+);
+
+alter table public.focusme_reports
+  enable row level security;
+
+drop policy if exists
+  "Users can read their FocusMe reports"
+on public.focusme_reports;
+
+create policy
+  "Users can read their FocusMe reports"
+on public.focusme_reports
+for select
+to authenticated
+using (
+  auth.uid() = user_id
+);
+
+drop policy if exists
+  "Users can create their FocusMe reports"
+on public.focusme_reports;
+
+create policy
+  "Users can create their FocusMe reports"
+on public.focusme_reports
+for insert
+to authenticated
+with check (
+  auth.uid() = user_id
+);
+
+drop policy if exists
+  "Users can update their FocusMe reports"
+on public.focusme_reports;
+
+create policy
+  "Users can update their FocusMe reports"
+on public.focusme_reports
+for update
+to authenticated
+using (
+  auth.uid() = user_id
+)
+with check (
+  auth.uid() = user_id
+);
+
+create index if not exists
+  focusme_reports_user_period_idx
+on public.focusme_reports (
+  user_id,
+  period_start desc
+);
+
+create index if not exists
+  focusme_reports_user_type_idx
+on public.focusme_reports (
+  user_id,
+  report_type,
+  period_start desc
+);
+
+commit;

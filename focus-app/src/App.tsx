@@ -15,6 +15,7 @@ import { ChangesPage } from './pages/ChangesPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { FocusHomeDiagnosticsPage } from './pages/FocusHomeDiagnosticsPage'
 import { FocusHomeRevealPage } from './pages/FocusHomeRevealPage'
+import { FocusHomeRetestPage } from './pages/FocusHomeRetestPage'
 import { FocusMeHistoryPage } from './pages/FocusMeHistoryPage'
 import { FocusMePage } from './pages/FocusMePage'
 import { FocusMeReportPage } from './pages/FocusMeReportPage'
@@ -66,6 +67,10 @@ function App() {
             <Route
               path="/focusme/reveal/:reportId"
               element={<FocusHomeRevealPage />}
+            />
+            <Route
+              path="/focusme/retest/:reportId"
+              element={<FocusHomeRetestPage />}
             />
             <Route
               path="/focusme/reports/:reportId"

@@ -6,6 +6,7 @@ import {
 
 import {
   assessFocusHome,
+  getFocusHomeAssessmentReportId,
   getFocusHomeProfile,
   type FocusHomeAssessmentType,
 } from '@/services/focusHomeService'
@@ -61,5 +62,23 @@ export function useAssessFocusHome() {
         }),
       ])
     },
+  })
+}
+
+
+export function useFocusHomeAssessmentReportId(
+  assessmentId?: string,
+) {
+  return useQuery({
+    queryKey: [
+      ...focusHomeProfileQueryKey,
+      'assessment-report',
+      assessmentId,
+    ],
+    queryFn: () =>
+      getFocusHomeAssessmentReportId(
+        assessmentId as string,
+      ),
+    enabled: Boolean(assessmentId),
   })
 }

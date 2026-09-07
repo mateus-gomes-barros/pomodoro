@@ -21,6 +21,9 @@ import {
   FocusHomeSymbolGallery,
 } from '@/components/focusme/FocusHomeSymbolGallery'
 import {
+  FocusHomeRetestControl,
+} from '@/components/focusme/FocusHomeRetestControl'
+import {
   PageHeader,
 } from '@/components/ui/PageHeader'
 
@@ -352,6 +355,7 @@ export function AboutFocusMePage() {
             )}
           </p>
         </motion.div>
+        <FocusHomeRetestControl />
       </div>
     </div>
   )

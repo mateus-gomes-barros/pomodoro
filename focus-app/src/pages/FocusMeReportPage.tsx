@@ -18,6 +18,12 @@ import {
 } from 'react-router-dom'
 
 import {
+  FocusMeMonthlyNarrativeCard,
+} from '@/components/focusme/FocusMeMonthlyNarrativeCard'
+import {
+  FocusMeWeeklyNarrativeCard,
+} from '@/components/focusme/FocusMeWeeklyNarrativeCard'
+import {
   FocusMeIcon,
 } from '@/components/icons/FocusMeIcon'
 import {
@@ -566,7 +572,21 @@ export function FocusMeReportPage() {
           </section>
         )}
 
-        {report.narrative && (
+        {!isWeekly &&
+          monthly &&
+          !report.narrative && (
+            <FocusMeMonthlyNarrativeCard
+              report={monthly}
+            />
+          )}
+
+        {isWeekly && weekly && (
+          <FocusMeWeeklyNarrativeCard
+            report={weekly}
+          />
+        )}
+
+        {!isWeekly && report.narrative && (
           <section className="card p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
               {t(
