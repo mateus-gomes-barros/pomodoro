@@ -81,10 +81,7 @@ public class SmallStreakWidgetProvider extends AppWidgetProvider {
         );
 
         Intent openApp =
-            new Intent(
-                context,
-                MainActivity.class
-            );
+            WidgetNavigation.intent(context, "/streaks");
 
         PendingIntent pendingIntent =
             PendingIntent.getActivity(

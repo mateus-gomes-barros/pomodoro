@@ -1,0 +1,206 @@
+===== TYPES =====
+// ─── Core Types ────────────────────────────────────────────────────────────────
+
+export type SessionType = 'work' | 'short_break' | 'long_break'
+export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed'
+export type TaskPriority = 'low' | 'medium' | 'high'
+
+// ─── Project ────────────────────────────────────────────────────────────────────
+
+export interface Project {
+  id: string
+  name: string
+  color: string
+  emoji: string
+  description?: string
+  totalSessions: number
+  completedSessions: number
+  totalFocusMinutes: number
+  createdAt: string
+  updatedAt: string
+}
+
+// ─── Task ───────────────────────────────────────────────────────────────────────
+
+export interface Task {
+  id: string
+  title: string
+  completed: boolean
+  projectId?: string
+  priority: TaskPriority
+  estimatedPomodoros: number
+  completedPomodoros: number
+  createdAt: string
+  completedAt?: string
+  order: number
+}
+
+// ─── Goal ───────────────────────────────────────────────────────────────────────
+
+export interface Goal {
+  id: string
+  title: string
+  year: number
+  completed: boolean
+  completedAt?: string
+  order: number
+  createdAt: string
+  updatedAt: string
+}
+
+// ─── Pomodoro Session ───────────────────────────────────────────────────────────
+
+export interface PomodoroSession {
+  id: string
+  type: SessionType
+  projectId?: string
+  taskId?: string
+  durationMinutes: number
+  completedAt: string
+  date: string
+}
+
+// ─── Timer Settings ─────────────────────────────────────────────────────────────
+
+export interface TimerSettings {
+  workDuration: number       // minutes
+  shortBreakDuration: number
+  longBreakDuration: number
+  sessionsUntilLongBreak: number
+  soundEnabled: boolean
+  autoStartBreaks: boolean
+  autoStartWork: boolean
+}
+
+// ─── Stats ──────────────────────────────────────────────────────────────────────
+
+export interface DailyStats {
+  date: string
+  focusMinutes: number
+  sessionsCompleted: number
+  tasksCompleted: number
+}
+
+export interface StreakData {
+  currentStreak: number
+  longestStreak: number
+  lastActiveDate: string | null
+  activeDates: string[]
+}
+
+// ─── Achievement ────────────────────────────────────────────────────────────────
+
+export interface Achievement {
+  id: string
+  title: string
+  description: string
+  icon: string
+  unlockedAt?: string
+  condition: (stats: AppStats) => boolean
+}
+
+export interface AppStats {
+  totalFocusMinutes: number
+  totalSessions: number
+  totalTasksCompleted: number
+  currentStreak: number
+  longestStreak: number
+}
+
+export function generateId(): string {
+    return crypto.randomUUID()
+  }
+  
+  export function getTodayString(): string {
+    return new Date().toISOString().split('T')[0]
+  }===== PACKAGE =====
+{
+  "name": "focus-app",
+  "private": true,
+  "version": "3.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@supabase/supabase-js": "^2.111.0",
+    "@tailwindcss/vite": "^4.3.1",
+    "@tanstack/react-query": "^5.101.4",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "framer-motion": "^12.42.0",
+    "i18next": "^26.4.2",
+    "lucide-react": "^1.21.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-i18next": "^17.0.13",
+    "react-router-dom": "^7.18.0",
+    "recharts": "^3.9.0",
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.5.2",
+    "oxlint": "^1.69.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.0"
+  }
+}
+===== SUPABASE FILES =====
+./android/.idea/migrations.xml
+./node_modules/.vite/deps/@supabase_supabase-js.js
+./node_modules/.vite/deps/@supabase_supabase-js.js.map
+./node_modules/@standard-schema/spec/LICENSE
+./node_modules/@standard-schema/spec/README.md
+./node_modules/@standard-schema/spec/package.json
+./node_modules/@standard-schema/utils/LICENSE
+./node_modules/@standard-schema/utils/README.md
+./node_modules/@standard-schema/utils/package.json
+./node_modules/@supabase/auth-js/AGENTS.md
+./node_modules/@supabase/auth-js/LICENSE
+./node_modules/@supabase/auth-js/README.md
+./node_modules/@supabase/auth-js/package.json
+./node_modules/@supabase/functions-js/AGENTS.md
+./node_modules/@supabase/functions-js/LICENSE
+./node_modules/@supabase/functions-js/README.md
+./node_modules/@supabase/functions-js/package.json
+./node_modules/@supabase/phoenix/LICENSE.md
+./node_modules/@supabase/phoenix/README.md
+./node_modules/@supabase/phoenix/package.json
+./node_modules/@supabase/phoenix/tsconfig.json
+./node_modules/@supabase/postgrest-js/AGENTS.md
+./node_modules/@supabase/postgrest-js/LICENSE
+./node_modules/@supabase/postgrest-js/README.md
+./node_modules/@supabase/postgrest-js/package.json
+./node_modules/@supabase/realtime-js/AGENTS.md
+./node_modules/@supabase/realtime-js/LICENSE
+./node_modules/@supabase/realtime-js/README.md
+./node_modules/@supabase/realtime-js/package.json
+./node_modules/@supabase/storage-js/AGENTS.md
+./node_modules/@supabase/storage-js/LICENSE
+./node_modules/@supabase/storage-js/README.md
+./node_modules/@supabase/storage-js/package.json
+./node_modules/@supabase/supabase-js/AGENTS.md
+./node_modules/@supabase/supabase-js/LICENSE
+./node_modules/@supabase/supabase-js/README.md
+./node_modules/@supabase/supabase-js/package.json
+./node_modules/oxlint/configuration_schema.json
+./src/lib/supabase.ts

@@ -850,7 +850,7 @@ export function StreaksPage() {
                           badge.minimumDays
                         }
                         className={cn(
-                          'relative flex min-h-48 flex-col items-center justify-between rounded-2xl border p-4 text-center transition',
+                          'relative flex min-h-56 min-w-0 flex-col items-center justify-between overflow-hidden rounded-2xl border p-4 text-center transition sm:min-h-52',
                           isCurrent
                             ? 'border-accent-green/40 bg-accent-green/[0.08]'
                             : unlocked
@@ -878,10 +878,10 @@ export function StreaksPage() {
                           {badge.icon}
                         </div>
 
-                        <div className="mt-4 min-w-0">
+                        <div className="mt-4 w-full min-w-0 overflow-hidden px-1">
                           <p
                             className={cn(
-                              'truncate text-sm font-semibold',
+                              'break-words text-sm font-semibold leading-5 [overflow-wrap:anywhere]',
                               unlocked
                                 ? 'text-accent-white'
                                 : 'text-white/45',
@@ -894,7 +894,7 @@ export function StreaksPage() {
 
                           <p
                             className={cn(
-                              'mt-1 line-clamp-2 text-[11px] leading-4',
+                              'mt-1 line-clamp-3 break-words text-[11px] leading-4 [overflow-wrap:anywhere]',
                               unlocked
                                 ? 'text-accent-subtle'
                                 : 'text-white/25',
@@ -906,7 +906,7 @@ export function StreaksPage() {
                           </p>
                         </div>
 
-                        <div className="mt-4 flex flex-col items-center gap-2">
+                        <div className="mt-4 flex w-full min-w-0 flex-col items-center gap-2 overflow-hidden">
                           <div
                             className={cn(
                               'flex h-7 w-7 items-center justify-center rounded-full',

@@ -94,10 +94,7 @@ public class SmallTodayFocusWidgetProvider extends AppWidgetProvider {
         );
 
         Intent openApp =
-            new Intent(
-                context,
-                MainActivity.class
-            );
+            WidgetNavigation.intent(context, "/timer");
 
         PendingIntent pendingIntent =
             PendingIntent.getActivity(

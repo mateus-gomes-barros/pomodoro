@@ -192,10 +192,7 @@ public class MonthlyAnalyticsWidgetProvider extends AppWidgetProvider {
         }
 
         Intent openApp =
-            new Intent(
-                context,
-                MainActivity.class
-            );
+            WidgetNavigation.intent(context, "/analytics");
 
         PendingIntent pendingIntent =
             PendingIntent.getActivity(

@@ -176,10 +176,7 @@ public class GoalsWidgetProvider extends AppWidgetProvider {
         }
 
         Intent openApp =
-            new Intent(
-                context,
-                MainActivity.class
-            );
+            WidgetNavigation.intent(context, "/goals");
 
         PendingIntent pendingIntent =
             PendingIntent.getActivity(

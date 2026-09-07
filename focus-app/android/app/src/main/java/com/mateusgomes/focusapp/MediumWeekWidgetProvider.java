@@ -125,10 +125,7 @@ public class MediumWeekWidgetProvider extends AppWidgetProvider {
             PendingIntent.getActivity(
                 context,
                 90,
-                new Intent(
-                    context,
-                    MainActivity.class
-                ),
+                WidgetNavigation.intent(context, "/analytics"),
                 PendingIntent.FLAG_UPDATE_CURRENT |
                 PendingIntent.FLAG_IMMUTABLE
             );

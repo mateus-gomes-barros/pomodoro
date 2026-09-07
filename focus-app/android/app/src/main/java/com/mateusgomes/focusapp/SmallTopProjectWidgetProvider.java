@@ -107,10 +107,7 @@ public class SmallTopProjectWidgetProvider extends AppWidgetProvider {
             PendingIntent.getActivity(
                 context,
                 110,
-                new Intent(
-                    context,
-                    MainActivity.class
-                ),
+                WidgetNavigation.intent(context, "/projects"),
                 PendingIntent.FLAG_UPDATE_CURRENT |
                 PendingIntent.FLAG_IMMUTABLE
             );

@@ -120,10 +120,7 @@ public class MediumGoalsWidgetProvider extends AppWidgetProvider {
             PendingIntent.getActivity(
                 context,
                 100,
-                new Intent(
-                    context,
-                    MainActivity.class
-                ),
+                WidgetNavigation.intent(context, "/goals"),
                 PendingIntent.FLAG_UPDATE_CURRENT |
                 PendingIntent.FLAG_IMMUTABLE
             );
