@@ -134,8 +134,8 @@ interface StoredPeriodRow {
 const WEEKLY_BACKFILL_HORIZON = 52
 const MONTHLY_BACKFILL_HORIZON = 24
 
-const WEEKLY_BACKFILL_LIMIT = 6
-const MONTHLY_BACKFILL_LIMIT = 2
+const WEEKLY_BACKFILL_LIMIT = 2
+const MONTHLY_BACKFILL_LIMIT = 1
 
 function createPeriodKey(
   type: FocusMeReportType,
@@ -285,6 +285,89 @@ function hasStoredReportActivity(
   )
 }
 
+function formatPeriodDate(
+  date: Date,
+): string {
+  const year =
+    date.getFullYear()
+
+  const month =
+    String(
+      date.getMonth() + 1,
+    ).padStart(2, '0')
+
+  const day =
+    String(
+      date.getDate(),
+    ).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function getExpectedWeekPeriod(
+  referenceDate: Date,
+): {
+  start: string
+  end: string
+} {
+  const start =
+    new Date(referenceDate)
+
+  start.setHours(0, 0, 0, 0)
+
+  const daysSinceMonday =
+    (start.getDay() + 6) % 7
+
+  start.setDate(
+    start.getDate() -
+      daysSinceMonday,
+  )
+
+  const end =
+    new Date(start)
+
+  end.setDate(
+    end.getDate() + 7,
+  )
+
+  return {
+    start:
+      formatPeriodDate(start),
+    end:
+      formatPeriodDate(end),
+  }
+}
+
+function getExpectedMonthPeriod(
+  referenceDate: Date,
+): {
+  start: string
+  end: string
+} {
+  const start =
+    new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth(),
+      1,
+      12,
+    )
+
+  const end =
+    new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth() + 1,
+      1,
+      12,
+    )
+
+  return {
+    start:
+      formatPeriodDate(start),
+    end:
+      formatPeriodDate(end),
+  }
+}
+
 export async function finalizeLatestFocusMeReports(
   referenceDate = new Date(),
 ): Promise<void> {
@@ -338,21 +421,26 @@ export async function finalizeLatestFocusMeReports(
       break
     }
 
-    const weeklyReport =
-      await getFocusMeWeeklyReport(
+    const expectedPeriod =
+      getExpectedWeekPeriod(
         weekReference,
       )
 
     const key =
       createPeriodKey(
         'weekly',
-        weeklyReport.period.start,
-        weeklyReport.period.end,
+        expectedPeriod.start,
+        expectedPeriod.end,
       )
 
     if (storedKeys.has(key)) {
       continue
     }
+
+    const weeklyReport =
+      await getFocusMeWeeklyReport(
+        weekReference,
+      )
 
     await saveSnapshot(
       'weekly',
@@ -381,21 +469,26 @@ export async function finalizeLatestFocusMeReports(
       break
     }
 
-    const monthlyReport =
-      await getFocusMeMonthlyReport(
+    const expectedPeriod =
+      getExpectedMonthPeriod(
         monthReference,
       )
 
     const key =
       createPeriodKey(
         'monthly',
-        monthlyReport.period.start,
-        monthlyReport.period.end,
+        expectedPeriod.start,
+        expectedPeriod.end,
       )
 
     if (storedKeys.has(key)) {
       continue
     }
+
+    const monthlyReport =
+      await getFocusMeMonthlyReport(
+        monthReference,
+      )
 
     await saveSnapshot(
       'monthly',

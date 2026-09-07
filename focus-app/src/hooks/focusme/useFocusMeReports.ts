@@ -1,5 +1,10 @@
 import {
+  useEffect,
+  useRef,
+} from 'react'
+import {
   useQuery,
+  useQueryClient,
 } from '@tanstack/react-query'
 
 import {
@@ -17,17 +22,45 @@ export const focusMeReportsQueryKey = [
 export function useFocusMeReports(
   type?: FocusMeReportType,
 ) {
-  return useQuery({
+  const queryClient =
+    useQueryClient()
+
+  const backfillStarted =
+    useRef(false)
+
+  const query = useQuery({
     queryKey: [
       ...focusMeReportsQueryKey,
       type ?? 'all',
     ],
-    queryFn: async () => {
-      await finalizeLatestFocusMeReports()
-
-      return getFocusMeReports(type)
-    },
+    queryFn: () =>
+      getFocusMeReports(type),
   })
+
+  useEffect(() => {
+    if (backfillStarted.current) {
+      return
+    }
+
+    backfillStarted.current = true
+
+    void finalizeLatestFocusMeReports()
+      .then(async () => {
+        await queryClient
+          .invalidateQueries({
+            queryKey:
+              focusMeReportsQueryKey,
+          })
+      })
+      .catch((error) => {
+        console.error(
+          'FocusMe report backfill failed:',
+          error,
+        )
+      })
+  }, [queryClient])
+
+  return query
 }
 
 export function useFocusMeReport(
