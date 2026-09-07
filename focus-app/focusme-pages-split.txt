@@ -1,22 +1,170 @@
+===== APP ROUTES =====
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom'
+
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { Layout } from './components/layout/Layout'
+
+import { useTimer } from './hooks/useTimer'
+
+import { AnalyticsPage } from './pages/AnalyticsPage'
+import { ChangesPage } from './pages/ChangesPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { FocusMePage } from './pages/FocusMePage'
+import { GoalsPage } from './pages/GoalsPage'
+import { LoginPage } from './pages/LoginPage'
+import { ProjectsPage } from './pages/ProjectsPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { StreaksPage } from './pages/StreaksPage'
+import { TasksPage } from './pages/TasksPage'
+import { TasksTrashPage } from './pages/TasksTrashPage'
+import { TimerPage } from './pages/TimerPage'
+
+function TimerDriver() {
+  useTimer()
+  return null
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <TimerDriver />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/timer" element={<TimerPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route
+              path="/tasks/trash"
+              element={<TasksTrashPage />}
+            />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/streaks" element={<StreaksPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/focusme" element={<FocusMePage />} />
+            <Route
+              path="/settings/focusme"
+              element={<Navigate to="/focusme" replace />}
+            />
+            <Route
+              path="/settings/focusme"
+              element={<FocusMePage />}
+            />
+            <Route
+              path="/settings/changes"
+              element={<ChangesPage />}
+            />
+          </Route>
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+export default App===== SETTINGS FOCUSME LINK =====
+571-              }
+572-              onChange={(value) =>
+573-                updateSettings({
+574-                  autoStartBreaks: value,
+575-                })
+576-              }
+577-            />
+578-
+579-            <Toggle
+580-              label={t('settings.preferences.autoWork')}
+581-              value={settings.autoStartWork}
+582-              onChange={(value) =>
+583-                updateSettings({
+584-                  autoStartWork: value,
+585-                })
+586-              }
+587-            />
+588-          </div>
+589-        </motion.div>
+590-
+591-        {/* FOCUSME */}
+592-
+593-        <motion.button
+594-          type="button"
+595-          onClick={() =>
+596:            navigate('/focusme')
+597-          }
+598-          initial={{
+599-            opacity: 0,
+600-            y: 8,
+601-          }}
+602-          animate={{
+603-            opacity: 1,
+604-            y: 0,
+605-          }}
+606-          transition={{
+607-            delay: 0.15,
+608-          }}
+609-          className="card flex w-full items-center gap-4 p-6 text-left transition hover:border-accent-green/20 hover:bg-accent-green/[0.025]"
+610-        >
+611-          <div className="rounded-xl bg-accent-green/10 p-3 text-accent-green">
+612-            <BarChart3 size={20} />
+613-          </div>
+614-
+615-          <div className="min-w-0 flex-1">
+616-            <div className="flex flex-wrap items-center gap-2">
+617-              <h3 className="text-sm font-semibold text-accent-white">
+618:                FocusMe
+619-              </h3>
+620-
+621-              <span className="rounded-full border border-accent-green/30 bg-accent-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-green">
+622-                {t(
+623-                  'settings.focusMe.badge',
+624-                )}
+625-              </span>
+626-            </div>
+627-
+628-            <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
+629-              {t(
+630-                'settings.focusMe.description',
+631-              )}
+632-            </p>
+633-          </div>
+634-
+635-          <ChevronRight
+636-            size={18}
+637-            className="shrink-0 text-accent-subtle"
+638-          />
+639-        </motion.button>
+640-
+641-        {/* CHANGES AND UPDATES */}
+642-
+643-        <motion.button
+===== CURRENT FOCUSME PAGE =====
 import { motion } from 'framer-motion'
 import {
+  BarChart3,
   CalendarDays,
+  CheckCircle2,
   CheckSquare2,
-  ChevronRight,
   Clock3,
-  History,
+  Home,
+  Lock,
   Pause,
   Play,
   RotateCcw,
+  Share2,
   Sparkles,
   Timer,
 } from 'lucide-react'
 import {
   useTranslation,
 } from 'react-i18next'
-import {
-  useNavigate,
-} from 'react-router-dom'
 
 import {
   FocusMeIcon,
@@ -27,6 +175,27 @@ import {
 import {
   useFocusMeWeeklyReport,
 } from '@/hooks/focusme/useFocusMeWeeklyReport'
+
+const previewCards = [
+  {
+    key: 'monthly',
+    icon: BarChart3,
+  },
+  {
+    key: 'focusHome',
+    icon: Home,
+  },
+  {
+    key: 'sharing',
+    icon: Share2,
+  },
+]
+
+const privacyItems = [
+  'location',
+  'apps',
+  'device',
+]
 
 function formatMinutes(
   minutes: number,
@@ -51,8 +220,6 @@ export function FocusMePage() {
     t,
     i18n,
   } = useTranslation()
-
-  const navigate = useNavigate()
 
   const reportQuery =
     useFocusMeWeeklyReport()
@@ -138,7 +305,7 @@ export function FocusMePage() {
       <PageHeader
         title="FocusMe"
         subtitle={t(
-          'focusMePage.reportsSubtitle',
+          'focusMePage.subtitle',
         )}
       />
 
@@ -518,11 +685,65 @@ export function FocusMePage() {
           </section>
         )}
 
-        <motion.button
-          type="button"
-          onClick={() =>
-            navigate('/focusme/history')
-          }
+        <section>
+          <div className="mb-4">
+            <h2 className="font-semibold text-accent-white">
+              {t(
+                'focusMePage.experience.title',
+              )}
+            </h2>
+
+            <p className="mt-1 text-sm text-accent-subtle">
+              {t(
+                'focusMePage.experience.subtitle',
+              )}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {previewCards.map(
+              ({
+                key,
+                icon: Icon,
+              }, index) => (
+                <motion.article
+                  key={key}
+                  initial={{
+                    opacity: 0,
+                    y: 8,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    delay:
+                      index * 0.04,
+                  }}
+                  className="card p-5"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.045] text-accent-green">
+                    <Icon size={18} />
+                  </div>
+
+                  <h3 className="mt-4 text-sm font-semibold text-accent-white">
+                    {t(
+                      `focusMePage.experience.items.${key}.title`,
+                    )}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-relaxed text-accent-subtle">
+                    {t(
+                      `focusMePage.experience.items.${key}.description`,
+                    )}
+                  </p>
+                </motion.article>
+              ),
+            )}
+          </div>
+        </section>
+
+        <motion.section
           initial={{
             opacity: 0,
             y: 8,
@@ -531,31 +752,110 @@ export function FocusMePage() {
             opacity: 1,
             y: 0,
           }}
-          className="card flex w-full items-center gap-4 p-5 text-left transition hover:border-accent-green/20 hover:bg-accent-green/[0.025]"
+          className="card p-6"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-green/10 text-accent-green">
-            <History size={20} />
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-green/10 text-accent-green">
+              <Home size={20} />
+            </div>
+
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+                FocushoMe
+              </span>
+
+              <h2 className="mt-2 text-lg font-semibold text-accent-white">
+                {t(
+                  'focusMePage.focusHome.title',
+                )}
+              </h2>
+
+              <p className="mt-3 text-sm leading-7 text-accent-subtle">
+                {t(
+                  'focusMePage.focusHome.description',
+                )}
+              </p>
+
+              <div className="mt-5 space-y-3">
+                {[
+                  'rare',
+                  'complete',
+                  'permanent',
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-start gap-2.5"
+                  >
+                    <CheckCircle2
+                      size={16}
+                      className="mt-0.5 shrink-0 text-accent-green"
+                    />
+
+                    <span className="text-sm leading-relaxed text-accent-muted">
+                      {t(
+                        `focusMePage.focusHome.items.${item}`,
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+        </motion.section>
 
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold text-accent-white">
-              {t(
-                'focusMePage.weeklyReport.historyTitle',
-              )}
-            </h2>
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card p-6"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.045] text-accent-white">
+              <Lock size={20} />
+            </div>
 
-            <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
-              {t(
-                'focusMePage.weeklyReport.historyDescription',
-              )}
-            </p>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-accent-white">
+                {t(
+                  'focusMePage.privacy.title',
+                )}
+              </h2>
+
+              <p className="mt-2 text-sm leading-relaxed text-accent-subtle">
+                {t(
+                  'focusMePage.privacy.description',
+                )}
+              </p>
+
+              <div className="mt-4 space-y-2.5">
+                {privacyItems.map(
+                  (item) => (
+                    <div
+                      key={item}
+                      className="flex items-start gap-2.5"
+                    >
+                      <CheckCircle2
+                        size={15}
+                        className="mt-0.5 shrink-0 text-accent-green"
+                      />
+
+                      <span className="text-sm text-accent-muted">
+                        {t(
+                          `focusMePage.privacy.items.${item}`,
+                        )}
+                      </span>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
           </div>
-
-          <ChevronRight
-            size={18}
-            className="shrink-0 text-accent-subtle"
-          />
-        </motion.button>
+        </motion.section>
       </div>
     </div>
   )

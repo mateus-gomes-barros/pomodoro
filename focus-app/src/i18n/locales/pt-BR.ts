@@ -690,9 +690,47 @@ const ptBR = {
 
   focusMePage: {
     back: 'Voltar para Configurações',
+    reportsSubtitle:
+      'Seus relatórios, padrões e descobertas reunidos em um só lugar.',
     subtitle:
       'Uma nova forma de compreender sua jornada de foco.',
     coming: 'Em desenvolvimento no Focus 4.0',
+
+    weeklyReport: {
+      available: 'Disponível agora',
+      eyebrow: 'Sua semana até agora',
+      title:
+        'O que seu foco já conta sobre você',
+      loading:
+        'Reunindo os dados da sua semana...',
+      error:
+        'Não foi possível preparar seu resumo agora.',
+      focusTime: 'Tempo de foco',
+      sessions: 'Sessões',
+      activeDays: 'Dias ativos',
+      tasksCompleted: 'Tarefas concluídas',
+      dailyRhythm: 'Ritmo diário',
+      bestDay: 'Dia com mais foco',
+      noFocus:
+        'Conclua uma sessão para começar a formar seu relatório.',
+      tasksTitle: 'Planejamento e execução',
+      created: 'Criadas',
+      completed: 'Concluídas',
+      rhythmTitle: 'Continuidade',
+      starts: 'Inícios',
+      pauses: 'Pausas',
+      resumes: 'Retomadas',
+      abandoned: 'Interrompidas',
+      topProject: 'Projeto em destaque',
+      noProject:
+        'Nenhum projeto recebeu sessões nesta semana.',
+      currentWeek:
+        'Este resumo evolui conforme você usa o Focus.',
+      historyTitle: 'Histórico de relatórios',
+      historyDescription:
+        'Consulte suas retrospectivas semanais e mensais preservadas ao longo do tempo.',
+    },
+
 
     hero: {
       title:
@@ -770,6 +808,26 @@ const ptBR = {
         'O FocusMe está em desenvolvimento',
       description:
         'Esta página será atualizada conforme os recursos do Focus 4.0 forem concluídos.',
+    },
+  },
+
+  focusMeHistoryPage: {
+    back: 'Voltar para o FocusMe',
+    title: 'Histórico de relatórios',
+    subtitle:
+      'Revisite suas semanas, seus meses e a evolução da sua rotina.',
+    filters: {
+      all: 'Todos',
+      weekly: 'Semanais',
+      monthly: 'Mensais',
+    },
+    empty: {
+      title:
+        'Seus relatórios aparecerão aqui',
+      description:
+        'Quando uma semana ou um mês for encerrado, o FocusMe preservará a retrospectiva para que ela não mude com o tempo.',
+      schedule:
+        'Semanas fecham na segunda-feira',
     },
   },
 
@@ -1039,6 +1097,7 @@ const ptBR = {
     },
 
     focusMe: {
+      title: 'Sobre o FocusMe',
       badge: 'Focus 4.0',
       description:
         'Descubra como sua atividade será transformada em retrospectivas pessoais.',

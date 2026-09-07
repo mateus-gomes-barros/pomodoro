@@ -1,0 +1,1170 @@
+===== TIMER HOOK =====
+import {
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react'
+import {
+  format,
+  subDays,
+} from 'date-fns'
+
+import {
+  useCreatePomodoroSession,
+  usePomodoroSessions,
+} from '@/hooks/pomodoro/usePomodoroSessions'
+import {
+  useIncrementProjectSession,
+  useProjects,
+} from '@/hooks/projects/useProjects'
+import {
+  useIncrementTaskPomodoro,
+  useTasks,
+} from '@/hooks/tasks/useTasks'
+import { getStreakBadge } from '@/lib/streakBadges'
+import {
+  endFocusLiveActivity,
+  startFocusLiveActivity,
+} from '@/services/focusLiveActivityService'
+import {
+  clearTimerNotification,
+  showTimerNotification,
+  addNotificationActionListener,
+} from '@/services/timerNotificationService'
+import { usePomodoroStore } from '@/store/pomodoroStore'
+
+import type {
+  SessionType,
+  TimerSettings,
+} from '@/types'
+
+function getSessionDuration(
+  type: SessionType,
+  settings: TimerSettings,
+): number {
+  switch (type) {
+    case 'work':
+      return settings.workDuration
+    case 'short_break':
+      return settings.shortBreakDuration
+    case 'long_break':
+      return settings.longBreakDuration
+  }
+}
+
+function getLiveActivityRemainingSeconds(
+  endsAt: number | null,
+  secondsLeft: number,
+): number {
+  if (endsAt === null) {
+    return secondsLeft
+  }
+  return Math.max(
+    0,
+    Math.ceil((endsAt - Date.now()) / 1000),
+  )
+}
+
+function calculateCurrentStreak(activeDates: string[]): number {
+  const uniqueDates = new Set(activeDates)
+  const today = new Date()
+  const todayString = format(today, 'yyyy-MM-dd')
+  const yesterday = subDays(today, 1)
+  const yesterdayString = format(yesterday, 'yyyy-MM-dd')
+
+  let currentDate: Date | null =
+    uniqueDates.has(todayString)
+      ? today
+      : uniqueDates.has(yesterdayString)
+        ? yesterday
+        : null
+
+  let currentStreak = 0
+  while (currentDate) {
+    const dateString = format(currentDate, 'yyyy-MM-dd')
+    if (!uniqueDates.has(dateString)) break
+    currentStreak += 1
+    currentDate = subDays(currentDate, 1)
+  }
+  return currentStreak
+}
+
+export function useTimer() {
+  const {
+    status,
+    sessionType,
+    settings,
+    secondsLeft,
+    endsAt,
+    tick,
+    activeTaskId,
+    activeProjectId,
+  } = usePomodoroStore()
+
+  const tasksQuery = useTasks()
+  const projectsQuery = useProjects()
+  const sessionsQuery = usePomodoroSessions()
+
+  const createPomodoroSessionMutation = useCreatePomodoroSession()
+  const incrementTaskPomodoroMutation = useIncrementTaskPomodoro()
+  const incrementProjectSessionMutation = useIncrementProjectSession()
+
+  const currentBadge = useMemo(() => {
+    const workSessionDates = (sessionsQuery.data ?? [])
+      .filter((session) => session.type === 'work')
+      .map((session) => session.date)
+
+    const currentStreak = calculateCurrentStreak(workSessionDates)
+    return getStreakBadge(currentStreak)
+  }, [sessionsQuery.data])
+
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const previousStatusRef = useRef(status)
+  const previousSessionTypeRef = useRef(sessionType)
+  const previousSettingsRef = useRef(settings)
+  const liveActivityStateRef = useRef<string | null>(null)
+  const hasSyncedLiveActivityRef = useRef(false)
+
+  // 1. Hook para salvar a sessão no banco ao concluir
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current
+    const completedSessionType = previousSessionTypeRef.current
+    const completedSessionSettings = previousSettingsRef.current
+
+    const sessionWasCompleted =
+      previousStatus === 'running' && status === 'completed'
+
+    if (sessionWasCompleted) {
+      const durationMinutes = getSessionDuration(
+        completedSessionType,
+        completedSessionSettings,
+      )
+      const completedAt = new Date().toISOString()
+
+      void createPomodoroSessionMutation
+        .mutateAsync({
+          type: completedSessionType,
+          projectId: activeProjectId ?? undefined,
+          taskId: activeTaskId ?? undefined,
+          durationMinutes,
+          completedAt,
+          date: completedAt.split('T')[0],
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to save pomodoro session:', error)
+        })
+
+      if (completedSessionType === 'work') {
+        if (activeTaskId) {
+          const activeTask = tasksQuery.data?.find((t) => t.id === activeTaskId)
+          if (activeTask) {
+            void incrementTaskPomodoroMutation.mutateAsync(activeTask).catch(console.error)
+          }
+        }
+        if (activeProjectId) {
+          const activeProject = projectsQuery.data?.find((p) => p.id === activeProjectId)
+          if (activeProject) {
+            void incrementProjectSessionMutation
+              .mutateAsync({ project: activeProject, minutes: durationMinutes })
+              .catch(console.error)
+          }
+        }
+      }
+
+      if (completedSessionSettings.soundEnabled) {
+        playCompletionSound()
+      }
+    }
+
+    previousStatusRef.current = status
+    previousSessionTypeRef.current = sessionType
+    previousSettingsRef.current = settings
+  }, [
+    status,
+    sessionType,
+    settings,
+    activeTaskId,
+    activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
+    createPomodoroSessionMutation,
+    incrementTaskPomodoroMutation,
+    incrementProjectSessionMutation,
+  ])
+
+  // 2. Hook para sincronizar atividades nativas (Live Activity iOS + Notification Android)
+  useEffect(() => {
+    if (status !== 'running' && status !== 'paused') {
+      const needsToEndActivity =
+        !hasSyncedLiveActivityRef.current || liveActivityStateRef.current !== null
+
+      if (needsToEndActivity) {
+        hasSyncedLiveActivityRef.current = true
+        liveActivityStateRef.current = null
+        
+        // Limpa estado nativo em ambas as plataformas
+        void endFocusLiveActivity()
+        void clearTimerNotification()
+      }
+      return
+    }
+
+    const activeTask = tasksQuery.data?.find((t) => t.id === activeTaskId)
+    const resolvedProjectId = activeProjectId ?? activeTask?.projectId ?? null
+    const activeProject = projectsQuery.data?.find((p) => p.id === resolvedProjectId)
+
+    const remainingSeconds = getLiveActivityRemainingSeconds(
+      status === 'running' ? endsAt : null,
+      secondsLeft,
+    )
+
+    const activityStateSignature = [
+      status,
+      sessionType,
+      endsAt ?? 'no-end-date',
+      status === 'paused' ? remainingSeconds : 'countdown',
+      activeProject?.name ?? '',
+      activeTask?.title ?? '',
+      currentBadge.icon,
+    ].join('|')
+
+    const stateHasNotChanged =
+      hasSyncedLiveActivityRef.current &&
+      liveActivityStateRef.current === activityStateSignature
+
+    if (stateHasNotChanged) {
+      return
+    }
+
+    hasSyncedLiveActivityRef.current = true
+    liveActivityStateRef.current = activityStateSignature
+
+    // Atualiza Live Activity (iOS)
+    void startFocusLiveActivity({
+      sessionType,
+      status,
+      endDate: status === 'running' ? endsAt : null,
+      remainingSeconds,
+      projectName: activeProject?.name,
+      taskName: activeTask?.title,
+      badgeIcon: currentBadge.icon,
+    })
+
+    // Atualiza Notificação Fixa / Now Bar (Android)
+    // O cronômetro é controlado nativamente pelo Android através do endTime.
+    // Não enviamos o tempo como texto para evitar que ele fique duplicado/estático.
+
+    const focusEmoji = activeProject?.emoji ?? '⏱️'
+
+const focusName =
+  activeTask?.title ??
+  activeProject?.name ??
+  (sessionType === 'work'
+    ? 'Foco'
+    : sessionType === 'short_break'
+      ? 'Pausa Curta'
+      : 'Pausa Longa')
+
+const notificationTitle = `${focusEmoji} ${focusName}`
+
+const notificationBody =
+  activeTask?.title && activeProject?.name
+    ? activeProject.name
+    : ''
+
+void showTimerNotification(
+  notificationTitle,
+  notificationBody,
+  status === 'running' ? (endsAt ?? 0) : 0,
+  currentBadge.icon,
+)
+  }, [
+    status,
+    sessionType,
+    secondsLeft,
+    endsAt,
+    activeTaskId,
+    activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
+    currentBadge.icon,
+  ])
+
+  // 3. Hook para ouvir ações da notificação (Android)
+  useEffect(() => {
+    const handleAction = (action: string) => {
+      const { status, start, pause, reset } = usePomodoroStore.getState()
+      console.log('⚡ [useTimer] Ação recebida da notificação:', action)
+
+      if (action === 'com.mateusgomes.focusapp.ACTION_PAUSE') {
+        if (status === 'running') {
+          pause()
+        } else {
+          start()
+        }
+      } else if (action === 'com.mateusgomes.focusapp.ACTION_STOP') {
+        reset()
+      }
+    }
+
+    const listener = addNotificationActionListener(handleAction)
+
+    return () => {
+      if (listener && 'then' in listener) {
+        void (listener as any).then((h: any) => h.remove())
+      }
+    }
+  }, [])
+
+  // 4. Hook para o Ticking interval
+  useEffect(() => {
+    if (status === 'running') {
+      intervalRef.current = setInterval(() => {
+        tick()
+      }, 1000)
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+  }, [status, tick])
+}
+
+function playCompletionSound() {
+  try {
+    const context = new AudioContext()
+    const notes = [523.25, 659.25, 783.99]
+    notes.forEach((frequency, index) => {
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.frequency.value = frequency
+      oscillator.type = 'sine'
+      gain.gain.setValueAtTime(0, context.currentTime + index * 0.18)
+      gain.gain.linearRampToValueAtTime(0.15, context.currentTime + index * 0.18 + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + index * 0.18 + 0.4)
+      oscillator.start(context.currentTime + index * 0.18)
+      oscillator.stop(context.currentTime + index * 0.18 + 0.5)
+    })
+  } catch {
+    // AudioContext unavailable
+  }
+}
+===== TIMER STORE FILES =====
+src/store/pomodoroStore.ts
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+import type {
+  PomodoroSession,
+  SessionType,
+  TimerSettings,
+  TimerStatus,
+} from '../types'
+
+import {
+  generateId,
+  getTodayString,
+} from '../utils'
+
+interface PomodoroState {
+  // Timer
+  status: TimerStatus
+  sessionType: SessionType
+  secondsLeft: number
+  endsAt: number | null
+  currentSessionCount: number
+  activeProjectId: string | null
+  activeTaskId: string | null
+
+  // Settings
+  settings: TimerSettings
+
+  // History
+  sessions: PomodoroSession[]
+
+  // Actions
+  start: () => void
+  pause: () => void
+  reset: () => void
+  tick: () => void
+  switchSession: (
+    type: SessionType,
+  ) => void
+  completeSession: () => void
+  setActiveProject: (
+    id: string | null,
+  ) => void
+  setActiveTask: (
+    id: string | null,
+  ) => void
+  updateSettings: (
+    settings: Partial<TimerSettings>,
+  ) => void
+  getTodaySessions: () => PomodoroSession[]
+  getTodayFocusMinutes: () => number
+}
+
+const DEFAULT_SETTINGS: TimerSettings = {
+  workDuration: 25,
+  shortBreakDuration: 5,
+  longBreakDuration: 15,
+  sessionsUntilLongBreak: 4,
+  soundEnabled: true,
+  autoStartBreaks: false,
+  autoStartWork: false,
+}
+
+function getDuration(
+  type: SessionType,
+  settings: TimerSettings,
+): number {
+  switch (type) {
+    case 'work':
+      return settings.workDuration * 60
+
+    case 'short_break':
+      return (
+        settings.shortBreakDuration * 60
+      )
+
+    case 'long_break':
+      return (
+        settings.longBreakDuration * 60
+      )
+  }
+}
+
+function getRemainingSeconds(
+  endsAt: number,
+): number {
+  return Math.max(
+    0,
+    Math.ceil(
+      (endsAt - Date.now()) / 1000,
+    ),
+  )
+}
+
+export const usePomodoroStore =
+  create<PomodoroState>()(
+    persist(
+      (set, get) => ({
+        status: 'idle',
+        sessionType: 'work',
+        secondsLeft:
+          DEFAULT_SETTINGS.workDuration *
+          60,
+        endsAt: null,
+        currentSessionCount: 0,
+        activeProjectId: null,
+        activeTaskId: null,
+        settings: DEFAULT_SETTINGS,
+        sessions: [],
+
+        start: () => {
+          const {
+            secondsLeft,
+            status,
+          } = get()
+
+          if (
+            status === 'running' ||
+            secondsLeft <= 0
+          ) {
+            return
+          }
+
+          set({
+            status: 'running',
+            endsAt:
+              Date.now() +
+              secondsLeft * 1000,
+          })
+        },
+
+        pause: () => {
+          const {
+            status,
+            endsAt,
+          } = get()
+
+          if (
+            status !== 'running' ||
+            endsAt === null
+          ) {
+            return
+          }
+
+          set({
+            status: 'paused',
+            secondsLeft:
+              getRemainingSeconds(endsAt),
+            endsAt: null,
+          })
+        },
+
+        reset: () => {
+          const {
+            sessionType,
+            settings,
+          } = get()
+
+          set({
+            status: 'idle',
+            secondsLeft: getDuration(
+              sessionType,
+              settings,
+            ),
+            endsAt: null,
+          })
+        },
+
+        tick: () => {
+          const {
+            status,
+            endsAt,
+          } = get()
+
+          if (
+            status !== 'running' ||
+            endsAt === null
+          ) {
+            return
+          }
+
+          const remainingSeconds =
+            getRemainingSeconds(endsAt)
+
+          if (remainingSeconds <= 0) {
+            get().completeSession()
+            return
+          }
+
+          set({
+            secondsLeft:
+              remainingSeconds,
+          })
+        },
+
+        switchSession: (
+          type: SessionType,
+        ) => {
+          const { settings } = get()
+
+          set({
+            sessionType: type,
+            secondsLeft: getDuration(
+              type,
+              settings,
+            ),
+            status: 'idle',
+            endsAt: null,
+          })
+        },
+
+        completeSession: () => {
+          const {
+            sessionType,
+            currentSessionCount,
+            settings,
+            activeProjectId,
+            activeTaskId,
+          } = get()
+
+          const session: PomodoroSession = {
+            id: generateId(),
+            type: sessionType,
+            projectId: activeProjectId ?? undefined,
+            taskId: activeTaskId ?? undefined,
+            durationMinutes:
+              sessionType === 'work'
+                ? settings.workDuration
+                : sessionType === 'short_break'
+                  ? settings.shortBreakDuration
+                  : settings.longBreakDuration,
+            completedAt: new Date().toISOString(),
+            date: getTodayString(),
+          }
+
+          const newCount =
+            sessionType === 'work'
+              ? currentSessionCount + 1
+              : currentSessionCount
+
+          const isLongBreak =
+            newCount > 0 &&
+            newCount %
+              settings.sessionsUntilLongBreak ===
+              0
+
+          let nextType: SessionType
+
+          if (sessionType === 'work') {
+            nextType = isLongBreak
+              ? 'long_break'
+              : 'short_break'
+          } else {
+            nextType = 'work'
+          }
+
+          const shouldAutoStart =
+            sessionType === 'work'
+              ? settings.autoStartBreaks
+              : settings.autoStartWork
+
+          const nextSeconds =
+            getDuration(
+              nextType,
+              settings,
+            )
+
+          set((state) => ({
+            sessions: [
+              ...state.sessions,
+              session,
+            ],
+            status: shouldAutoStart
+              ? 'running'
+              : 'completed',
+            endsAt: shouldAutoStart
+              ? Date.now() +
+                nextSeconds * 1000
+              : null,
+            currentSessionCount:
+              newCount,
+            sessionType: nextType,
+            secondsLeft: nextSeconds,
+          }))
+        },
+
+        setActiveProject: (id) => {
+          set({
+            activeProjectId: id,
+          })
+        },
+
+        setActiveTask: (id) => {
+          set({
+            activeTaskId: id,
+          })
+        },
+
+        updateSettings: (
+          newSettings,
+        ) => {
+          set((state) => {
+            const merged = {
+              ...state.settings,
+              ...newSettings,
+            }
+
+            return {
+              settings: merged,
+              secondsLeft: getDuration(
+                state.sessionType,
+                merged,
+              ),
+              status: 'idle',
+              endsAt: null,
+            }
+          })
+        },
+
+        getTodaySessions: () => {
+          const today =
+            getTodayString()
+
+          return get().sessions.filter(
+            (session) =>
+              session.date === today,
+          )
+        },
+
+        getTodayFocusMinutes: () => {
+          const today =
+            getTodayString()
+
+          return get()
+            .sessions.filter(
+              (session) =>
+                session.date ===
+                  today &&
+                session.type === 'work',
+            )
+            .reduce(
+              (total, session) =>
+                total +
+                session.durationMinutes,
+              0,
+            )
+        },
+      }),
+      {
+        name: 'focus_pomodoro',
+
+        partialize: (state) => ({
+          status: state.status,
+          sessionType:
+            state.sessionType,
+          secondsLeft:
+            state.secondsLeft,
+          endsAt: state.endsAt,
+          activeProjectId:
+            state.activeProjectId,
+          activeTaskId:
+            state.activeTaskId,
+          sessions: state.sessions,
+          settings: state.settings,
+          currentSessionCount:
+            state.currentSessionCount,
+        }),
+      },
+    ),
+  )===== TIMER PAGE ACTIONS =====
+32-  short_break: 'timer.session.shortBreak',
+33-  long_break: 'timer.session.longBreak',
+34-}
+35-
+36-const SESSION_TYPES: SessionType[] = [
+37-  'work',
+38-  'short_break',
+39-  'long_break',
+40-]
+41-
+42-export function TimerPage() {
+43-  const { t } = useTranslation()
+44-
+45-  const {
+46-    status,
+47-    sessionType,
+48-    secondsLeft,
+49-    settings,
+50-    currentSessionCount,
+51-    activeProjectId,
+52:    start,
+53:    pause,
+54:    reset,
+55-    switchSession,
+56-    setActiveProject,
+57-    updateSettings,
+58-  } = usePomodoroStore()
+59-
+60-  const projectsQuery = useProjects()
+61-
+62-  const projects =
+63-    projectsQuery.data ?? []
+64-
+65-  const [showSettings, setShowSettings] =
+66-    useState(false)
+67-
+68-  const totalSeconds =
+69-    sessionType === 'work'
+70-      ? settings.workDuration * 60
+71-      : sessionType === 'short_break'
+72-        ? settings.shortBreakDuration * 60
+73-        : settings.longBreakDuration * 60
+74-
+--
+247-      </motion.div>
+248-
+249-      {/* Timer controls */}
+250-
+251-      <motion.div
+252-        initial={{
+253-          opacity: 0,
+254-          y: 10,
+255-        }}
+256-        animate={{
+257-          opacity: 1,
+258-          y: 0,
+259-        }}
+260-        transition={{
+261-          delay: 0.2,
+262-        }}
+263-        className="flex items-center gap-4"
+264-      >
+265-        <button
+266-          type="button"
+267:          onClick={reset}
+268-          className="btn-ghost h-11 w-11 justify-center p-0"
+269:          aria-label={t('timer.status.reset')}
+270-        >
+271-          <RotateCcw size={16} />
+272-        </button>
+273-
+274-        <motion.button
+275-          type="button"
+276-          whileTap={{
+277-            scale: 0.94,
+278-          }}
+279-          onClick={
+280-            isRunning
+281:              ? pause
+282:              : start
+283-          }
+284-          className={cn(
+285-            'flex h-[72px] w-[72px] items-center justify-center rounded-2xl font-bold text-black',
+286-            'transition-all duration-150',
+287-            isRunning
+288-              ? 'bg-white hover:bg-white/85'
+289-              : 'bg-gradient-to-br from-emerald-400 to-emerald-500 hover:opacity-90',
+290-          )}
+291-          style={{
+292-            boxShadow:
+293-              '0 0 24px rgba(52,211,153,0.18)',
+294-          }}
+295-          aria-label={
+296-            isRunning
+297-              ? 'Pause timer'
+298-              : 'Start timer'
+299-          }
+300-        >
+301-          {isRunning ? (
+302-            <Pause size={26} />
+--
+576-                                    max,
+577-                                    value +
+578-                                      1,
+579-                                  ),
+580-                              },
+581-                            )
+582-                          }
+583-                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-base text-white/60 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+584-                          aria-label={`Increase ${label}`}
+585-                        >
+586-                          +
+587-                        </button>
+588-                      </div>
+589-                    </div>
+590-                  ),
+591-                )}
+592-              </div>
+593-
+594-              {isRunning && (
+595-                <p className="border-t border-white/[0.05] px-5 py-3 text-xs text-white/30">
+596:                  Pause or reset the
+597-                  timer to change its
+598-                  duration.
+599-                </p>
+600-              )}
+601-            </motion.div>
+602-          )}
+603-        </AnimatePresence>
+604-      </motion.div>
+605-    </div>
+606-  )
+607-}
+===== FOCUSME PAGE =====
+import { motion } from 'framer-motion'
+import {
+  ArrowLeft,
+  BarChart3,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Home,
+  Lock,
+  Share2,
+  Sparkles,
+} from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+
+import { PageHeader } from '../components/ui/PageHeader'
+
+const previewCards = [
+  {
+    key: 'weekly',
+    icon: CalendarDays,
+  },
+  {
+    key: 'monthly',
+    icon: BarChart3,
+  },
+  {
+    key: 'focusHome',
+    icon: Home,
+  },
+  {
+    key: 'sharing',
+    icon: Share2,
+  },
+]
+
+const privacyItems = [
+  'location',
+  'apps',
+  'device',
+]
+
+export function FocusMePage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+
+  return (
+    <div className="mx-auto max-w-3xl px-6 pb-12 lg:px-10 lg:pb-16">
+      <button
+        type="button"
+        onClick={() =>
+          navigate('/settings')
+        }
+        className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition-colors hover:text-accent-white"
+      >
+        <ArrowLeft size={17} />
+
+        {t('focusMePage.back')}
+      </button>
+
+      <PageHeader
+        title="FocusMe"
+        subtitle={t(
+          'focusMePage.subtitle',
+        )}
+      />
+
+      <div className="space-y-8">
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card relative overflow-hidden p-6 sm:p-8"
+        >
+          <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-accent-green/[0.07] blur-3xl" />
+
+          <div className="relative">
+            <span className="inline-flex rounded-full border border-accent-green/40 bg-accent-green/10 px-3 py-1 text-xs font-semibold text-accent-green">
+              {t(
+                'focusMePage.coming',
+              )}
+            </span>
+
+            <div className="mt-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-green/10 text-accent-green">
+              <Sparkles size={23} />
+            </div>
+
+            <h2 className="mt-5 max-w-xl text-2xl font-semibold leading-tight text-accent-white sm:text-3xl">
+              {t('focusMePage.hero.title')}
+            </h2>
+
+            <p className="mt-4 max-w-xl text-sm leading-7 text-accent-subtle">
+              {t(
+                'focusMePage.hero.description',
+              )}
+            </p>
+          </div>
+        </motion.section>
+
+        <section>
+          <div className="mb-4">
+            <h2 className="font-semibold text-accent-white">
+              {t(
+                'focusMePage.experience.title',
+              )}
+            </h2>
+
+            <p className="mt-1 text-sm text-accent-subtle">
+              {t(
+                'focusMePage.experience.subtitle',
+              )}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {previewCards.map(
+              ({ key, icon: Icon }, index) => (
+                <motion.article
+                  key={key}
+                  initial={{
+                    opacity: 0,
+                    y: 8,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    delay:
+                      index * 0.04,
+                  }}
+                  className="card p-5"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.045] text-accent-green">
+                    <Icon size={18} />
+                  </div>
+
+                  <h3 className="mt-4 text-sm font-semibold text-accent-white">
+                    {t(
+                      `focusMePage.experience.items.${key}.title`,
+                    )}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-relaxed text-accent-subtle">
+                    {t(
+                      `focusMePage.experience.items.${key}.description`,
+                    )}
+                  </p>
+                </motion.article>
+              ),
+            )}
+          </div>
+        </section>
+
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card p-6"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-green/10 text-accent-green">
+              <Home size={20} />
+            </div>
+
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+                FocushoMe
+              </span>
+
+              <h2 className="mt-2 text-lg font-semibold text-accent-white">
+                {t(
+                  'focusMePage.focusHome.title',
+                )}
+              </h2>
+
+              <p className="mt-3 text-sm leading-7 text-accent-subtle">
+                {t(
+                  'focusMePage.focusHome.description',
+                )}
+              </p>
+
+              <div className="mt-5 space-y-3">
+                {[
+                  'rare',
+                  'complete',
+                  'permanent',
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-start gap-2.5"
+                  >
+                    <CheckCircle2
+                      size={16}
+                      className="mt-0.5 shrink-0 text-accent-green"
+                    />
+
+                    <span className="text-sm leading-relaxed text-accent-muted">
+                      {t(
+                        `focusMePage.focusHome.items.${item}`,
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card p-6"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.045] text-accent-white">
+              <Lock size={20} />
+            </div>
+
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-accent-white">
+                {t(
+                  'focusMePage.privacy.title',
+                )}
+              </h2>
+
+              <p className="mt-2 text-sm leading-relaxed text-accent-subtle">
+                {t(
+                  'focusMePage.privacy.description',
+                )}
+              </p>
+
+              <div className="mt-4 space-y-2.5">
+                {privacyItems.map(
+                  (item) => (
+                    <div
+                      key={item}
+                      className="flex items-start gap-2.5"
+                    >
+                      <CheckCircle2
+                        size={15}
+                        className="mt-0.5 shrink-0 text-accent-green"
+                      />
+
+                      <span className="text-sm text-accent-muted">
+                        {t(
+                          `focusMePage.privacy.items.${item}`,
+                        )}
+                      </span>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="rounded-2xl border border-accent-green/20 bg-accent-green/[0.04] p-5 text-center"
+        >
+          <Clock3
+            size={20}
+            className="mx-auto text-accent-green"
+          />
+
+          <h2 className="mt-3 text-sm font-semibold text-accent-white">
+            {t(
+              'focusMePage.development.title',
+            )}
+          </h2>
+
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-accent-subtle">
+            {t(
+              'focusMePage.development.description',
+            )}
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,515 @@
+===== FOCUSME PT-BR =====
+686-      minutes: 'min',
+687-    },
+688-    sessionNumber: 'Sessão {{current}} de {{total}}',
+689-  },
+690-
+691:  focusMePage: {
+692-    back: 'Voltar para Configurações',
+693-    subtitle:
+694-      'Uma nova forma de compreender sua jornada de foco.',
+695-    coming: 'Em desenvolvimento no Focus 4.0',
+696-
+697-    hero: {
+698-      title:
+699-        'Seu foco conta uma história.',
+700-      description:
+701-        'O FocusMe reunirá suas sessões, tarefas, metas, projetos e conquistas para mostrar não apenas quanto você produziu, mas como sua rotina realmente aconteceu.',
+702-    },
+703-
+704-    experience: {
+705-      title: 'Uma retrospectiva só sua',
+706-      subtitle:
+707-        'Cada parte do Focus ajudará a construir uma visão mais completa da sua jornada.',
+708-
+709-      items: {
+710-        weekly: {
+711-          title: 'Sua semana',
+712-          description:
+713-            'Entenda seus dias mais focados, tarefas concluídas, projetos em destaque e mudanças no seu ritmo.',
+714-        },
+715-
+716-        monthly: {
+717-          title: 'Seu mês',
+718-          description:
+719-            'Receba uma retrospectiva profunda, escrita de forma humana a partir de métricas calculadas pelo Focus.',
+720-        },
+721-
+722-        focusHome: {
+723-          title: 'Sua FocushoMe',
+724-          description:
+725-            'Descubra uma classe rara baseada na maneira como você planeja, executa, conclui e mantém seu foco.',
+726-        },
+727-
+728-        sharing: {
+729-          title: 'Sua história em uma imagem',
+730-          description:
+731-            'Transforme seus resultados em um recap personalizado pronto para compartilhar.',
+732-        },
+733-      },
+734-    },
+735-
+736-    focusHome: {
+737-      title:
+738-        'Mais do que uma insígnia',
+739-      description:
+740-        'Sua FocushoMe será uma identidade construída a partir do uso real do aplicativo. Ela não será definida apenas pelo horário em que você trabalha nem por deixar o timer rodando.',
+741-
+742-      items: {
+743-        rare:
+744-          'Conquistada somente depois de um mês com dados suficientes.',
+745-        complete:
+746-          'Baseada em sessões, tarefas, metas, projetos e padrões de conclusão.',
+747-        permanent:
+748-          'Permanece com você e só muda quando um novo teste mensal for solicitado.',
+749-      },
+750-    },
+751-
+752-    privacy: {
+753-      title:
+754-        'Sua rotina continua sendo sua',
+755-      description:
+756-        'O FocusMe utilizará somente as ações registradas dentro do Focus. Nenhum monitoramento constante será necessário.',
+757-
+758-      items: {
+759-        location:
+760-          'Sem acesso à sua localização.',
+761-        apps:
+762-          'Sem acesso à atividade de outros aplicativos.',
+763-        device:
+764-          'Sem monitoramento permanente do dispositivo.',
+765-      },
+766-    },
+767-
+768-    development: {
+769-      title:
+770-        'O FocusMe está em desenvolvimento',
+771-      description:
+772-        'Esta página será atualizada conforme os recursos do Focus 4.0 forem concluídos.',
+773-    },
+774-  },
+775-
+776-  changesPage: {
+777-    back: 'Voltar para Configurações',
+778-    title: 'Mudanças e novidades',
+779-    subtitle:
+780-      'Acompanhe tudo o que evoluiu no Focus e o que estamos preparando.',
+781-    currentVersion: 'Versão atual',
+782-    currentDescription:
+783-      'Uma nova geração do Focus, com tarefas mais inteligentes, projetos concluíveis e a fundação do FocusMe.',
+784-    new: 'Novo',
+785-
+786-    recent: {
+787-      title: 'Novidades recentes',
+788-      subtitle:
+789-        'As melhorias mais novas disponíveis no aplicativo.',
+790-
+791-      items: {
+792-        taskCategories: {
+793-          title: 'Nova experiência de tarefas',
+794-          description:
+795-            'As tarefas agora possuem categorias, filtros combináveis, projeto associado e estimativa de Pomodoros.',
+796-        },
+797-
+798-        taskTrash: {
+799-          title: 'Lixeira de tarefas',
+800-          description:
+801-            'Tarefas removidas podem ser restauradas durante 30 dias antes da exclusão definitiva.',
+802-        },
+803-
+804-        projectLifecycle: {
+805-          title: 'Conclusão de projetos',
+806-          description:
+807-            'Projetos agora podem ser concluídos, consultados separadamente e reabertos sem perder seu histórico.',
+808-        },
+809-
+810-        focusMePreview: {
+811-          title: 'Conheça o FocusMe',
+812-          description:
+813-            'Uma nova página apresenta as retrospectivas, a FocushoMe e a visão do Focus para análises pessoais.',
+814-        },
+815-
+816-        taskEditing: {
+817-          title: 'Edição de tarefas',
+818-          description:
+819-            'Agora você pode corrigir ou atualizar o nome de uma tarefa sem precisar excluí-la e criar outra.',
+820-        },
+821-        responsive: {
+822-          title: 'Melhorias de responsividade',
+823-          description:
+824-            'Textos, cabeçalhos e espaçamentos foram refinados para oferecer uma experiência melhor em celulares e tablets.',
+825-        },
+826-        changesCenter: {
+827-          title: 'Central de mudanças',
+828-          description:
+829-            'Este novo espaço reúne o histórico do Focus, as novidades recentes e os próximos recursos.',
+830-        },
+831-      },
+832-    },
+833-
+834-    history: {
+835-      title: 'Histórico de versões',
+836-      subtitle:
+837-        'Veja como o Focus evoluiu desde sua primeira versão.',
+838-      current: 'Atual',
+839-
+840-      versions: {
+841-        v4: {
+842-          description:
+843-            'O Focus começou uma nova fase, conectando organização diária, conclusão e compreensão da rotina.',
+844-          items: {
+845-            taskEditing:
+846-              'Edição completa de tarefas sem precisar excluí-las.',
+847-            taskCategories:
+848-              'Categorias Rápida, Planejada, Urgente e Longo prazo, com filtros e identificação visual minimalista.',
+849-            taskTrash:
+850-              'Lixeira com restauração por 30 dias e exclusão definitiva.',
+851-            projectLifecycle:
+852-              'Conclusão, reabertura e filtros de projetos, preservando horas, tarefas e sessões.',
+853-            focusMePreview:
+854-              'Apresentação do FocusMe, da FocushoMe, das futuras retrospectivas e da política de privacidade.',
+855-          },
+856-        },
+857-
+858-        v3: {
+859-          description:
+860-            'O Focus se tornou uma experiência verdadeiramente multiplataforma e bilíngue.',
+861-          items: {
+862-            languages:
+863-              'Aplicativo completo em português e inglês.',
+864-            androidWidgets:
+865-              'Novos widgets para dispositivos Android.',
+866-            autoStart:
+867-              'Opções para iniciar pausas e sessões de foco automaticamente.',
+868-            widgetImprovements:
+869-              'Melhorias de layout, sincronização e responsividade dos widgets.',
+870-          },
+871-        },
+872-
+873-        v2: {
+874-          description:
+875-            'A experiência móvel ganhou recursos nativos e maior integração com o sistema.',
+876-          items: {
+877-            android:
+878-              'Versão nativa do Focus para Android.',
+879-            liveNotifications:
+880-              'Timer visível em notificações ao vivo durante as sessões.',
+881-            appleExperience:
+882-              'Live Activity, Dynamic Island e widgets no iPhone.',
+883-            tabletSupport:
+884-              'Layouts e widgets adaptados para iPad.',
+885-          },
+886-        },
+887-
+888-        v1: {
+889-          description:
+890-            'A base do Focus nasceu com as ferramentas essenciais para organizar tempo e progresso.',
+891-          items: {
+892-            pomodoro:
+893-              'Timer Pomodoro com durações personalizáveis.',
+894-            organization:
+895-              'Tarefas, projetos e metas anuais.',
+896-            progress:
+897-              'Sequências, insígnias, análises e histórico de foco.',
+898-            accounts:
+899-              'Conta Google com sincronização e modo visitante.',
+900-          },
+901-        },
+902-      },
+903-    },
+904-
+905-    roadmap: {
+906-      title: 'Ainda chegando no Focus 4.0',
+907-      subtitle:
+908-        'A base já está disponível. Agora estamos construindo a experiência completa do FocusMe.',
+909-
+910-      status: {
+911-        development: 'Em desenvolvimento',
+===== FOCUSME EN =====
+676-      minutes: 'min',
+677-    },
+678-    sessionNumber: 'Session {{current}} of {{total}}',
+679-  },
+680-
+681:  focusMePage: {
+682-    back: 'Back to Settings',
+683-    subtitle:
+684-      'A new way to understand your focus journey.',
+685-    coming: 'In development for Focus 4.0',
+686-
+687-    hero: {
+688-      title:
+689-        'Your focus tells a story.',
+690-      description:
+691-        'FocusMe will bring together your sessions, tasks, goals, projects, and achievements to show not only how much you accomplished, but how your routine truly unfolded.',
+692-    },
+693-
+694-    experience: {
+695-      title: 'A retrospective made for you',
+696-      subtitle:
+697-        'Every part of Focus will help build a more complete view of your journey.',
+698-
+699-      items: {
+700-        weekly: {
+701-          title: 'Your week',
+702-          description:
+703-            'Understand your most focused days, completed tasks, highlighted projects, and changes in your rhythm.',
+704-        },
+705-
+706-        monthly: {
+707-          title: 'Your month',
+708-          description:
+709-            'Receive a deep retrospective written in a human way from metrics calculated by Focus.',
+710-        },
+711-
+712-        focusHome: {
+713-          title: 'Your FocushoMe',
+714-          description:
+715-            'Discover a rare class based on how you plan, execute, complete, and maintain your focus.',
+716-        },
+717-
+718-        sharing: {
+719-          title: 'Your story in one image',
+720-          description:
+721-            'Turn your results into a personalized recap ready to share.',
+722-        },
+723-      },
+724-    },
+725-
+726-    focusHome: {
+727-      title: 'More than a badge',
+728-      description:
+729-        'Your FocushoMe will be an identity built from real app usage. It will not be determined only by when you work or by leaving the timer running.',
+730-
+731-      items: {
+732-        rare:
+733-          'Earned only after a month with enough meaningful data.',
+734-        complete:
+735-          'Based on sessions, tasks, goals, projects, and completion patterns.',
+736-        permanent:
+737-          'It stays with you and changes only when you request a new monthly test.',
+738-      },
+739-    },
+740-
+741-    privacy: {
+742-      title:
+743-        'Your routine remains yours',
+744-      description:
+745-        'FocusMe will use only actions recorded inside Focus. No constant monitoring will be required.',
+746-
+747-      items: {
+748-        location:
+749-          'No access to your location.',
+750-        apps:
+751-          'No access to activity from other apps.',
+752-        device:
+753-          'No permanent device monitoring.',
+754-      },
+755-    },
+756-
+757-    development: {
+758-      title:
+759-        'FocusMe is in development',
+760-      description:
+761-        'This page will evolve as Focus 4.0 features are completed.',
+762-    },
+763-  },
+764-
+765-  changesPage: {
+766-    back: 'Back to Settings',
+767-    title: 'Changes and updates',
+768-    subtitle:
+769-      'Follow everything that has evolved in Focus and what we are preparing next.',
+770-    currentVersion: 'Current version',
+771-    currentDescription:
+772-      'A new generation of Focus, with smarter tasks, completable projects, and the foundation of FocusMe.',
+773-    new: 'New',
+774-
+775-    recent: {
+776-      title: 'Recent updates',
+777-      subtitle:
+778-        'The newest improvements available in the app.',
+779-
+780-      items: {
+781-        taskCategories: {
+782-          title: 'New task experience',
+783-          description:
+784-            'Tasks now include categories, combined filters, linked projects, and Pomodoro estimates.',
+785-        },
+786-
+787-        taskTrash: {
+788-          title: 'Task trash',
+789-          description:
+790-            'Removed tasks can be restored for 30 days before permanent deletion.',
+791-        },
+792-
+793-        projectLifecycle: {
+794-          title: 'Project completion',
+795-          description:
+796-            'Projects can now be completed, viewed separately, and reopened without losing their history.',
+797-        },
+798-
+799-        focusMePreview: {
+800-          title: 'Meet FocusMe',
+801-          description:
+802-            'A new page introduces retrospectives, FocushoMe, and the Focus vision for personal insights.',
+803-        },
+804-
+805-        taskEditing: {
+806-          title: 'Task editing',
+807-          description:
+808-            'You can now correct or update a task name without deleting it and creating another one.',
+809-        },
+810-        responsive: {
+811-          title: 'Responsive improvements',
+812-          description:
+813-            'Text, headers, and spacing have been refined for a better experience on phones and tablets.',
+814-        },
+815-        changesCenter: {
+816-          title: 'Changes center',
+817-          description:
+818-            'This new space brings together the Focus history, recent updates, and upcoming features.',
+819-        },
+820-      },
+821-    },
+822-
+823-    history: {
+824-      title: 'Version history',
+825-      subtitle:
+826-        'See how Focus has evolved since its first version.',
+827-      current: 'Current',
+828-
+829-      versions: {
+830-        v4: {
+831-          description:
+832-            'Focus entered a new phase, connecting daily organization, completion, and understanding of your routine.',
+833-          items: {
+834-            taskEditing:
+835-              'Complete task editing without needing to delete and recreate.',
+836-            taskCategories:
+837-              'Quick, Planned, Urgent, and Long-term categories with filters and minimalist visual identification.',
+838-            taskTrash:
+839-              'Trash with 30-day restoration and permanent deletion.',
+840-            projectLifecycle:
+841-              'Project completion, reopening, and filters while preserving hours, tasks, and sessions.',
+842-            focusMePreview:
+843-              'Introduction to FocusMe, FocushoMe, upcoming retrospectives, and privacy principles.',
+844-          },
+845-        },
+846-
+847-        v3: {
+848-          description:
+849-            'Focus became a truly cross-platform and bilingual experience.',
+850-          items: {
+851-            languages:
+852-              'Complete app experience in Portuguese and English.',
+853-            androidWidgets:
+854-              'New widgets for Android devices.',
+855-            autoStart:
+856-              'Options to automatically start breaks and focus sessions.',
+857-            widgetImprovements:
+858-              'Layout, synchronization, and responsiveness improvements for widgets.',
+859-          },
+860-        },
+861-
+862-        v2: {
+863-          description:
+864-            'The mobile experience gained native features and deeper system integration.',
+865-          items: {
+866-            android:
+867-              'Native Focus experience for Android.',
+868-            liveNotifications:
+869-              'Timer displayed in live notifications during sessions.',
+870-            appleExperience:
+871-              'Live Activity, Dynamic Island, and iPhone widgets.',
+872-            tabletSupport:
+873-              'Layouts and widgets adapted for iPad.',
+874-          },
+875-        },
+876-
+877-        v1: {
+878-          description:
+879-            'The foundation of Focus launched with the essential tools for organizing time and progress.',
+880-          items: {
+881-            pomodoro:
+882-              'Pomodoro timer with customizable durations.',
+883-            organization:
+884-              'Tasks, projects, and yearly goals.',
+885-            progress:
+886-              'Streaks, badges, analytics, and focus history.',
+887-            accounts:
+888-              'Google account synchronization and guest mode.',
+889-          },
+890-        },
+891-      },
+892-    },
+893-
+894-    roadmap: {
+895-      title: 'Still coming to Focus 4.0',
+896-      subtitle:
+897-        'The foundation is already available. Now we are building the complete FocusMe experience.',
+898-
+899-      status: {
+900-        development: 'In development',
+901-        planned: 'Planned',
+===== UI HELPERS =====
+import type { ReactNode } from 'react'
+
+interface PageHeaderProps {
+  title: string
+  subtitle?: string
+  action?: ReactNode
+}
+
+export function PageHeader({
+  title,
+  subtitle,
+  action,
+}: PageHeaderProps) {
+  return (
+    <div
+      className="
+        flex
+        flex-col
+        gap-5
+        md:flex-row
+        md:items-start
+        md:justify-between
+        mb-8
+      "
+    >
+      <div className="min-w-0">
+        <h1
+          className="
+            text-3xl
+            font-bold
+            tracking-tight
+            text-white
+          "
+        >
+          {title}
+        </h1>
+
+        {subtitle && (
+          <p
+            className="
+              mt-2
+              max-w-2xl
+              text-sm
+              leading-relaxed
+              text-white/50
+            "
+          >
+            {subtitle}
+          </p>
+        )}
+      </div>
+
+      {action && (
+        <div className="flex-shrink-0">
+          {action}
+        </div>
+      )}
+    </div>
+  )
+}

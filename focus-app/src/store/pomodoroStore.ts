@@ -13,6 +13,10 @@ import {
   getTodayString,
 } from '../utils'
 
+import {
+  trackActivityEvent,
+} from '@/services/activityEventsService'
+
 interface PomodoroState {
   // Timer
   status: TimerStatus
@@ -112,6 +116,9 @@ export const usePomodoroStore =
           const {
             secondsLeft,
             status,
+            sessionType,
+            activeProjectId,
+            activeTaskId,
           } = get()
 
           if (
@@ -121,11 +128,31 @@ export const usePomodoroStore =
             return
           }
 
+          const isResume =
+            status === 'paused'
+
           set({
             status: 'running',
             endsAt:
               Date.now() +
               secondsLeft * 1000,
+          })
+
+          void trackActivityEvent({
+            eventType: isResume
+              ? 'pomodoro_resumed'
+              : 'pomodoro_started',
+            entityType: 'pomodoro',
+            metadata: {
+              session_type:
+                sessionType,
+              seconds_remaining:
+                secondsLeft,
+              has_project:
+                Boolean(activeProjectId),
+              has_task:
+                Boolean(activeTaskId),
+            },
           })
         },
 
@@ -133,6 +160,9 @@ export const usePomodoroStore =
           const {
             status,
             endsAt,
+            sessionType,
+            activeProjectId,
+            activeTaskId,
           } = get()
 
           if (
@@ -142,11 +172,30 @@ export const usePomodoroStore =
             return
           }
 
+          const remainingSeconds =
+            getRemainingSeconds(endsAt)
+
           set({
             status: 'paused',
             secondsLeft:
-              getRemainingSeconds(endsAt),
+              remainingSeconds,
             endsAt: null,
+          })
+
+          void trackActivityEvent({
+            eventType:
+              'pomodoro_paused',
+            entityType: 'pomodoro',
+            metadata: {
+              session_type:
+                sessionType,
+              seconds_remaining:
+                remainingSeconds,
+              has_project:
+                Boolean(activeProjectId),
+              has_task:
+                Boolean(activeTaskId),
+            },
           })
         },
 
@@ -154,7 +203,36 @@ export const usePomodoroStore =
           const {
             sessionType,
             settings,
+            status,
+            secondsLeft,
+            activeProjectId,
+            activeTaskId,
           } = get()
+
+          const wasInProgress =
+            status === 'running' ||
+            status === 'paused'
+
+          if (wasInProgress) {
+            void trackActivityEvent({
+              eventType:
+                'pomodoro_abandoned',
+              entityType: 'pomodoro',
+              metadata: {
+                session_type:
+                  sessionType,
+                reason: 'reset',
+                seconds_remaining:
+                  secondsLeft,
+                has_project:
+                  Boolean(
+                    activeProjectId,
+                  ),
+                has_task:
+                  Boolean(activeTaskId),
+              },
+            })
+          }
 
           set({
             status: 'idle',
@@ -196,7 +274,39 @@ export const usePomodoroStore =
         switchSession: (
           type: SessionType,
         ) => {
-          const { settings } = get()
+          const {
+            settings,
+            status,
+            sessionType,
+            secondsLeft,
+            activeProjectId,
+            activeTaskId,
+          } = get()
+
+          if (
+            status === 'running' ||
+            status === 'paused'
+          ) {
+            void trackActivityEvent({
+              eventType:
+                'pomodoro_abandoned',
+              entityType: 'pomodoro',
+              metadata: {
+                session_type:
+                  sessionType,
+                reason:
+                  'session_changed',
+                seconds_remaining:
+                  secondsLeft,
+                has_project:
+                  Boolean(
+                    activeProjectId,
+                  ),
+                has_task:
+                  Boolean(activeTaskId),
+              },
+            })
+          }
 
           set({
             sessionType: type,
@@ -282,6 +392,27 @@ export const usePomodoroStore =
             sessionType: nextType,
             secondsLeft: nextSeconds,
           }))
+
+          if (shouldAutoStart) {
+            void trackActivityEvent({
+              eventType:
+                'pomodoro_started',
+              entityType: 'pomodoro',
+              metadata: {
+                session_type:
+                  nextType,
+                seconds_remaining:
+                  nextSeconds,
+                auto_started: true,
+                has_project:
+                  Boolean(
+                    activeProjectId,
+                  ),
+                has_task:
+                  Boolean(activeTaskId),
+              },
+            })
+          }
         },
 
         setActiveProject: (id) => {

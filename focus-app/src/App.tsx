@@ -1,6 +1,5 @@
 import {
   BrowserRouter,
-  Navigate,
   Route,
   Routes,
 } from 'react-router-dom'
@@ -10,9 +9,11 @@ import { Layout } from './components/layout/Layout'
 
 import { useTimer } from './hooks/useTimer'
 
+import { AboutFocusMePage } from './pages/AboutFocusMePage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { ChangesPage } from './pages/ChangesPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { FocusMeHistoryPage } from './pages/FocusMeHistoryPage'
 import { FocusMePage } from './pages/FocusMePage'
 import { GoalsPage } from './pages/GoalsPage'
 import { LoginPage } from './pages/LoginPage'
@@ -52,12 +53,12 @@ function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/focusme" element={<FocusMePage />} />
             <Route
-              path="/settings/focusme"
-              element={<Navigate to="/focusme" replace />}
+              path="/focusme/history"
+              element={<FocusMeHistoryPage />}
             />
             <Route
               path="/settings/focusme"
-              element={<FocusMePage />}
+              element={<AboutFocusMePage />}
             />
             <Route
               path="/settings/changes"

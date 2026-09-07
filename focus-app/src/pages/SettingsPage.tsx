@@ -593,7 +593,7 @@ export function SettingsPage() {
         <motion.button
           type="button"
           onClick={() =>
-            navigate('/focusme')
+            navigate('/settings/focusme')
           }
           initial={{
             opacity: 0,
@@ -615,7 +615,9 @@ export function SettingsPage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-semibold text-accent-white">
-                FocusMe
+                {t(
+                  'settings.focusMe.title',
+                )}
               </h3>
 
               <span className="rounded-full border border-accent-green/30 bg-accent-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-green">

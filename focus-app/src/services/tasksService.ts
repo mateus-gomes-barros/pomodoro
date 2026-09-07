@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase'
 
+import {
+  trackActivityEvent,
+  type ActivityEventType,
+} from '@/services/activityEventsService'
+
 import type {
   Task,
   TaskCategory,
@@ -191,12 +196,32 @@ export async function createTask(
     throw error
   }
 
-  return mapTaskRow(data as TaskRow)
+  const task =
+    mapTaskRow(data as TaskRow)
+
+  void trackActivityEvent({
+    eventType: 'task_created',
+    entityType: 'task',
+    entityId: task.id,
+    metadata: {
+      category: task.category,
+      priority: task.priority,
+      estimated_pomodoros:
+        task.estimatedPomodoros,
+      has_project:
+        Boolean(task.projectId),
+    },
+  })
+
+  return task
 }
 
 export async function updateTask(
   taskId: string,
   input: UpdateTaskInput,
+  eventType:
+    ActivityEventType | null =
+      'task_updated',
 ): Promise<Task> {
   const updates: Record<
     string,
@@ -261,7 +286,40 @@ export async function updateTask(
     throw error
   }
 
-  return mapTaskRow(data as TaskRow)
+  const task =
+    mapTaskRow(data as TaskRow)
+
+  if (eventType) {
+    void trackActivityEvent({
+      eventType,
+      entityType: 'task',
+      entityId: task.id,
+      metadata: {
+        category: task.category,
+        priority: task.priority,
+        estimated_pomodoros:
+          task.estimatedPomodoros,
+        completed_pomodoros:
+          task.completedPomodoros,
+        completed: task.completed,
+        has_project:
+          Boolean(task.projectId),
+        changed_title:
+          input.title !== undefined,
+        changed_category:
+          input.category !== undefined,
+        changed_priority:
+          input.priority !== undefined,
+        changed_project:
+          input.projectId !== undefined,
+        changed_estimate:
+          input.estimatedPomodoros !==
+          undefined,
+      },
+    })
+  }
+
+  return task
 }
 
 export async function deleteTask(
@@ -292,7 +350,23 @@ export async function deleteTask(
     throw error
   }
 
-  return mapTaskRow(data as TaskRow)
+  const task =
+    mapTaskRow(data as TaskRow)
+
+  void trackActivityEvent({
+    eventType: 'task_deleted',
+    entityType: 'task',
+    entityId: task.id,
+    metadata: {
+      category: task.category,
+      priority: task.priority,
+      completed: task.completed,
+      has_project:
+        Boolean(task.projectId),
+    },
+  })
+
+  return task
 }
 
 export async function restoreTask(
@@ -313,7 +387,23 @@ export async function restoreTask(
     throw error
   }
 
-  return mapTaskRow(data as TaskRow)
+  const task =
+    mapTaskRow(data as TaskRow)
+
+  void trackActivityEvent({
+    eventType: 'task_restored',
+    entityType: 'task',
+    entityId: task.id,
+    metadata: {
+      category: task.category,
+      priority: task.priority,
+      completed: task.completed,
+      has_project:
+        Boolean(task.projectId),
+    },
+  })
+
+  return task
 }
 
 export async function deleteTaskPermanently(
@@ -328,6 +418,13 @@ export async function deleteTaskPermanently(
   if (error) {
     throw error
   }
+
+  void trackActivityEvent({
+    eventType:
+      'task_permanently_deleted',
+    entityType: 'task',
+    entityId: taskId,
+  })
 }
 
 export async function toggleTask(
@@ -335,21 +432,31 @@ export async function toggleTask(
 ): Promise<Task> {
   const nextCompleted = !task.completed
 
-  return updateTask(task.id, {
-    completed: nextCompleted,
-    completedAt: nextCompleted
-      ? new Date().toISOString()
-      : '',
-  })
+  return updateTask(
+    task.id,
+    {
+      completed: nextCompleted,
+      completedAt: nextCompleted
+        ? new Date().toISOString()
+        : '',
+    },
+    nextCompleted
+      ? 'task_completed'
+      : 'task_reopened',
+  )
 }
 
 export async function incrementTaskPomodoro(
   task: Task,
 ): Promise<Task> {
-  return updateTask(task.id, {
-    completedPomodoros:
-      task.completedPomodoros + 1,
-  })
+  return updateTask(
+    task.id,
+    {
+      completedPomodoros:
+        task.completedPomodoros + 1,
+    },
+    null,
+  )
 }
 
 export async function reorderTasks(

@@ -680,9 +680,47 @@ const en = {
 
   focusMePage: {
     back: 'Back to Settings',
+    reportsSubtitle:
+      'Your reports, patterns, and discoveries gathered in one place.',
     subtitle:
       'A new way to understand your focus journey.',
     coming: 'In development for Focus 4.0',
+
+    weeklyReport: {
+      available: 'Available now',
+      eyebrow: 'Your week so far',
+      title:
+        'What your focus already says about you',
+      loading:
+        'Bringing your weekly data together...',
+      error:
+        'Your summary could not be prepared right now.',
+      focusTime: 'Focus time',
+      sessions: 'Sessions',
+      activeDays: 'Active days',
+      tasksCompleted: 'Tasks completed',
+      dailyRhythm: 'Daily rhythm',
+      bestDay: 'Most focused day',
+      noFocus:
+        'Complete a session to start building your report.',
+      tasksTitle: 'Planning and execution',
+      created: 'Created',
+      completed: 'Completed',
+      rhythmTitle: 'Continuity',
+      starts: 'Starts',
+      pauses: 'Pauses',
+      resumes: 'Resumes',
+      abandoned: 'Interrupted',
+      topProject: 'Highlighted project',
+      noProject:
+        'No project received focus sessions this week.',
+      currentWeek:
+        'This summary evolves as you use Focus.',
+      historyTitle: 'Report history',
+      historyDescription:
+        'Review your preserved weekly and monthly retrospectives over time.',
+    },
+
 
     hero: {
       title:
@@ -759,6 +797,26 @@ const en = {
         'FocusMe is in development',
       description:
         'This page will evolve as Focus 4.0 features are completed.',
+    },
+  },
+
+  focusMeHistoryPage: {
+    back: 'Back to FocusMe',
+    title: 'Report history',
+    subtitle:
+      'Revisit your weeks, months, and the evolution of your routine.',
+    filters: {
+      all: 'All',
+      weekly: 'Weekly',
+      monthly: 'Monthly',
+    },
+    empty: {
+      title:
+        'Your reports will appear here',
+      description:
+        'When a week or month ends, FocusMe will preserve the retrospective so it no longer changes over time.',
+      schedule:
+        'Weeks close on Monday',
     },
   },
 
@@ -1023,6 +1081,7 @@ const en = {
     },
 
     focusMe: {
+      title: 'About FocusMe',
       badge: 'Focus 4.0',
       description:
         'Discover how your activity will become personal retrospectives.',
