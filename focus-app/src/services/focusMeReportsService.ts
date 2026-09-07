@@ -109,7 +109,7 @@ async function saveSnapshot(
         period_end:
           periodEnd,
         metrics,
-        schema_version: 1,
+        schema_version: 2,
       },
       {
         onConflict:

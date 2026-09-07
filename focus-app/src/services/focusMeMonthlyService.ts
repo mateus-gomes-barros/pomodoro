@@ -4,7 +4,7 @@ import type {
   TaskCategory,
 } from '@/types'
 
-type TimeBlock =
+export type TimeBlock =
   | 'morning'
   | 'afternoon'
   | 'evening'
@@ -87,6 +87,40 @@ export interface FocusMeMonthlyTopProject {
   sessions: number
 }
 
+export interface FocusMeBehaviorSignals {
+  planningTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  executionTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  taskCreationTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  taskCompletionTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  projectCreationTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  goalCreationTimeBlocks: Record<
+    TimeBlock,
+    number
+  >
+  categoryDiversity: number
+  focusTimeDiversity: number
+  projectFocusShare: number
+  strongestWeekShare: number
+  completionBalance: number
+  abandonmentRate: number
+  recoveryActions: number
+}
+
 export interface FocusMeMonthlyMetrics {
   focusMinutes: number
   completedSessions: number
@@ -132,6 +166,9 @@ export interface FocusMeMonthlyMetrics {
     resumes: number
     abandoned: number
   }
+
+  behavior:
+    FocusMeBehaviorSignals
 
   coverage: {
     meaningfulActions: number
@@ -238,6 +275,44 @@ function eventCategory(
     : null
 }
 
+function emptyTimeBlocks(): Record<
+  TimeBlock,
+  number
+> {
+  return {
+    morning: 0,
+    afternoon: 0,
+    evening: 0,
+    late_night: 0,
+  }
+}
+
+function countEventTimeBlocks(
+  events: ActivityEventRow[],
+  eventTypes: string[],
+): Record<TimeBlock, number> {
+  const result =
+    emptyTimeBlocks()
+
+  events
+    .filter(
+      (event) =>
+        eventTypes.includes(
+          event.event_type,
+        ),
+    )
+    .forEach((event) => {
+      const block =
+        getTimeBlock(
+          event.local_hour,
+        )
+
+      result[block] += 1
+    })
+
+  return result
+}
+
 function getTimeBlock(
   hour: number,
 ): TimeBlock {
@@ -326,15 +401,8 @@ function calculateMetrics(
     FocusMeMonthlyWeek
   >()
 
-  const timeBlocks: Record<
-    TimeBlock,
-    number
-  > = {
-    morning: 0,
-    afternoon: 0,
-    evening: 0,
-    late_night: 0,
-  }
+  const timeBlocks =
+    emptyTimeBlocks()
 
   const projectTotals = new Map<
     string,
@@ -681,6 +749,155 @@ function calculateMetrics(
     completedProjects.size +
     completedGoals.size
 
+  const planningTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      [
+        'task_created',
+        'project_created',
+        'goal_created',
+      ],
+    )
+
+  const executionTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      [
+        'task_completed',
+        'project_completed',
+        'goal_completed',
+      ],
+    )
+
+  const taskCreationTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      ['task_created'],
+    )
+
+  const taskCompletionTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      ['task_completed'],
+    )
+
+  const projectCreationTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      ['project_created'],
+    )
+
+  const goalCreationTimeBlocks =
+    countEventTimeBlocks(
+      events,
+      ['goal_created'],
+    )
+
+  const categoryDiversity =
+    categories.filter(
+      (category) =>
+        category.created > 0 ||
+        category.completed > 0,
+    ).length
+
+  const focusTimeDiversity =
+    TIME_BLOCKS.filter(
+      (block) =>
+        timeBlocks[block] > 0,
+    ).length
+
+  const topProjectMinutes =
+    topProjects[0]
+      ?.focusMinutes ?? 0
+
+  const projectFocusShare =
+    focusMinutes > 0
+      ? Math.round(
+          (
+            topProjectMinutes /
+            focusMinutes
+          ) * 100,
+        )
+      : 0
+
+  const strongestWeekMinutes =
+    Math.max(
+      ...[...weeks.values()].map(
+        (week) =>
+          week.focusMinutes,
+      ),
+      0,
+    )
+
+  const strongestWeekShare =
+    focusMinutes > 0
+      ? Math.round(
+          (
+            strongestWeekMinutes /
+            focusMinutes
+          ) * 100,
+        )
+      : 0
+
+  const completionBalance =
+    createdTaskMap.size > 0
+      ? Math.round(
+          (
+            completedTaskMap.size /
+            createdTaskMap.size
+          ) * 100,
+        )
+      : completedTaskMap.size > 0
+        ? 100
+        : 0
+
+  const starts =
+    countEvent(
+      events,
+      'pomodoro_started',
+    )
+
+  const abandoned =
+    countEvent(
+      events,
+      'pomodoro_abandoned',
+    )
+
+  const abandonmentRate =
+    starts > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (
+              abandoned /
+              starts
+            ) * 100,
+          ),
+        )
+      : 0
+
+  const recoveryActions =
+    countEvent(
+      events,
+      'pomodoro_resumed',
+    ) +
+    countEvent(
+      events,
+      'task_restored',
+    ) +
+    countEvent(
+      events,
+      'task_reopened',
+    ) +
+    countEvent(
+      events,
+      'project_reopened',
+    ) +
+    countEvent(
+      events,
+      'goal_reopened',
+    )
+
   return {
     focusMinutes,
     completedSessions:
@@ -763,6 +980,22 @@ function calculateMetrics(
         events,
         'pomodoro_abandoned',
       ),
+    },
+
+    behavior: {
+      planningTimeBlocks,
+      executionTimeBlocks,
+      taskCreationTimeBlocks,
+      taskCompletionTimeBlocks,
+      projectCreationTimeBlocks,
+      goalCreationTimeBlocks,
+      categoryDiversity,
+      focusTimeDiversity,
+      projectFocusShare,
+      strongestWeekShare,
+      completionBalance,
+      abandonmentRate,
+      recoveryActions,
     },
 
     coverage: {

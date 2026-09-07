@@ -12,6 +12,7 @@ const REQUIREMENTS = {
   completedTasks: 6,
   meaningfulActions: 18,
   featureAreasUsed: 2,
+  activityEvents: 12,
 } as const
 
 export type FocusHomeEligibilityState =
@@ -74,6 +75,9 @@ export function evaluateFocusHomeEligibility(
     featureAreasUsed:
       metrics.coverage
         .featureAreasUsed,
+    activityEvents:
+      metrics.coverage
+        .activityEvents,
   }
 
   const checks = (
@@ -120,12 +124,13 @@ export function evaluateFocusHomeEligibility(
     keyof typeof REQUIREMENTS,
     number
   > = {
-    activeDays: 0.2,
-    completedSessions: 0.15,
-    focusMinutes: 0.2,
-    completedTasks: 0.2,
-    meaningfulActions: 0.15,
-    featureAreasUsed: 0.1,
+    activeDays: 0.15,
+    completedSessions: 0.12,
+    focusMinutes: 0.18,
+    completedTasks: 0.18,
+    meaningfulActions: 0.13,
+    featureAreasUsed: 0.09,
+    activityEvents: 0.15,
   }
 
   const progress =

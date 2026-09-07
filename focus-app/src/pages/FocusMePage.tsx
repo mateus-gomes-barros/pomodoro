@@ -23,11 +23,11 @@ import {
   FocusMeMonthlyPanel,
 } from '@/components/focusme/FocusMeMonthlyPanel'
 import {
+  FocusHomeIdentityHeader,
+} from '@/components/focusme/FocusHomeIdentityHeader'
+import {
   FocusMeIcon,
 } from '@/components/icons/FocusMeIcon'
-import {
-  PageHeader,
-} from '@/components/ui/PageHeader'
 import {
   useFocusMeWeeklyReport,
 } from '@/hooks/focusme/useFocusMeWeeklyReport'
@@ -146,12 +146,7 @@ export function FocusMePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 pb-12 lg:px-10 lg:pb-16">
-      <PageHeader
-        title="FocusMe"
-        subtitle={t(
-          'focusMePage.reportsSubtitle',
-        )}
-      />
+      <FocusHomeIdentityHeader />
 
       <div
         className="card mb-5 grid grid-cols-2 gap-1 p-1"

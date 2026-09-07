@@ -287,6 +287,43 @@ export function AboutFocusMePage() {
 
         <FocusHomeSymbolGallery />
 
+        <motion.button
+          type="button"
+          onClick={() =>
+            navigate(
+              '/focusme/diagnostics',
+            )
+          }
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="card flex w-full items-center justify-between gap-4 p-5 text-left transition hover:border-accent-green/20"
+        >
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent-green">
+              Interno
+            </span>
+
+            <h2 className="mt-2 text-sm font-semibold text-accent-white">
+              Diagnóstico das classes
+            </h2>
+
+            <p className="mt-1 text-xs text-accent-subtle">
+              Verifique os perfis artificiais antes de liberar classificações reais.
+            </p>
+          </div>
+
+          <Sparkles
+            size={19}
+            className="shrink-0 text-accent-green"
+          />
+        </motion.button>
+
         <motion.div
           initial={{
             opacity: 0,

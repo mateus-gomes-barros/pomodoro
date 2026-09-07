@@ -688,6 +688,35 @@ const ptBR = {
     sessionNumber: 'Sessão {{current}} de {{total}}',
   },
 
+  focusHomeIdentity: {
+    current: 'Sua FocushoMe',
+    locked:
+      'FocushoMe ainda não revelada',
+
+    archetypes: {
+      visionary: 'O Visionário',
+      builder: 'O Construtor',
+      finisher: 'O Finalizador',
+      executor: 'O Executor',
+      organizer: 'O Organizador',
+      rhythmist: 'O Ritmista',
+      restorer: 'O Restaurador',
+      planner: 'O Planejador',
+      catalyst: 'O Catalisador',
+      explorer: 'O Explorador',
+      strategist: 'O Estrategista',
+      guardian: 'O Guardião',
+    },
+
+    temporal: {
+      aurora: 'Aurora',
+      solaris: 'Solaris',
+      vesper: 'Vesper',
+      lunaris: 'Lunaris',
+      equinox: 'Equinox',
+    },
+  },
+
   focusMePage: {
     back: 'Voltar para Configurações',
     reportsSubtitle:
