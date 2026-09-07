@@ -12,6 +12,7 @@ import { useTimer } from './hooks/useTimer'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { ChangesPage } from './pages/ChangesPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { FocusMePage } from './pages/FocusMePage'
 import { GoalsPage } from './pages/GoalsPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProjectsPage } from './pages/ProjectsPage'
@@ -48,6 +49,10 @@ function App() {
             <Route path="/streaks" element={<StreaksPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/settings/focusme"
+              element={<FocusMePage />}
+            />
             <Route
               path="/settings/changes"
               element={<ChangesPage />}

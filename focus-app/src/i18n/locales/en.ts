@@ -659,6 +659,90 @@ const en = {
     sessionNumber: 'Session {{current}} of {{total}}',
   },
 
+  focusMePage: {
+    back: 'Back to Settings',
+    subtitle:
+      'A new way to understand your focus journey.',
+    coming: 'Coming in Focus 4.0',
+
+    hero: {
+      title:
+        'Your focus tells a story.',
+      description:
+        'FocusMe will bring together your sessions, tasks, goals, projects, and achievements to show not only how much you accomplished, but how your routine truly unfolded.',
+    },
+
+    experience: {
+      title: 'A retrospective made for you',
+      subtitle:
+        'Every part of Focus will help build a more complete view of your journey.',
+
+      items: {
+        weekly: {
+          title: 'Your week',
+          description:
+            'Understand your most focused days, completed tasks, highlighted projects, and changes in your rhythm.',
+        },
+
+        monthly: {
+          title: 'Your month',
+          description:
+            'Receive a deep retrospective written in a human way from metrics calculated by Focus.',
+        },
+
+        focusHome: {
+          title: 'Your FocushoMe',
+          description:
+            'Discover a rare class based on how you plan, execute, complete, and maintain your focus.',
+        },
+
+        sharing: {
+          title: 'Your story in one image',
+          description:
+            'Turn your results into a personalized recap ready to share.',
+        },
+      },
+    },
+
+    focusHome: {
+      title: 'More than a badge',
+      description:
+        'Your FocushoMe will be an identity built from real app usage. It will not be determined only by when you work or by leaving the timer running.',
+
+      items: {
+        rare:
+          'Earned only after a month with enough meaningful data.',
+        complete:
+          'Based on sessions, tasks, goals, projects, and completion patterns.',
+        permanent:
+          'It stays with you and changes only when you request a new monthly test.',
+      },
+    },
+
+    privacy: {
+      title:
+        'Your routine remains yours',
+      description:
+        'FocusMe will use only actions recorded inside Focus. No constant monitoring will be required.',
+
+      items: {
+        location:
+          'No access to your location.',
+        apps:
+          'No access to activity from other apps.',
+        device:
+          'No permanent device monitoring.',
+      },
+    },
+
+    development: {
+      title:
+        'FocusMe is in development',
+      description:
+        'This page will evolve as Focus 4.0 features are completed.',
+    },
+  },
+
   changesPage: {
     back: 'Back to Settings',
     title: 'Changes and updates',
@@ -748,9 +832,9 @@ const en = {
     },
 
     roadmap: {
-      title: 'Upcoming updates',
+      title: 'Focus 4.0',
       subtitle:
-        'Features currently being prepared for Focus.',
+        'The next major evolution of Focus is already being built.',
 
       status: {
         development: 'In development',
@@ -758,25 +842,63 @@ const en = {
       },
 
       items: {
-        taskDetails: {
-          title: 'More task details',
+        taskExperience: {
+          title: 'New task experience',
           description:
-            'Projects, priority, and Pomodoro estimates directly in task creation and editing.',
+            'A reorganized and more complete screen that remains true to the Focus minimalism.',
         },
-        liveTimer: {
-          title: 'Deeper system timer integration',
+
+        categories: {
+          title: 'Task categories',
           description:
-            'Further improvements to notifications and session tracking outside the app.',
+            'Quick, planned, urgent, and long-term tasks with filters and subtle visual identification.',
         },
-        widgets: {
-          title: 'New widgets and interactions',
+
+        trash: {
+          title: 'Task trash',
           description:
-            'More ways to follow goals, projects, streaks, and progress from your home screen.',
+            'Recover removed tasks for 30 days before permanent deletion.',
+        },
+
+        weeklyRecaps: {
+          title: 'Weekly recaps',
+          description:
+            'A complete summary of your days, sessions, tasks, goals, projects, and achievements.',
+        },
+
+        monthlyRecaps: {
+          title: 'Monthly retrospectives',
+          description:
+            'A deep view of your month with metrics, patterns, comparisons, and a personal narrative.',
+        },
+
+        focusHome: {
+          title: 'FocushoMe',
+          description:
+            'A rare and permanent class based on how you plan, execute, and complete.',
+        },
+
+        sharing: {
+          title: 'Shareable reports',
+          description:
+            'Personalized PNG recaps for sharing your results and your FocushoMe.',
+        },
+
+        history: {
+          title: 'FocusMe history',
+          description:
+            'Browse weekly recaps, monthly retrospectives, and previous analyses.',
+        },
+
+        notifications: {
+          title: 'New reports available',
+          description:
+            'Receive an optional alert when your week, month, or FocushoMe is ready.',
         },
       },
 
       disclaimer:
-        'The roadmap may change based on development progress and user needs.',
+        'Focus 4.0 details may evolve during development.',
     },
   },
 
@@ -838,6 +960,12 @@ const en = {
         'Auto-start breaks',
       autoWork:
         'Auto-start work sessions',
+    },
+
+    focusMe: {
+      badge: 'Focus 4.0',
+      description:
+        'Discover how your activity will become personal retrospectives.',
     },
 
     changes: {

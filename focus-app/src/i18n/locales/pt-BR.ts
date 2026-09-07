@@ -669,6 +669,91 @@ const ptBR = {
     sessionNumber: 'Sessão {{current}} de {{total}}',
   },
 
+  focusMePage: {
+    back: 'Voltar para Configurações',
+    subtitle:
+      'Uma nova forma de compreender sua jornada de foco.',
+    coming: 'Chegando no Focus 4.0',
+
+    hero: {
+      title:
+        'Seu foco conta uma história.',
+      description:
+        'O FocusMe reunirá suas sessões, tarefas, metas, projetos e conquistas para mostrar não apenas quanto você produziu, mas como sua rotina realmente aconteceu.',
+    },
+
+    experience: {
+      title: 'Uma retrospectiva só sua',
+      subtitle:
+        'Cada parte do Focus ajudará a construir uma visão mais completa da sua jornada.',
+
+      items: {
+        weekly: {
+          title: 'Sua semana',
+          description:
+            'Entenda seus dias mais focados, tarefas concluídas, projetos em destaque e mudanças no seu ritmo.',
+        },
+
+        monthly: {
+          title: 'Seu mês',
+          description:
+            'Receba uma retrospectiva profunda, escrita de forma humana a partir de métricas calculadas pelo Focus.',
+        },
+
+        focusHome: {
+          title: 'Sua FocushoMe',
+          description:
+            'Descubra uma classe rara baseada na maneira como você planeja, executa, conclui e mantém seu foco.',
+        },
+
+        sharing: {
+          title: 'Sua história em uma imagem',
+          description:
+            'Transforme seus resultados em um recap personalizado pronto para compartilhar.',
+        },
+      },
+    },
+
+    focusHome: {
+      title:
+        'Mais do que uma insígnia',
+      description:
+        'Sua FocushoMe será uma identidade construída a partir do uso real do aplicativo. Ela não será definida apenas pelo horário em que você trabalha nem por deixar o timer rodando.',
+
+      items: {
+        rare:
+          'Conquistada somente depois de um mês com dados suficientes.',
+        complete:
+          'Baseada em sessões, tarefas, metas, projetos e padrões de conclusão.',
+        permanent:
+          'Permanece com você e só muda quando um novo teste mensal for solicitado.',
+      },
+    },
+
+    privacy: {
+      title:
+        'Sua rotina continua sendo sua',
+      description:
+        'O FocusMe utilizará somente as ações registradas dentro do Focus. Nenhum monitoramento constante será necessário.',
+
+      items: {
+        location:
+          'Sem acesso à sua localização.',
+        apps:
+          'Sem acesso à atividade de outros aplicativos.',
+        device:
+          'Sem monitoramento permanente do dispositivo.',
+      },
+    },
+
+    development: {
+      title:
+        'O FocusMe está em desenvolvimento',
+      description:
+        'Esta página será atualizada conforme os recursos do Focus 4.0 forem concluídos.',
+    },
+  },
+
   changesPage: {
     back: 'Voltar para Configurações',
     title: 'Mudanças e novidades',
@@ -758,9 +843,9 @@ const ptBR = {
     },
 
     roadmap: {
-      title: 'Próximas atualizações',
+      title: 'Focus 4.0',
       subtitle:
-        'Recursos que estão sendo preparados para o Focus.',
+        'A próxima grande evolução do Focus já está sendo construída.',
 
       status: {
         development: 'Em desenvolvimento',
@@ -768,25 +853,63 @@ const ptBR = {
       },
 
       items: {
-        taskDetails: {
-          title: 'Mais detalhes nas tarefas',
+        taskExperience: {
+          title: 'Nova experiência de tarefas',
           description:
-            'Projetos, prioridade e estimativa de pomodoros diretamente na criação e edição de tarefas.',
+            'Uma tela reorganizada, mais completa e ainda fiel ao minimalismo do Focus.',
         },
-        liveTimer: {
-          title: 'Timer ainda mais integrado ao sistema',
+
+        categories: {
+          title: 'Categorias de tarefas',
           description:
-            'Novas melhorias nas notificações e no acompanhamento de sessões fora do aplicativo.',
+            'Tarefas rápidas, planejadas, urgentes e de longo prazo com filtros e identificação visual discreta.',
         },
-        widgets: {
-          title: 'Novos widgets e interações',
+
+        trash: {
+          title: 'Lixeira de tarefas',
           description:
-            'Mais formas de acompanhar metas, projetos, sequências e progresso pela tela inicial.',
+            'Recupere tarefas removidas durante 30 dias antes da exclusão definitiva.',
+        },
+
+        weeklyRecaps: {
+          title: 'Recaps semanais',
+          description:
+            'Um resumo completo dos seus dias, sessões, tarefas, metas, projetos e conquistas.',
+        },
+
+        monthlyRecaps: {
+          title: 'Retrospectivas mensais',
+          description:
+            'Uma visão profunda do mês com métricas, padrões, comparações e uma narrativa pessoal.',
+        },
+
+        focusHome: {
+          title: 'FocushoMe',
+          description:
+            'Uma classe rara e permanente baseada na forma como você planeja, executa e conclui.',
+        },
+
+        sharing: {
+          title: 'Relatórios compartilháveis',
+          description:
+            'Recaps personalizados em PNG para compartilhar seus resultados e sua FocushoMe.',
+        },
+
+        history: {
+          title: 'Histórico do FocusMe',
+          description:
+            'Consulte recaps semanais, retrospectivas mensais e análises anteriores.',
+        },
+
+        notifications: {
+          title: 'Novos relatórios disponíveis',
+          description:
+            'Receba um aviso opcional quando sua semana, seu mês ou sua FocushoMe estiverem prontos.',
         },
       },
 
       disclaimer:
-        'O roadmap pode mudar conforme o desenvolvimento e as necessidades dos usuários.',
+        'Os detalhes do Focus 4.0 podem evoluir durante o desenvolvimento.',
     },
   },
 
@@ -853,6 +976,12 @@ const ptBR = {
         'Iniciar pausas automaticamente',
       autoWork:
         'Iniciar sessões de foco automaticamente',
+    },
+
+    focusMe: {
+      badge: 'Focus 4.0',
+      description:
+        'Descubra como sua atividade será transformada em retrospectivas pessoais.',
     },
 
     changes: {

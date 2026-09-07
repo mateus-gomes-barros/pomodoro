@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
+  BarChart3,
   ChevronRight,
   Sparkles,
 } from 'lucide-react'
@@ -467,7 +468,7 @@ export function SettingsPage() {
           className="card p-6"
         >
           <h3 className="text-sm font-semibold text-accent-white mb-5">
-            {t('settings.timer.durationsTitle')}
+            {t('settings.timer.title')}
           </h3>
 
           <div className="space-y-4">
@@ -586,6 +587,56 @@ export function SettingsPage() {
             />
           </div>
         </motion.div>
+
+        {/* FOCUSME */}
+
+        <motion.button
+          type="button"
+          onClick={() =>
+            navigate('/settings/focusme')
+          }
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.15,
+          }}
+          className="card flex w-full items-center gap-4 p-6 text-left transition hover:border-accent-green/20 hover:bg-accent-green/[0.025]"
+        >
+          <div className="rounded-xl bg-accent-green/10 p-3 text-accent-green">
+            <BarChart3 size={20} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold text-accent-white">
+                FocusMe
+              </h3>
+
+              <span className="rounded-full border border-accent-green/30 bg-accent-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-green">
+                {t(
+                  'settings.focusMe.badge',
+                )}
+              </span>
+            </div>
+
+            <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
+              {t(
+                'settings.focusMe.description',
+              )}
+            </p>
+          </div>
+
+          <ChevronRight
+            size={18}
+            className="shrink-0 text-accent-subtle"
+          />
+        </motion.button>
 
         {/* CHANGES AND UPDATES */}
 

@@ -1,18 +1,21 @@
 import { motion } from 'framer-motion'
 import {
+  Archive,
   ArrowLeft,
   BellRing,
+  CalendarDays,
   CheckCircle2,
   Clock3,
   History,
+  Home,
   Languages,
   ListTodo,
   Rocket,
+  Share2,
   Smartphone,
   Sparkles,
-  Target,
   TimerReset,
-  LayoutGrid,
+  Trash2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -36,18 +39,48 @@ const recentChanges = [
 
 const roadmapItems = [
   {
-    key: 'taskDetails',
-    icon: Target,
+    key: 'taskExperience',
+    icon: ListTodo,
     status: 'development',
   },
   {
-    key: 'liveTimer',
+    key: 'categories',
+    icon: CheckCircle2,
+    status: 'development',
+  },
+  {
+    key: 'trash',
+    icon: Trash2,
+    status: 'development',
+  },
+  {
+    key: 'weeklyRecaps',
+    icon: CalendarDays,
+    status: 'planned',
+  },
+  {
+    key: 'monthlyRecaps',
+    icon: Sparkles,
+    status: 'planned',
+  },
+  {
+    key: 'focusHome',
+    icon: Home,
+    status: 'planned',
+  },
+  {
+    key: 'sharing',
+    icon: Share2,
+    status: 'planned',
+  },
+  {
+    key: 'history',
+    icon: Archive,
+    status: 'planned',
+  },
+  {
+    key: 'notifications',
     icon: BellRing,
-    status: 'development',
-  },
-  {
-    key: 'widgets',
-    icon: LayoutGrid,
     status: 'planned',
   },
 ]
