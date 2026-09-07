@@ -5,9 +5,12 @@ import { useInvalidateQuery } from '@/hooks/useInvalidateQuery'
 import {
   createTask,
   deleteTask,
+  deleteTaskPermanently,
   getTasks,
+  getTrashTasks,
   incrementTaskPomodoro,
   reorderTasks,
+  restoreTask,
   toggleTask,
   updateTask,
   type CreateTaskInput,
@@ -17,11 +20,26 @@ import {
 import type { Task } from '@/types'
 
 export const tasksQueryKey = ['tasks']
+export const activeTasksQueryKey = [
+  ...tasksQueryKey,
+  'active',
+]
+export const trashTasksQueryKey = [
+  ...tasksQueryKey,
+  'trash',
+]
 
 export function useTasks() {
   return useQuery({
-    queryKey: tasksQueryKey,
+    queryKey: activeTasksQueryKey,
     queryFn: getTasks,
+  })
+}
+
+export function useTrashTasks() {
+  return useQuery({
+    queryKey: trashTasksQueryKey,
+    queryFn: getTrashTasks,
   })
 }
 
@@ -65,6 +83,29 @@ export function useDeleteTask() {
   )
 }
 
+export function useRestoreTask() {
+  return useInvalidateQuery(
+    tasksQueryKey,
+    {
+      mutationFn: (
+        taskId: string,
+      ) => restoreTask(taskId),
+    },
+  )
+}
+
+export function useDeleteTaskPermanently() {
+  return useInvalidateQuery(
+    tasksQueryKey,
+    {
+      mutationFn: (
+        taskId: string,
+      ) =>
+        deleteTaskPermanently(taskId),
+    },
+  )
+}
+
 export function useToggleTask() {
   return useInvalidateQuery(
     tasksQueryKey,
@@ -82,7 +123,8 @@ export function useIncrementTaskPomodoro() {
     {
       mutationFn: (
         task: Task,
-      ) => incrementTaskPomodoro(task),
+      ) =>
+        incrementTaskPomodoro(task),
     },
   )
 }

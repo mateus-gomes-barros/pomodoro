@@ -3,6 +3,11 @@
 export type SessionType = 'work' | 'short_break' | 'long_break'
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed'
 export type TaskPriority = 'low' | 'medium' | 'high'
+export type TaskCategory =
+  | 'quick'
+  | 'planned'
+  | 'urgent'
+  | 'long_term'
 
 // ─── Project ────────────────────────────────────────────────────────────────────
 
@@ -27,10 +32,13 @@ export interface Task {
   completed: boolean
   projectId?: string
   priority: TaskPriority
+  category: TaskCategory
   estimatedPomodoros: number
   completedPomodoros: number
   createdAt: string
   completedAt?: string
+  deletedAt?: string
+  scheduledDeletionAt?: string
   order: number
 }
 

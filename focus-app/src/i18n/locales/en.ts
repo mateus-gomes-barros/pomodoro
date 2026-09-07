@@ -392,21 +392,108 @@ const en = {
     unableToLoad: 'Unable to load tasks',
     loadError:
       'An unexpected error occurred while loading your tasks.',
-    count_one: '{{count}} task',
-    count_other: '{{count}} tasks',
+    count_one: '{{count}} active task',
+    count_other: '{{count}} active tasks',
     add: 'Add Task',
+    addShort: 'Add',
     updateError:
       'Unable to update the task. Please try again.',
     empty: 'No tasks yet',
+    emptyAction: 'Create first task',
     reopen: 'Reopen {{title}}',
     complete: 'Complete {{title}}',
-    delete: 'Delete {{title}}',
+    edit: 'Edit {{title}}',
     newTask: 'New Task',
+    editTask: 'Edit Task',
     placeholder: 'Task name...',
     createError:
       'Unable to create the task. Please try again.',
+    editError:
+      'Unable to save the task. Please try again.',
     creating: 'Creating...',
     create: 'Create Task',
+    saving: 'Saving...',
+    save: 'Save Changes',
+    pomodoroCount_one: '{{count}} Pomodoro',
+    pomodoroCount_other: '{{count}} Pomodoros',
+
+    filters: {
+      status: 'Filter by status',
+      pending: 'Pending',
+      completed: 'Completed',
+      all: 'All',
+      empty:
+        'No tasks match the selected filters.',
+    },
+
+    categories: {
+      all: 'All categories',
+
+      quick: {
+        label: 'Quick',
+        description:
+          'A small action to complete in little time.',
+      },
+
+      planned: {
+        label: 'Planned',
+        description:
+          'A task that requires organization and attention.',
+      },
+
+      urgent: {
+        label: 'Urgent',
+        description:
+          'Something that needs priority.',
+      },
+
+      long_term: {
+        label: 'Long term',
+        description:
+          'Work to advance over several days.',
+      },
+    },
+
+    form: {
+      name: 'Name',
+      category: 'Category',
+      project: 'Project',
+      noProject: 'No project',
+      estimate: 'Focus estimate',
+    },
+
+    trash: {
+      open: 'Open trash',
+      move: 'Move {{title}} to trash',
+      title: 'Trash',
+      subtitle:
+        'Tasks are permanently deleted after 30 days.',
+      back: 'Back to Tasks',
+      empty: 'Trash is empty',
+      emptyDescription:
+        'Removed tasks will remain available here for 30 days.',
+      daysRemaining_one:
+        'Permanent deletion in {{count}} day',
+      daysRemaining_other:
+        'Permanent deletion in {{count}} days',
+      deleteToday:
+        'Permanent deletion today',
+      restoreTask: 'Restore {{title}}',
+      deleteTask:
+        'Permanently delete {{title}}',
+      confirmTitle:
+        'Permanently delete',
+      confirmDescription:
+        'Permanently delete “{{title}}”? This action cannot be undone.',
+      cancel: 'Cancel',
+      deletePermanently:
+        'Delete permanently',
+      deleting: 'Deleting...',
+      deleteError:
+        'Unable to permanently delete the task.',
+      loadError:
+        'Unable to load trash.',
+    },
   },
 
   goalsPage: {
@@ -572,6 +659,127 @@ const en = {
     sessionNumber: 'Session {{current}} of {{total}}',
   },
 
+  changesPage: {
+    back: 'Back to Settings',
+    title: 'Changes and updates',
+    subtitle:
+      'Follow everything that has evolved in Focus and what we are preparing next.',
+    currentVersion: 'Current version',
+    currentDescription:
+      'A more complete, connected, and consistent focus experience across all your devices.',
+    new: 'New',
+
+    recent: {
+      title: 'Recent updates',
+      subtitle:
+        'The newest improvements available in the app.',
+
+      items: {
+        taskEditing: {
+          title: 'Task editing',
+          description:
+            'You can now correct or update a task name without deleting it and creating another one.',
+        },
+        responsive: {
+          title: 'Responsive improvements',
+          description:
+            'Text, headers, and spacing have been refined for a better experience on phones and tablets.',
+        },
+        changesCenter: {
+          title: 'Changes center',
+          description:
+            'This new space brings together the Focus history, recent updates, and upcoming features.',
+        },
+      },
+    },
+
+    history: {
+      title: 'Version history',
+      subtitle:
+        'See how Focus has evolved since its first version.',
+      current: 'Current',
+
+      versions: {
+        v3: {
+          description:
+            'Focus became a truly cross-platform and bilingual experience.',
+          items: {
+            languages:
+              'Complete app experience in Portuguese and English.',
+            androidWidgets:
+              'New widgets for Android devices.',
+            autoStart:
+              'Options to automatically start breaks and focus sessions.',
+            widgetImprovements:
+              'Layout, synchronization, and responsiveness improvements for widgets.',
+          },
+        },
+
+        v2: {
+          description:
+            'The mobile experience gained native features and deeper system integration.',
+          items: {
+            android:
+              'Native Focus experience for Android.',
+            liveNotifications:
+              'Timer displayed in live notifications during sessions.',
+            appleExperience:
+              'Live Activity, Dynamic Island, and iPhone widgets.',
+            tabletSupport:
+              'Layouts and widgets adapted for iPad.',
+          },
+        },
+
+        v1: {
+          description:
+            'The foundation of Focus launched with the essential tools for organizing time and progress.',
+          items: {
+            pomodoro:
+              'Pomodoro timer with customizable durations.',
+            organization:
+              'Tasks, projects, and yearly goals.',
+            progress:
+              'Streaks, badges, analytics, and focus history.',
+            accounts:
+              'Google account synchronization and guest mode.',
+          },
+        },
+      },
+    },
+
+    roadmap: {
+      title: 'Upcoming updates',
+      subtitle:
+        'Features currently being prepared for Focus.',
+
+      status: {
+        development: 'In development',
+        planned: 'Planned',
+      },
+
+      items: {
+        taskDetails: {
+          title: 'More task details',
+          description:
+            'Projects, priority, and Pomodoro estimates directly in task creation and editing.',
+        },
+        liveTimer: {
+          title: 'Deeper system timer integration',
+          description:
+            'Further improvements to notifications and session tracking outside the app.',
+        },
+        widgets: {
+          title: 'New widgets and interactions',
+          description:
+            'More ways to follow goals, projects, streaks, and progress from your home screen.',
+        },
+      },
+
+      disclaimer:
+        'The roadmap may change based on development progress and user needs.',
+    },
+  },
+
   settings: {
     title: 'Settings',
     subtitle:
@@ -630,6 +838,12 @@ const en = {
         'Auto-start breaks',
       autoWork:
         'Auto-start work sessions',
+    },
+
+    changes: {
+      title: 'Changes and updates',
+      description:
+        'Explore the evolution of Focus and see what is coming next.',
     },
 
     about: {

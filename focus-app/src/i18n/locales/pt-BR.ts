@@ -401,21 +401,108 @@ const ptBR = {
       'Não foi possível carregar as tarefas',
     loadError:
       'Ocorreu um erro inesperado ao carregar suas tarefas.',
-    count_one: '{{count}} tarefa',
-    count_other: '{{count}} tarefas',
+    count_one: '{{count}} tarefa ativa',
+    count_other: '{{count}} tarefas ativas',
     add: 'Adicionar tarefa',
+    addShort: 'Adicionar',
     updateError:
       'Não foi possível atualizar a tarefa. Tente novamente.',
     empty: 'Nenhuma tarefa ainda',
+    emptyAction: 'Criar primeira tarefa',
     reopen: 'Reabrir {{title}}',
     complete: 'Concluir {{title}}',
-    delete: 'Excluir {{title}}',
+    edit: 'Editar {{title}}',
     newTask: 'Nova tarefa',
+    editTask: 'Editar tarefa',
     placeholder: 'Nome da tarefa...',
     createError:
       'Não foi possível criar a tarefa. Tente novamente.',
+    editError:
+      'Não foi possível salvar a tarefa. Tente novamente.',
     creating: 'Criando...',
     create: 'Criar tarefa',
+    saving: 'Salvando...',
+    save: 'Salvar alterações',
+    pomodoroCount_one: '{{count}} pomodoro',
+    pomodoroCount_other: '{{count}} pomodoros',
+
+    filters: {
+      status: 'Filtrar por status',
+      pending: 'Pendentes',
+      completed: 'Concluídas',
+      all: 'Todas',
+      empty:
+        'Nenhuma tarefa corresponde aos filtros selecionados.',
+    },
+
+    categories: {
+      all: 'Todas as categorias',
+
+      quick: {
+        label: 'Rápida',
+        description:
+          'Uma ação pequena para resolver em pouco tempo.',
+      },
+
+      planned: {
+        label: 'Planejada',
+        description:
+          'Uma tarefa que exige organização e atenção.',
+      },
+
+      urgent: {
+        label: 'Urgente',
+        description:
+          'Algo que precisa receber prioridade.',
+      },
+
+      long_term: {
+        label: 'Longo prazo',
+        description:
+          'Trabalho para avançar ao longo de vários dias.',
+      },
+    },
+
+    form: {
+      name: 'Nome',
+      category: 'Categoria',
+      project: 'Projeto',
+      noProject: 'Sem projeto',
+      estimate: 'Estimativa de foco',
+    },
+
+    trash: {
+      open: 'Abrir lixeira',
+      move: 'Mover {{title}} para a lixeira',
+      title: 'Lixeira',
+      subtitle:
+        'As tarefas são excluídas permanentemente depois de 30 dias.',
+      back: 'Voltar para Tarefas',
+      empty: 'A lixeira está vazia',
+      emptyDescription:
+        'As tarefas removidas ficarão disponíveis aqui por 30 dias.',
+      daysRemaining_one:
+        'Exclusão permanente em {{count}} dia',
+      daysRemaining_other:
+        'Exclusão permanente em {{count}} dias',
+      deleteToday:
+        'Exclusão permanente hoje',
+      restoreTask: 'Restaurar {{title}}',
+      deleteTask:
+        'Excluir {{title}} permanentemente',
+      confirmTitle:
+        'Excluir permanentemente',
+      confirmDescription:
+        'Excluir “{{title}}” permanentemente? Esta ação não poderá ser desfeita.',
+      cancel: 'Cancelar',
+      deletePermanently:
+        'Excluir permanentemente',
+      deleting: 'Excluindo...',
+      deleteError:
+        'Não foi possível excluir a tarefa permanentemente.',
+      loadError:
+        'Não foi possível carregar a lixeira.',
+    },
   },
 
   goalsPage: {
@@ -582,6 +669,127 @@ const ptBR = {
     sessionNumber: 'Sessão {{current}} de {{total}}',
   },
 
+  changesPage: {
+    back: 'Voltar para Configurações',
+    title: 'Mudanças e novidades',
+    subtitle:
+      'Acompanhe tudo o que evoluiu no Focus e o que estamos preparando.',
+    currentVersion: 'Versão atual',
+    currentDescription:
+      'Uma experiência de foco mais completa, conectada e consistente em todos os seus dispositivos.',
+    new: 'Novo',
+
+    recent: {
+      title: 'Novidades recentes',
+      subtitle:
+        'As melhorias mais novas disponíveis no aplicativo.',
+
+      items: {
+        taskEditing: {
+          title: 'Edição de tarefas',
+          description:
+            'Agora você pode corrigir ou atualizar o nome de uma tarefa sem precisar excluí-la e criar outra.',
+        },
+        responsive: {
+          title: 'Melhorias de responsividade',
+          description:
+            'Textos, cabeçalhos e espaçamentos foram refinados para oferecer uma experiência melhor em celulares e tablets.',
+        },
+        changesCenter: {
+          title: 'Central de mudanças',
+          description:
+            'Este novo espaço reúne o histórico do Focus, as novidades recentes e os próximos recursos.',
+        },
+      },
+    },
+
+    history: {
+      title: 'Histórico de versões',
+      subtitle:
+        'Veja como o Focus evoluiu desde sua primeira versão.',
+      current: 'Atual',
+
+      versions: {
+        v3: {
+          description:
+            'O Focus se tornou uma experiência verdadeiramente multiplataforma e bilíngue.',
+          items: {
+            languages:
+              'Aplicativo completo em português e inglês.',
+            androidWidgets:
+              'Novos widgets para dispositivos Android.',
+            autoStart:
+              'Opções para iniciar pausas e sessões de foco automaticamente.',
+            widgetImprovements:
+              'Melhorias de layout, sincronização e responsividade dos widgets.',
+          },
+        },
+
+        v2: {
+          description:
+            'A experiência móvel ganhou recursos nativos e maior integração com o sistema.',
+          items: {
+            android:
+              'Versão nativa do Focus para Android.',
+            liveNotifications:
+              'Timer visível em notificações ao vivo durante as sessões.',
+            appleExperience:
+              'Live Activity, Dynamic Island e widgets no iPhone.',
+            tabletSupport:
+              'Layouts e widgets adaptados para iPad.',
+          },
+        },
+
+        v1: {
+          description:
+            'A base do Focus nasceu com as ferramentas essenciais para organizar tempo e progresso.',
+          items: {
+            pomodoro:
+              'Timer Pomodoro com durações personalizáveis.',
+            organization:
+              'Tarefas, projetos e metas anuais.',
+            progress:
+              'Sequências, insígnias, análises e histórico de foco.',
+            accounts:
+              'Conta Google com sincronização e modo visitante.',
+          },
+        },
+      },
+    },
+
+    roadmap: {
+      title: 'Próximas atualizações',
+      subtitle:
+        'Recursos que estão sendo preparados para o Focus.',
+
+      status: {
+        development: 'Em desenvolvimento',
+        planned: 'Planejado',
+      },
+
+      items: {
+        taskDetails: {
+          title: 'Mais detalhes nas tarefas',
+          description:
+            'Projetos, prioridade e estimativa de pomodoros diretamente na criação e edição de tarefas.',
+        },
+        liveTimer: {
+          title: 'Timer ainda mais integrado ao sistema',
+          description:
+            'Novas melhorias nas notificações e no acompanhamento de sessões fora do aplicativo.',
+        },
+        widgets: {
+          title: 'Novos widgets e interações',
+          description:
+            'Mais formas de acompanhar metas, projetos, sequências e progresso pela tela inicial.',
+        },
+      },
+
+      disclaimer:
+        'O roadmap pode mudar conforme o desenvolvimento e as necessidades dos usuários.',
+    },
+  },
+
   settings: {
     title: 'Configurações',
     subtitle:
@@ -645,6 +853,12 @@ const ptBR = {
         'Iniciar pausas automaticamente',
       autoWork:
         'Iniciar sessões de foco automaticamente',
+    },
+
+    changes: {
+      title: 'Mudanças e novidades',
+      description:
+        'Conheça a evolução do Focus e veja o que está por vir.',
     },
 
     about: {

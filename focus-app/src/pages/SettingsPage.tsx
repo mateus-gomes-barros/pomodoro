@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import {
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -583,6 +587,48 @@ export function SettingsPage() {
           </div>
         </motion.div>
 
+        {/* CHANGES AND UPDATES */}
+
+        <motion.button
+          type="button"
+          onClick={() =>
+            navigate('/settings/changes')
+          }
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.15,
+          }}
+          className="card flex w-full items-center gap-4 p-6 text-left transition hover:border-white/15 hover:bg-white/[0.035]"
+        >
+          <div className="rounded-xl bg-accent-green/10 p-3 text-accent-green">
+            <Sparkles size={20} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-accent-white">
+              {t('settings.changes.title')}
+            </h3>
+
+            <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
+              {t(
+                'settings.changes.description',
+              )}
+            </p>
+          </div>
+
+          <ChevronRight
+            size={18}
+            className="shrink-0 text-accent-subtle"
+          />
+        </motion.button>
+
         {/* ABOUT */}
 
         <motion.div
@@ -595,7 +641,7 @@ export function SettingsPage() {
             y: 0,
           }}
           transition={{
-            delay: 0.15,
+            delay: 0.2,
           }}
           className="card p-6"
         >
