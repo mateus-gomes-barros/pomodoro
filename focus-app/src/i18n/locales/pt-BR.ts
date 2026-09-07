@@ -688,6 +688,70 @@ const ptBR = {
     sessionNumber: 'Sessão {{current}} de {{total}}',
   },
 
+  focusHomeReveal: {
+    back: 'Voltar ao FocusMe',
+    unavailable:
+      'Este relatório ainda não pode realizar uma análise FocushoMe.',
+    alreadyRevealed:
+      'Sua FocushoMe atual',
+    goToFocusMe: 'Ir para o FocusMe',
+    title:
+      'Seu mês revelou uma identidade',
+    description:
+      'O Focus analisou como você planejou, executou, concluiu e retomou seu trabalho. Sua FocushoMe está pronta para ser revelada.',
+    action: 'Revelar minha FocushoMe',
+    analyzing: 'Analisando...',
+    error:
+      'Não foi possível concluir a revelação agora.',
+
+    invitation: {
+      title:
+        'Sua primeira FocushoMe está pronta',
+      description:
+        'Um mês completo reuniu dados suficientes para uma análise profunda.',
+    },
+
+    result: {
+      eyebrow:
+        'Você pertence à FocushoMe',
+      influence:
+        'Influência: {{archetype}}',
+      expression:
+        'Expressão temporal: {{expression}}',
+      permanent:
+        'Esta identidade permanecerá com você',
+    },
+
+    traits: {
+      night_planner_morning_executor:
+        'Planeja à noite e executa pela manhã',
+      morning_planner_night_executor:
+        'Planeja cedo e executa à noite',
+      goal_rich_open_horizons:
+        'Horizontes ainda abertos',
+      task_driven:
+        'Movido por tarefas',
+      project_concentrated:
+        'Foco concentrado',
+      category_explorer:
+        'Explorador de categorias',
+      comeback_pattern:
+        'Força de retomada',
+      urgent_closer:
+        'Finalizador de urgências',
+      long_horizon:
+        'Horizonte longo',
+      quick_solver:
+        'Resolvedor rápido',
+      deep_sessions:
+        'Sessões profundas',
+      steady_weeks:
+        'Semanas constantes',
+      peak_driven:
+        'Movido por picos',
+    },
+  },
+
   focusHomeIdentity: {
     current: 'Sua FocushoMe',
     locked:

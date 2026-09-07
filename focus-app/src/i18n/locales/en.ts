@@ -678,6 +678,70 @@ const en = {
     sessionNumber: 'Session {{current}} of {{total}}',
   },
 
+  focusHomeReveal: {
+    back: 'Back to FocusMe',
+    unavailable:
+      'This report cannot perform a FocushoMe analysis yet.',
+    alreadyRevealed:
+      'Your current FocushoMe',
+    goToFocusMe: 'Go to FocusMe',
+    title:
+      'Your month revealed an identity',
+    description:
+      'Focus analyzed how you planned, executed, completed, and resumed your work. Your FocushoMe is ready to be revealed.',
+    action: 'Reveal my FocushoMe',
+    analyzing: 'Analyzing...',
+    error:
+      'The reveal could not be completed right now.',
+
+    invitation: {
+      title:
+        'Your first FocushoMe is ready',
+      description:
+        'A complete month gathered enough data for a deep analysis.',
+    },
+
+    result: {
+      eyebrow:
+        'You belong to FocushoMe',
+      influence:
+        'Influence: {{archetype}}',
+      expression:
+        'Temporal expression: {{expression}}',
+      permanent:
+        'This identity will remain with you',
+    },
+
+    traits: {
+      night_planner_morning_executor:
+        'Plans at night and executes in the morning',
+      morning_planner_night_executor:
+        'Plans early and executes at night',
+      goal_rich_open_horizons:
+        'Open horizons',
+      task_driven:
+        'Task driven',
+      project_concentrated:
+        'Concentrated focus',
+      category_explorer:
+        'Category explorer',
+      comeback_pattern:
+        'Return strength',
+      urgent_closer:
+        'Urgency finisher',
+      long_horizon:
+        'Long horizon',
+      quick_solver:
+        'Quick solver',
+      deep_sessions:
+        'Deep sessions',
+      steady_weeks:
+        'Consistent weeks',
+      peak_driven:
+        'Peak driven',
+    },
+  },
+
   focusHomeIdentity: {
     current: 'Your FocushoMe',
     locked:

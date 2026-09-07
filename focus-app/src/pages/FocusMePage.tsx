@@ -26,6 +26,9 @@ import {
   FocusHomeIdentityHeader,
 } from '@/components/focusme/FocusHomeIdentityHeader'
 import {
+  FocusHomeRevealInvitation,
+} from '@/components/focusme/FocusHomeRevealInvitation'
+import {
   FocusMeIcon,
 } from '@/components/icons/FocusMeIcon'
 import {
@@ -147,6 +150,8 @@ export function FocusMePage() {
   return (
     <div className="mx-auto max-w-5xl px-6 pb-12 lg:px-10 lg:pb-16">
       <FocusHomeIdentityHeader />
+
+      <FocusHomeRevealInvitation />
 
       <div
         className="card mb-5 grid grid-cols-2 gap-1 p-1"
