@@ -682,7 +682,7 @@ const en = {
     back: 'Back to Settings',
     subtitle:
       'A new way to understand your focus journey.',
-    coming: 'Coming in Focus 4.0',
+    coming: 'In development for Focus 4.0',
 
     hero: {
       title:
@@ -769,7 +769,7 @@ const en = {
       'Follow everything that has evolved in Focus and what we are preparing next.',
     currentVersion: 'Current version',
     currentDescription:
-      'A more complete, connected, and consistent focus experience across all your devices.',
+      'A new generation of Focus, with smarter tasks, completable projects, and the foundation of FocusMe.',
     new: 'New',
 
     recent: {
@@ -778,6 +778,30 @@ const en = {
         'The newest improvements available in the app.',
 
       items: {
+        taskCategories: {
+          title: 'New task experience',
+          description:
+            'Tasks now include categories, combined filters, linked projects, and Pomodoro estimates.',
+        },
+
+        taskTrash: {
+          title: 'Task trash',
+          description:
+            'Removed tasks can be restored for 30 days before permanent deletion.',
+        },
+
+        projectLifecycle: {
+          title: 'Project completion',
+          description:
+            'Projects can now be completed, viewed separately, and reopened without losing their history.',
+        },
+
+        focusMePreview: {
+          title: 'Meet FocusMe',
+          description:
+            'A new page introduces retrospectives, FocushoMe, and the Focus vision for personal insights.',
+        },
+
         taskEditing: {
           title: 'Task editing',
           description:
@@ -803,6 +827,23 @@ const en = {
       current: 'Current',
 
       versions: {
+        v4: {
+          description:
+            'Focus entered a new phase, connecting daily organization, completion, and understanding of your routine.',
+          items: {
+            taskEditing:
+              'Complete task editing without needing to delete and recreate.',
+            taskCategories:
+              'Quick, Planned, Urgent, and Long-term categories with filters and minimalist visual identification.',
+            taskTrash:
+              'Trash with 30-day restoration and permanent deletion.',
+            projectLifecycle:
+              'Project completion, reopening, and filters while preserving hours, tasks, and sessions.',
+            focusMePreview:
+              'Introduction to FocusMe, FocushoMe, upcoming retrospectives, and privacy principles.',
+          },
+        },
+
         v3: {
           description:
             'Focus became a truly cross-platform and bilingual experience.',
@@ -851,9 +892,9 @@ const en = {
     },
 
     roadmap: {
-      title: 'Focus 4.0',
+      title: 'Still coming to Focus 4.0',
       subtitle:
-        'The next major evolution of Focus is already being built.',
+        'The foundation is already available. Now we are building the complete FocusMe experience.',
 
       status: {
         development: 'In development',
@@ -917,7 +958,7 @@ const en = {
       },
 
       disclaimer:
-        'Focus 4.0 details may evolve during development.',
+        'The remaining features will be added progressively throughout the evolution of Focus 4.0.',
     },
   },
 
@@ -996,7 +1037,7 @@ const en = {
     about: {
       title: 'About',
       description:
-        'Focus v3.0 — A minimalist Pomodoro and productivity app. Guest data is stored locally on your device.',
+        'Focus v4.0 — A minimalist Pomodoro and productivity app. Guest data is stored locally on your device.',
     },
   },
 }

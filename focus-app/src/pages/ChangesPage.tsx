@@ -12,7 +12,6 @@ import {
   ListTodo,
   Rocket,
   Share2,
-  Smartphone,
   Sparkles,
   TimerReset,
   Trash2,
@@ -24,35 +23,24 @@ import { PageHeader } from '../components/ui/PageHeader'
 
 const recentChanges = [
   {
-    key: 'taskEditing',
+    key: 'taskCategories',
     icon: ListTodo,
   },
   {
-    key: 'responsive',
-    icon: Smartphone,
+    key: 'taskTrash',
+    icon: Trash2,
   },
   {
-    key: 'changesCenter',
-    icon: Sparkles,
+    key: 'projectLifecycle',
+    icon: CheckCircle2,
+  },
+  {
+    key: 'focusMePreview',
+    icon: Home,
   },
 ]
 
 const roadmapItems = [
-  {
-    key: 'taskExperience',
-    icon: ListTodo,
-    status: 'development',
-  },
-  {
-    key: 'categories',
-    icon: CheckCircle2,
-    status: 'development',
-  },
-  {
-    key: 'trash',
-    icon: Trash2,
-    status: 'development',
-  },
   {
     key: 'weeklyRecaps',
     icon: CalendarDays,
@@ -87,10 +75,23 @@ const roadmapItems = [
 
 const versions = [
   {
+    version: '4.0',
+    key: 'v4',
+    icon: Sparkles,
+    current: true,
+    items: [
+      'taskEditing',
+      'taskCategories',
+      'taskTrash',
+      'projectLifecycle',
+      'focusMePreview',
+    ],
+  },
+  {
     version: '3.0',
     key: 'v3',
     icon: Languages,
-    current: true,
+    current: false,
     items: [
       'languages',
       'androidWidgets',
@@ -158,7 +159,7 @@ export function ChangesPage() {
               </span>
 
               <h2 className="mt-4 text-xl font-semibold text-accent-white">
-                Focus 3.0
+                Focus 4.0
               </h2>
 
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-accent-subtle">

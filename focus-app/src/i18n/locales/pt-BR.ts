@@ -692,7 +692,7 @@ const ptBR = {
     back: 'Voltar para Configurações',
     subtitle:
       'Uma nova forma de compreender sua jornada de foco.',
-    coming: 'Chegando no Focus 4.0',
+    coming: 'Em desenvolvimento no Focus 4.0',
 
     hero: {
       title:
@@ -780,7 +780,7 @@ const ptBR = {
       'Acompanhe tudo o que evoluiu no Focus e o que estamos preparando.',
     currentVersion: 'Versão atual',
     currentDescription:
-      'Uma experiência de foco mais completa, conectada e consistente em todos os seus dispositivos.',
+      'Uma nova geração do Focus, com tarefas mais inteligentes, projetos concluíveis e a fundação do FocusMe.',
     new: 'Novo',
 
     recent: {
@@ -789,6 +789,30 @@ const ptBR = {
         'As melhorias mais novas disponíveis no aplicativo.',
 
       items: {
+        taskCategories: {
+          title: 'Nova experiência de tarefas',
+          description:
+            'As tarefas agora possuem categorias, filtros combináveis, projeto associado e estimativa de Pomodoros.',
+        },
+
+        taskTrash: {
+          title: 'Lixeira de tarefas',
+          description:
+            'Tarefas removidas podem ser restauradas durante 30 dias antes da exclusão definitiva.',
+        },
+
+        projectLifecycle: {
+          title: 'Conclusão de projetos',
+          description:
+            'Projetos agora podem ser concluídos, consultados separadamente e reabertos sem perder seu histórico.',
+        },
+
+        focusMePreview: {
+          title: 'Conheça o FocusMe',
+          description:
+            'Uma nova página apresenta as retrospectivas, a FocushoMe e a visão do Focus para análises pessoais.',
+        },
+
         taskEditing: {
           title: 'Edição de tarefas',
           description:
@@ -814,6 +838,23 @@ const ptBR = {
       current: 'Atual',
 
       versions: {
+        v4: {
+          description:
+            'O Focus começou uma nova fase, conectando organização diária, conclusão e compreensão da rotina.',
+          items: {
+            taskEditing:
+              'Edição completa de tarefas sem precisar excluí-las.',
+            taskCategories:
+              'Categorias Rápida, Planejada, Urgente e Longo prazo, com filtros e identificação visual minimalista.',
+            taskTrash:
+              'Lixeira com restauração por 30 dias e exclusão definitiva.',
+            projectLifecycle:
+              'Conclusão, reabertura e filtros de projetos, preservando horas, tarefas e sessões.',
+            focusMePreview:
+              'Apresentação do FocusMe, da FocushoMe, das futuras retrospectivas e da política de privacidade.',
+          },
+        },
+
         v3: {
           description:
             'O Focus se tornou uma experiência verdadeiramente multiplataforma e bilíngue.',
@@ -862,9 +903,9 @@ const ptBR = {
     },
 
     roadmap: {
-      title: 'Focus 4.0',
+      title: 'Ainda chegando no Focus 4.0',
       subtitle:
-        'A próxima grande evolução do Focus já está sendo construída.',
+        'A base já está disponível. Agora estamos construindo a experiência completa do FocusMe.',
 
       status: {
         development: 'Em desenvolvimento',
@@ -928,7 +969,7 @@ const ptBR = {
       },
 
       disclaimer:
-        'Os detalhes do Focus 4.0 podem evoluir durante o desenvolvimento.',
+        'Os recursos restantes serão adicionados progressivamente durante a evolução do Focus 4.0.',
     },
   },
 
@@ -1012,7 +1053,7 @@ const ptBR = {
     about: {
       title: 'Sobre',
       description:
-        'Focus v3.0 — Um aplicativo minimalista de Pomodoro e produtividade. Dados do modo visitante são armazenados localmente no dispositivo.',
+        'Focus v4.0 — Um aplicativo minimalista de Pomodoro e produtividade. Dados do modo visitante são armazenados localmente no dispositivo.',
     },
   },
 }

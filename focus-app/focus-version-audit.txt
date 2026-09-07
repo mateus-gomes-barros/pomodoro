@@ -1,0 +1,56 @@
+===== WEB VERSION =====
+package.json:4:  "version": "3.0.0",
+package-lock.json:137:      "version": "3.1.1",
+package-lock.json:178:      "version": "3.2.2",
+package-lock.json:248:      "version": "3.1.7",
+package-lock.json:308:      "version": "3.1.7",
+package-lock.json:321:      "version": "3.0.1",
+package-lock.json:392:      "version": "3.1.2",
+package-lock.json:1440:      "version": "3.2.2",
+package-lock.json:1446:      "version": "3.1.3",
+package-lock.json:1452:      "version": "3.0.2",
+package-lock.json:1458:      "version": "3.0.4",
+package-lock.json:1467:      "version": "3.1.1",
+package-lock.json:1482:      "version": "3.1.8",
+package-lock.json:1491:      "version": "3.0.4",
+package-lock.json:1497:      "version": "3.0.2",
+package-lock.json:1815:      "version": "3.0.0",
+package-lock.json:1887:      "version": "3.2.3",
+package-lock.json:1894:      "version": "3.2.4",
+package-lock.json:1906:      "version": "3.1.0",
+package-lock.json:1915:      "version": "3.0.1",
+package-lock.json:1924:      "version": "3.1.2",
+package-lock.json:1933:      "version": "3.0.1",
+package-lock.json:1945:      "version": "3.1.0",
+package-lock.json:1970:      "version": "3.2.0",
+package-lock.json:1982:      "version": "3.1.0",
+package-lock.json:2006:      "version": "3.0.1",
+package-lock.json:2123:      "version": "3.2.0",
+package-lock.json:2352:      "version": "3.0.0",
+package-lock.json:2709:      "version": "3.1.0",
+package-lock.json:2742:      "version": "3.3.15",
+package-lock.json:2867:      "version": "3.1.1",
+package-lock.json:2916:      "version": "3.1.1",
+package-lock.json:2978:      "version": "3.0.3",
+package-lock.json:3103:      "version": "3.6.2",
+package-lock.json:3117:      "version": "3.9.0",
+package-lock.json:3153:      "version": "3.1.0",
+package-lock.json:3282:      "version": "3.0.0",
+package-lock.json:3291:      "version": "3.0.7",
+package-lock.json:3405:      "version": "3.6.0",
+package-lock.json:3590:      "version": "37.3.6",
+package-lock.json:3721:      "version": "3.0.1",
+===== ANDROID VERSION =====
+android/app/build.gradle:20:        versionCode 2
+android/app/build.gradle:21:        versionName "3.0"
+===== IOS VERSION =====
+ios/App/App.xcodeproj/project.pbxproj:354:				CURRENT_PROJECT_VERSION = 2;
+ios/App/App.xcodeproj/project.pbxproj:369:				MARKETING_VERSION = 3.0;
+ios/App/App.xcodeproj/project.pbxproj:398:				CURRENT_PROJECT_VERSION = 2;
+ios/App/App.xcodeproj/project.pbxproj:413:				MARKETING_VERSION = 3.0;
+ios/App/App.xcodeproj/project.pbxproj:543:				CURRENT_PROJECT_VERSION = 2;
+ios/App/App.xcodeproj/project.pbxproj:551:				MARKETING_VERSION = 3.0;
+ios/App/App.xcodeproj/project.pbxproj:567:				CURRENT_PROJECT_VERSION = 2;
+ios/App/App.xcodeproj/project.pbxproj:575:				MARKETING_VERSION = 3.0;
+ios/App/App/Info.plist:22:	<string>$(MARKETING_VERSION)</string>
+ios/App/App/Info.plist:38:	<string>$(CURRENT_PROJECT_VERSION)</string>
