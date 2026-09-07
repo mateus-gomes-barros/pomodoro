@@ -389,6 +389,13 @@ const en = {
     card: {
       edit: 'Edit {{name}}',
       delete: 'Delete {{name}}',
+      complete: 'Complete {{name}}',
+      reopen: 'Reopen {{name}}',
+      completeShort: 'Complete',
+      reopenShort: 'Reopen',
+      completed: 'Completed',
+      completedOn:
+        'Completed on {{date}}',
     },
 
     empty: {

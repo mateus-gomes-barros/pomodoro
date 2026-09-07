@@ -397,6 +397,13 @@ const ptBR = {
     card: {
       edit: 'Editar {{name}}',
       delete: 'Excluir {{name}}',
+      complete: 'Concluir {{name}}',
+      reopen: 'Reabrir {{name}}',
+      completeShort: 'Concluir',
+      reopenShort: 'Reabrir',
+      completed: 'Concluído',
+      completedOn:
+        'Concluído em {{date}}',
     },
 
     empty: {

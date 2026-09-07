@@ -1,0 +1,717 @@
+===== TIMER PAGE =====
+
+const SESSION_TYPES: SessionType[] = [
+  'work',
+  'short_break',
+  'long_break',
+]
+
+export function TimerPage() {
+  const { t } = useTranslation()
+
+  const {
+    status,
+    sessionType,
+    secondsLeft,
+    settings,
+    currentSessionCount,
+    activeProjectId,
+    start,
+    pause,
+    reset,
+    switchSession,
+    setActiveProject,
+    updateSettings,
+  } = usePomodoroStore()
+
+  const projectsQuery = useProjects()
+
+  const projects =
+    projectsQuery.data ?? []
+
+  const [showSettings, setShowSettings] =
+    useState(false)
+
+  const totalSeconds =
+    sessionType === 'work'
+      ? settings.workDuration * 60
+      : sessionType === 'short_break'
+        ? settings.shortBreakDuration * 60
+        : settings.longBreakDuration * 60
+
+  const rawProgress =
+    status !== 'idle' &&
+    totalSeconds > 0
+      ? 1 -
+        secondsLeft / totalSeconds
+      : 0
+
+  const progress = Math.min(
+    Math.max(rawProgress, 0),
+    1,
+  )
+
+  const ringColor =
+    sessionType === 'work'
+      ? '#34d399'
+      : '#60a5fa'
+
+  const completedSessionDots =
+    settings.sessionsUntilLongBreak > 0
+      ? currentSessionCount %
+        settings.sessionsUntilLongBreak
+      : 0
+
+  const isRunning =
+    status === 'running'
+
+  return (
+    <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col items-center space-y-7">
+      {/* Session type switcher */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: -6,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className="segment grid w-full grid-cols-3 sm:w-auto"
+      >
+        {SESSION_TYPES.map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() =>
+              switchSession(type)
+            }
+            disabled={isRunning}
+            className={cn(
+              'segment-item min-w-0 whitespace-nowrap',
+              sessionType === type
+                ? 'active'
+                : 'inactive',
+              isRunning &&
+                'cursor-not-allowed opacity-60',
+            )}
+          >
+            {t(SESSION_LABEL_KEYS[type])}
+          </button>
+        ))}
+      </motion.div>
+
+      {/* Timer ring */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          scale: 0.92,
+        }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+        }}
+        transition={{
+          duration: 0.45,
+          ease: [
+            0.16,
+            1,
+            0.3,
+            1,
+          ],
+        }}
+        className="relative"
+      >
+        <CircularProgress
+          progress={progress}
+          size={260}
+          strokeWidth={5}
+          color={ringColor}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${sessionType}-${secondsLeft}`}
+              initial={{
+                opacity: 0.65,
+              }}
+              animate={{
+                opacity: 1,
+              }}
+              exit={{
+                opacity: 0.65,
+              }}
+              transition={{
+                duration: 0.12,
+              }}
+              className="flex flex-col items-center"
+            >
+              <span className="font-mono text-[52px] font-bold leading-none tracking-[-3px] text-white sm:text-[56px]">
+                {formatTime(
+                  secondsLeft,
+                )}
+              </span>
+
+              <span className="mt-2 text-[13px] text-white/40">
+                {
+                  t(
+                    SESSION_LABEL_KEYS[
+                      sessionType
+                    ],
+                  )
+                }
+              </span>
+            </motion.div>
+          </AnimatePresence>
+        </CircularProgress>
+
+        {isRunning &&
+          sessionType === 'work' && (
+            <div
+              className="pointer-events-none absolute inset-0 animate-pulse rounded-full opacity-[0.07]"
+              style={{
+                background: `radial-gradient(circle, ${ringColor} 0%, transparent 70%)`,
+              }}
+            />
+          )}
+      </motion.div>
+
+      {/* Session dots */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+        }}
+        animate={{
+          opacity: 1,
+        }}
+        transition={{
+          delay: 0.15,
+        }}
+        className="flex flex-wrap items-center justify-center gap-2"
+      >
+        {Array.from({
+          length:
+            settings.sessionsUntilLongBreak,
+        }).map((_, index) => (
+          <div
+            key={index}
+            className="h-2 w-2 rounded-full transition-all duration-300"
+            style={{
+              backgroundColor:
+                index <
+                completedSessionDots
+                  ? '#34d399'
+                  : 'rgba(255,255,255,0.12)',
+            }}
+          />
+        ))}
+
+        <span className="ml-1 text-[11px] text-white/30">
+          until long break
+        </span>
+      </motion.div>
+
+      {/* Timer controls */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: 10,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.2,
+        }}
+        className="flex items-center gap-4"
+      >
+        <button
+          type="button"
+          onClick={reset}
+          className="btn-ghost h-11 w-11 justify-center p-0"
+          aria-label={t('timer.status.reset')}
+        >
+          <RotateCcw size={16} />
+        </button>
+
+        <motion.button
+          type="button"
+          whileTap={{
+            scale: 0.94,
+          }}
+          onClick={
+            isRunning
+              ? pause
+              : start
+          }
+          className={cn(
+            'flex h-[72px] w-[72px] items-center justify-center rounded-2xl font-bold text-black',
+            'transition-all duration-150',
+            isRunning
+              ? 'bg-white hover:bg-white/85'
+              : 'bg-gradient-to-br from-emerald-400 to-emerald-500 hover:opacity-90',
+          )}
+          style={{
+            boxShadow:
+              '0 0 24px rgba(52,211,153,0.18)',
+          }}
+          aria-label={
+            isRunning
+              ? 'Pause timer'
+              : 'Start timer'
+          }
+        >
+          {isRunning ? (
+            <Pause size={26} />
+          ) : (
+            <Play
+              size={26}
+              className="translate-x-[1px]"
+            />
+          )}
+        </motion.button>
+
+        <button
+          type="button"
+          onClick={() =>
+            updateSettings({
+              soundEnabled:
+                !settings.soundEnabled,
+            })
+          }
+          className="btn-ghost h-11 w-11 justify-center p-0"
+          aria-label={
+            settings.soundEnabled
+              ? t('timer.sound.mute')
+              : t('timer.sound.enable')
+          }
+        >
+          {settings.soundEnabled ? (
+            <Volume2 size={16} />
+          ) : (
+            <VolumeX size={16} />
+          )}
+        </button>
+      </motion.div>
+
+      {/* Project and timer settings */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+        }}
+        animate={{
+          opacity: 1,
+        }}
+        transition={{
+          delay: 0.28,
+        }}
+        className="w-full space-y-3"
+      >
+        <div className="card p-5">
+          <p className="label-section mb-3">
+            Assign to Project
+          </p>
+
+          {projectsQuery.isLoading ? (
+            <div className="flex min-h-10 items-center justify-center">
+              <LoaderCircle
+                size={18}
+                className="animate-spin text-white/35"
+              />
+            </div>
+          ) : projectsQuery.isError ? (
+            <p className="text-xs text-red-400">
+              {projectsQuery.error
+                instanceof Error
+                ? projectsQuery.error
+                    .message
+                : t('timer.projects.loadError')}
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveProject(null)
+                }
+                className={cn(
+                  'rounded-xl px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                  activeProjectId ===
+                    null
+                    ? 'bg-white/10 text-white'
+                    : 'bg-white/[0.04] text-white/40 hover:text-white/60',
+                )}
+              >
+                None
+              </button>
+
+              {projects.map(
+                (project) => (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() =>
+                      setActiveProject(
+                        project.id,
+                      )
+                    }
+                    title={project.name}
+                    className={cn(
+                      'flex max-w-full items-center gap-1.5 rounded-xl px-3 py-1.5',
+                      'text-xs font-medium transition-all duration-150',
+                      activeProjectId ===
+                        project.id
+                        ? 'border border-white/10 bg-white/10 text-white'
+                        : 'bg-white/[0.04] text-white/40 hover:text-white/60',
+                    )}
+                  >
+                    <span className="flex-shrink-0">
+                      {
+                        project.emoji
+                      }
+                    </span>
+
+                    <span className="max-w-[190px] truncate">
+                      {
+                        project.name
+                      }
+                    </span>
+                  </button>
+                ),
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Settings trigger */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setShowSettings(
+              (current) =>
+===== TIMER HOOK =====
+
+  let currentStreak = 0
+  while (currentDate) {
+    const dateString = format(currentDate, 'yyyy-MM-dd')
+    if (!uniqueDates.has(dateString)) break
+    currentStreak += 1
+    currentDate = subDays(currentDate, 1)
+  }
+  return currentStreak
+}
+
+export function useTimer() {
+  const {
+    status,
+    sessionType,
+    settings,
+    secondsLeft,
+    endsAt,
+    tick,
+    activeTaskId,
+    activeProjectId,
+  } = usePomodoroStore()
+
+  const tasksQuery = useTasks()
+  const projectsQuery = useProjects()
+  const sessionsQuery = usePomodoroSessions()
+
+  const createPomodoroSessionMutation = useCreatePomodoroSession()
+  const incrementTaskPomodoroMutation = useIncrementTaskPomodoro()
+  const incrementProjectSessionMutation = useIncrementProjectSession()
+
+  const currentBadge = useMemo(() => {
+    const workSessionDates = (sessionsQuery.data ?? [])
+      .filter((session) => session.type === 'work')
+      .map((session) => session.date)
+
+    const currentStreak = calculateCurrentStreak(workSessionDates)
+    return getStreakBadge(currentStreak)
+  }, [sessionsQuery.data])
+
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const previousStatusRef = useRef(status)
+  const previousSessionTypeRef = useRef(sessionType)
+  const previousSettingsRef = useRef(settings)
+  const liveActivityStateRef = useRef<string | null>(null)
+  const hasSyncedLiveActivityRef = useRef(false)
+
+  // 1. Hook para salvar a sessão no banco ao concluir
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current
+    const completedSessionType = previousSessionTypeRef.current
+    const completedSessionSettings = previousSettingsRef.current
+
+    const sessionWasCompleted =
+      previousStatus === 'running' && status === 'completed'
+
+    if (sessionWasCompleted) {
+      const durationMinutes = getSessionDuration(
+        completedSessionType,
+        completedSessionSettings,
+      )
+      const completedAt = new Date().toISOString()
+
+      void createPomodoroSessionMutation
+        .mutateAsync({
+          type: completedSessionType,
+          projectId: activeProjectId ?? undefined,
+          taskId: activeTaskId ?? undefined,
+          durationMinutes,
+          completedAt,
+          date: completedAt.split('T')[0],
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to save pomodoro session:', error)
+        })
+
+      if (completedSessionType === 'work') {
+        if (activeTaskId) {
+          const activeTask = tasksQuery.data?.find((t) => t.id === activeTaskId)
+          if (activeTask) {
+            void incrementTaskPomodoroMutation.mutateAsync(activeTask).catch(console.error)
+          }
+        }
+        if (activeProjectId) {
+          const activeProject = projectsQuery.data?.find((p) => p.id === activeProjectId)
+          if (activeProject) {
+            void incrementProjectSessionMutation
+              .mutateAsync({ project: activeProject, minutes: durationMinutes })
+              .catch(console.error)
+          }
+        }
+      }
+
+      if (completedSessionSettings.soundEnabled) {
+        playCompletionSound()
+      }
+    }
+
+    previousStatusRef.current = status
+    previousSessionTypeRef.current = sessionType
+    previousSettingsRef.current = settings
+  }, [
+    status,
+    sessionType,
+    settings,
+    activeTaskId,
+    activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
+    createPomodoroSessionMutation,
+    incrementTaskPomodoroMutation,
+    incrementProjectSessionMutation,
+  ])
+
+  // 2. Hook para sincronizar atividades nativas (Live Activity iOS + Notification Android)
+  useEffect(() => {
+    if (status !== 'running' && status !== 'paused') {
+      const needsToEndActivity =
+        !hasSyncedLiveActivityRef.current || liveActivityStateRef.current !== null
+
+      if (needsToEndActivity) {
+        hasSyncedLiveActivityRef.current = true
+        liveActivityStateRef.current = null
+        
+        // Limpa estado nativo em ambas as plataformas
+        void endFocusLiveActivity()
+        void clearTimerNotification()
+      }
+      return
+    }
+
+    const activeTask = tasksQuery.data?.find((t) => t.id === activeTaskId)
+    const resolvedProjectId = activeProjectId ?? activeTask?.projectId ?? null
+    const activeProject = projectsQuery.data?.find((p) => p.id === resolvedProjectId)
+
+    const remainingSeconds = getLiveActivityRemainingSeconds(
+      status === 'running' ? endsAt : null,
+      secondsLeft,
+    )
+
+    const activityStateSignature = [
+      status,
+      sessionType,
+      endsAt ?? 'no-end-date',
+      status === 'paused' ? remainingSeconds : 'countdown',
+      activeProject?.name ?? '',
+      activeTask?.title ?? '',
+      currentBadge.icon,
+    ].join('|')
+
+    const stateHasNotChanged =
+      hasSyncedLiveActivityRef.current &&
+      liveActivityStateRef.current === activityStateSignature
+
+    if (stateHasNotChanged) {
+      return
+    }
+
+    hasSyncedLiveActivityRef.current = true
+    liveActivityStateRef.current = activityStateSignature
+
+===== POMODORO STORE PROJECT =====
+src/store/pomodoroStore.ts-13-  getTodayString,
+src/store/pomodoroStore.ts-14-} from '../utils'
+src/store/pomodoroStore.ts-15-
+src/store/pomodoroStore.ts-16-interface PomodoroState {
+src/store/pomodoroStore.ts-17-  // Timer
+src/store/pomodoroStore.ts-18-  status: TimerStatus
+src/store/pomodoroStore.ts-19-  sessionType: SessionType
+src/store/pomodoroStore.ts-20-  secondsLeft: number
+src/store/pomodoroStore.ts-21-  endsAt: number | null
+src/store/pomodoroStore.ts-22-  currentSessionCount: number
+src/store/pomodoroStore.ts:23:  activeProjectId: string | null
+src/store/pomodoroStore.ts-24-  activeTaskId: string | null
+src/store/pomodoroStore.ts-25-
+src/store/pomodoroStore.ts-26-  // Settings
+src/store/pomodoroStore.ts-27-  settings: TimerSettings
+src/store/pomodoroStore.ts-28-
+src/store/pomodoroStore.ts-29-  // History
+src/store/pomodoroStore.ts-30-  sessions: PomodoroSession[]
+src/store/pomodoroStore.ts-31-
+src/store/pomodoroStore.ts-32-  // Actions
+src/store/pomodoroStore.ts-33-  start: () => void
+src/store/pomodoroStore.ts-34-  pause: () => void
+src/store/pomodoroStore.ts-35-  reset: () => void
+src/store/pomodoroStore.ts-36-  tick: () => void
+src/store/pomodoroStore.ts-37-  switchSession: (
+src/store/pomodoroStore.ts-38-    type: SessionType,
+src/store/pomodoroStore.ts-39-  ) => void
+src/store/pomodoroStore.ts-40-  completeSession: () => void
+src/store/pomodoroStore.ts-41-  setActiveProject: (
+src/store/pomodoroStore.ts-42-    id: string | null,
+src/store/pomodoroStore.ts-43-  ) => void
+--
+src/store/pomodoroStore.ts-96-  create<PomodoroState>()(
+src/store/pomodoroStore.ts-97-    persist(
+src/store/pomodoroStore.ts-98-      (set, get) => ({
+src/store/pomodoroStore.ts-99-        status: 'idle',
+src/store/pomodoroStore.ts-100-        sessionType: 'work',
+src/store/pomodoroStore.ts-101-        secondsLeft:
+src/store/pomodoroStore.ts-102-          DEFAULT_SETTINGS.workDuration *
+src/store/pomodoroStore.ts-103-          60,
+src/store/pomodoroStore.ts-104-        endsAt: null,
+src/store/pomodoroStore.ts-105-        currentSessionCount: 0,
+src/store/pomodoroStore.ts:106:        activeProjectId: null,
+src/store/pomodoroStore.ts-107-        activeTaskId: null,
+src/store/pomodoroStore.ts-108-        settings: DEFAULT_SETTINGS,
+src/store/pomodoroStore.ts-109-        sessions: [],
+src/store/pomodoroStore.ts-110-
+src/store/pomodoroStore.ts-111-        start: () => {
+src/store/pomodoroStore.ts-112-          const {
+src/store/pomodoroStore.ts-113-            secondsLeft,
+src/store/pomodoroStore.ts-114-            status,
+src/store/pomodoroStore.ts-115-          } = get()
+src/store/pomodoroStore.ts-116-
+src/store/pomodoroStore.ts-117-          if (
+src/store/pomodoroStore.ts-118-            status === 'running' ||
+src/store/pomodoroStore.ts-119-            secondsLeft <= 0
+src/store/pomodoroStore.ts-120-          ) {
+src/store/pomodoroStore.ts-121-            return
+src/store/pomodoroStore.ts-122-          }
+src/store/pomodoroStore.ts-123-
+src/store/pomodoroStore.ts-124-          set({
+src/store/pomodoroStore.ts-125-            status: 'running',
+src/store/pomodoroStore.ts-126-            endsAt:
+--
+src/store/pomodoroStore.ts-207-            status: 'idle',
+src/store/pomodoroStore.ts-208-            endsAt: null,
+src/store/pomodoroStore.ts-209-          })
+src/store/pomodoroStore.ts-210-        },
+src/store/pomodoroStore.ts-211-
+src/store/pomodoroStore.ts-212-        completeSession: () => {
+src/store/pomodoroStore.ts-213-          const {
+src/store/pomodoroStore.ts-214-            sessionType,
+src/store/pomodoroStore.ts-215-            currentSessionCount,
+src/store/pomodoroStore.ts-216-            settings,
+src/store/pomodoroStore.ts:217:            activeProjectId,
+src/store/pomodoroStore.ts-218-            activeTaskId,
+src/store/pomodoroStore.ts-219-          } = get()
+src/store/pomodoroStore.ts-220-
+src/store/pomodoroStore.ts-221-          const session: PomodoroSession = {
+src/store/pomodoroStore.ts-222-            id: generateId(),
+src/store/pomodoroStore.ts-223-            type: sessionType,
+src/store/pomodoroStore.ts:224:            projectId: activeProjectId ?? undefined,
+src/store/pomodoroStore.ts-225-            taskId: activeTaskId ?? undefined,
+src/store/pomodoroStore.ts-226-            durationMinutes:
+src/store/pomodoroStore.ts-227-              sessionType === 'work'
+src/store/pomodoroStore.ts-228-                ? settings.workDuration
+src/store/pomodoroStore.ts-229-                : sessionType === 'short_break'
+src/store/pomodoroStore.ts-230-                  ? settings.shortBreakDuration
+src/store/pomodoroStore.ts-231-                  : settings.longBreakDuration,
+src/store/pomodoroStore.ts-232-            completedAt: new Date().toISOString(),
+src/store/pomodoroStore.ts-233-            date: getTodayString(),
+src/store/pomodoroStore.ts-234-          }
+src/store/pomodoroStore.ts-235-
+src/store/pomodoroStore.ts-236-          const newCount =
+src/store/pomodoroStore.ts-237-            sessionType === 'work'
+src/store/pomodoroStore.ts-238-              ? currentSessionCount + 1
+src/store/pomodoroStore.ts-239-              : currentSessionCount
+src/store/pomodoroStore.ts-240-
+src/store/pomodoroStore.ts-241-          const isLongBreak =
+src/store/pomodoroStore.ts-242-            newCount > 0 &&
+src/store/pomodoroStore.ts-243-            newCount %
+src/store/pomodoroStore.ts-244-              settings.sessionsUntilLongBreak ===
+--
+src/store/pomodoroStore.ts-279-              : null,
+src/store/pomodoroStore.ts-280-            currentSessionCount:
+src/store/pomodoroStore.ts-281-              newCount,
+src/store/pomodoroStore.ts-282-            sessionType: nextType,
+src/store/pomodoroStore.ts-283-            secondsLeft: nextSeconds,
+src/store/pomodoroStore.ts-284-          }))
+src/store/pomodoroStore.ts-285-        },
+src/store/pomodoroStore.ts-286-
+src/store/pomodoroStore.ts-287-        setActiveProject: (id) => {
+src/store/pomodoroStore.ts-288-          set({
+src/store/pomodoroStore.ts:289:            activeProjectId: id,
+src/store/pomodoroStore.ts-290-          })
+src/store/pomodoroStore.ts-291-        },
+src/store/pomodoroStore.ts-292-
+src/store/pomodoroStore.ts-293-        setActiveTask: (id) => {
+src/store/pomodoroStore.ts-294-          set({
+src/store/pomodoroStore.ts-295-            activeTaskId: id,
+src/store/pomodoroStore.ts-296-          })
+src/store/pomodoroStore.ts-297-        },
+src/store/pomodoroStore.ts-298-
+src/store/pomodoroStore.ts-299-        updateSettings: (
+src/store/pomodoroStore.ts-300-          newSettings,
+src/store/pomodoroStore.ts-301-        ) => {
+src/store/pomodoroStore.ts-302-          set((state) => {
+src/store/pomodoroStore.ts-303-            const merged = {
+src/store/pomodoroStore.ts-304-              ...state.settings,
+src/store/pomodoroStore.ts-305-              ...newSettings,
+src/store/pomodoroStore.ts-306-            }
+src/store/pomodoroStore.ts-307-
+src/store/pomodoroStore.ts-308-            return {
+src/store/pomodoroStore.ts-309-              settings: merged,
+--
+src/store/pomodoroStore.ts-349-      {
+src/store/pomodoroStore.ts-350-        name: 'focus_pomodoro',
+src/store/pomodoroStore.ts-351-
+src/store/pomodoroStore.ts-352-        partialize: (state) => ({
+src/store/pomodoroStore.ts-353-          status: state.status,
+src/store/pomodoroStore.ts-354-          sessionType:
+src/store/pomodoroStore.ts-355-            state.sessionType,
+src/store/pomodoroStore.ts-356-          secondsLeft:
+src/store/pomodoroStore.ts-357-            state.secondsLeft,
+src/store/pomodoroStore.ts-358-          endsAt: state.endsAt,
+src/store/pomodoroStore.ts:359:          activeProjectId:
+src/store/pomodoroStore.ts:360:            state.activeProjectId,
+src/store/pomodoroStore.ts-361-          activeTaskId:
+src/store/pomodoroStore.ts-362-            state.activeTaskId,
+src/store/pomodoroStore.ts-363-          sessions: state.sessions,
+src/store/pomodoroStore.ts-364-          settings: state.settings,
+src/store/pomodoroStore.ts-365-          currentSessionCount:
+src/store/pomodoroStore.ts-366-            state.currentSessionCount,
+src/store/pomodoroStore.ts-367-        }),
+src/store/pomodoroStore.ts-368-      },
+src/store/pomodoroStore.ts-369-    ),
+src/store/pomodoroStore.ts-370-  )

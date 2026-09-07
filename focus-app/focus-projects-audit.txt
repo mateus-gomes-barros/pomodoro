@@ -1,3 +1,4 @@
+===== PROJECTS PAGE =====
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import {
@@ -5,12 +6,10 @@ import {
   motion,
 } from 'framer-motion'
 import {
-  CheckCircle2,
   LoaderCircle,
   Palette,
   Pencil,
   Plus,
-  RotateCcw,
   Timer,
   Trash2,
 } from 'lucide-react'
@@ -19,7 +18,6 @@ import {
   useCreateProject,
   useDeleteProject,
   useProjects,
-  useToggleProjectStatus,
   useUpdateProject,
 } from '@/hooks/projects/useProjects'
 
@@ -39,7 +37,6 @@ import {
 
 import type {
   Project,
-  ProjectStatus,
 } from '../types'
 
 interface ProjectForm {
@@ -56,14 +53,6 @@ const EMPTY_FORM: ProjectForm = {
   emoji: PROJECT_EMOJIS[0],
 }
 
-const STATUS_FILTERS: Array<
-  ProjectStatus | 'all'
-> = [
-  'active',
-  'completed',
-  'all',
-]
-
 export function ProjectsPage() {
   const { t } = useTranslation()
 
@@ -79,9 +68,6 @@ export function ProjectsPage() {
 
   const updateProjectMutation =
     useUpdateProject()
-
-  const toggleProjectStatusMutation =
-    useToggleProjectStatus()
 
   const deleteProjectMutation =
     useDeleteProject()
@@ -111,28 +97,6 @@ export function ProjectsPage() {
   ] = useState<ProjectForm>(
     EMPTY_FORM,
   )
-
-  const [
-    statusFilter,
-    setStatusFilter,
-  ] = useState<
-    ProjectStatus | 'all'
-  >('active')
-
-  const activeProjectsCount =
-    projects.filter(
-      (project) =>
-        project.status === 'active',
-    ).length
-
-  const visibleProjects =
-    statusFilter === 'all'
-      ? projects
-      : projects.filter(
-          (project) =>
-            project.status ===
-            statusFilter,
-        )
 
   const isSaving =
     createProjectMutation.isPending ||
@@ -213,21 +177,6 @@ export function ProjectsPage() {
     }
   }
 
-  async function handleToggleStatus(
-    project: Project,
-  ) {
-    try {
-      await toggleProjectStatusMutation.mutateAsync(
-        project,
-      )
-    } catch (mutationError) {
-      console.error(
-        'Failed to update project status:',
-        mutationError,
-      )
-    }
-  }
-
   async function handleDelete() {
     if (
       !deleteConfirmId ||
@@ -295,7 +244,7 @@ export function ProjectsPage() {
           'projectsPage.active',
           {
             count:
-              activeProjectsCount,
+              projects.length,
           },
         )}
         action={
@@ -313,62 +262,14 @@ export function ProjectsPage() {
         }
       />
 
-      <div
-        className="card mb-5 grid grid-cols-3 gap-1 p-1"
-        role="group"
-        aria-label={t(
-          'projectsPage.filters.label',
-        )}
-      >
-        {STATUS_FILTERS.map(
-          (filter) => (
-            <button
-              key={filter}
-              type="button"
-              onClick={() =>
-                setStatusFilter(filter)
-              }
-              className={cn(
-                'rounded-xl px-3 py-2.5 text-xs font-medium transition',
-                statusFilter === filter
-                  ? 'bg-white/[0.08] text-accent-white'
-                  : 'text-accent-subtle hover:text-accent-white',
-              )}
-            >
-              {t(
-                `projectsPage.filters.${filter}`,
-              )}
-            </button>
-          ),
-        )}
-      </div>
-
-      {toggleProjectStatusMutation.isError && (
-        <div className="card mb-4 p-4">
-          <p className="text-sm text-red-400">
-            {t(
-              'projectsPage.statusUpdateError',
-            )}
-          </p>
-        </div>
-      )}
-
       {projects.length === 0 ? (
         <EmptyState
           onAdd={openCreate}
         />
-      ) : visibleProjects.length === 0 ? (
-        <div className="card p-10 text-center">
-          <p className="text-sm text-accent-subtle">
-            {t(
-              'projectsPage.filters.empty',
-            )}
-          </p>
-        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence>
-            {visibleProjects.map(
+            {projects.map(
               (
                 project,
                 index,
@@ -377,17 +278,6 @@ export function ProjectsPage() {
                   key={project.id}
                   project={project}
                   index={index}
-                  isToggling={
-                    toggleProjectStatusMutation.isPending &&
-                    toggleProjectStatusMutation.variables
-                      ?.id ===
-                      project.id
-                  }
-                  onToggle={() => {
-                    void handleToggleStatus(
-                      project,
-                    )
-                  }}
                   onEdit={() =>
                     openEdit(project)
                   }
@@ -746,8 +636,6 @@ export function ProjectsPage() {
 interface ProjectCardProps {
   project: Project
   index: number
-  isToggling: boolean
-  onToggle: () => void
   onEdit: () => void
   onDelete: () => void
 }
@@ -755,32 +643,10 @@ interface ProjectCardProps {
 function ProjectCard({
   project,
   index,
-  isToggling,
-  onToggle,
   onEdit,
   onDelete,
 }: ProjectCardProps) {
-  const { t, i18n } =
-    useTranslation()
-
-  const isCompleted =
-    project.status === 'completed'
-
-  const completedDate =
-    project.completedAt
-      ? new Intl.DateTimeFormat(
-          i18n.language,
-          {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          },
-        ).format(
-          new Date(
-            project.completedAt,
-          ),
-        )
-      : null
+  const { t } = useTranslation()
 
   return (
     <motion.div
@@ -799,14 +665,10 @@ function ProjectCard({
       transition={{
         delay: index * 0.06,
       }}
-      className={cn(
-        'card p-5 transition',
-        isCompleted &&
-          'border-accent-green/20',
-      )}
+      className="card p-5"
     >
-      <div className="flex justify-between gap-4">
-        <div className="min-w-0">
+      <div className="flex justify-between">
+        <div>
           <div
             className="flex h-12 w-12 items-center justify-center rounded-2xl text-2xl"
             style={{
@@ -816,51 +678,27 @@ function ProjectCard({
             {project.emoji}
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <h3 className="break-words font-semibold text-accent-white">
-              {project.name}
-            </h3>
-
-            {isCompleted && (
-              <span className="rounded-full border border-accent-green/30 bg-accent-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-green">
-                {t(
-                  'projectsPage.card.completed',
-                )}
-              </span>
-            )}
-          </div>
+          <h3 className="mt-3 font-semibold text-accent-white">
+            {project.name}
+          </h3>
 
           {project.description && (
-            <p className="mt-1 break-words text-sm text-accent-subtle">
-              {project.description}
-            </p>
-          )}
-
-          {completedDate && (
-            <p className="mt-2 text-[11px] text-accent-green/80">
-              {t(
-                'projectsPage.card.completedOn',
-                {
-                  date:
-                    completedDate,
-                },
-              )}
+            <p className="text-sm text-accent-subtle">
+              {
+                project.description
+              }
             </p>
           )}
         </div>
 
-        <div className="flex shrink-0 gap-3 text-accent-subtle">
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={onEdit}
-            disabled={isToggling}
             aria-label={t(
               'projectsPage.card.edit',
-              {
-                name: project.name,
-              },
+              { name: project.name },
             )}
-            className="transition hover:text-accent-white disabled:opacity-40"
           >
             <Pencil size={15} />
           </button>
@@ -868,14 +706,10 @@ function ProjectCard({
           <button
             type="button"
             onClick={onDelete}
-            disabled={isToggling}
             aria-label={t(
               'projectsPage.card.delete',
-              {
-                name: project.name,
-              },
+              { name: project.name },
             )}
-            className="transition hover:text-red-400 disabled:opacity-40"
           >
             <Trash2 size={15} />
           </button>
@@ -883,57 +717,14 @@ function ProjectCard({
       </div>
 
       <div className="surface mt-5 rounded-xl p-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Timer size={14} />
+        <div className="flex items-center gap-2">
+          <Timer size={14} />
 
-            <span className="text-sm">
-              {formatDuration(
-                project.totalFocusMinutes,
-              )}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={onToggle}
-            disabled={isToggling}
-            aria-label={t(
-              isCompleted
-                ? 'projectsPage.card.reopen'
-                : 'projectsPage.card.complete',
-              {
-                name: project.name,
-              },
+          <span className="text-sm">
+            {formatDuration(
+              project.totalFocusMinutes,
             )}
-            title={t(
-              isCompleted
-                ? 'projectsPage.card.reopenShort'
-                : 'projectsPage.card.completeShort',
-            )}
-            className="flex items-center gap-1.5 text-xs font-medium text-accent-subtle transition hover:text-accent-green disabled:opacity-40"
-          >
-            {isToggling ? (
-              <LoaderCircle
-                size={15}
-                className="animate-spin"
-              />
-            ) : isCompleted ? (
-              <RotateCcw size={15} />
-            ) : (
-              <CheckCircle2
-                size={15}
-              />
-            )}
-
-            <span>
-              {t(
-                isCompleted
-                  ? 'projectsPage.card.reopenShort'
-                  : 'projectsPage.card.completeShort',
-              )}
-            </span>
-          </button>
+          </span>
         </div>
       </div>
     </motion.div>
@@ -978,4 +769,542 @@ function EmptyState({
       </button>
     </div>
   )
+}===== PROJECTS HOOK =====
+import { useQuery } from '@tanstack/react-query'
+
+import { useInvalidateQuery } from '@/hooks/useInvalidateQuery'
+
+import {
+  createProject,
+  deleteProject,
+  getProjects,
+  incrementProjectSession,
+  updateProject,
+  type CreateProjectInput,
+  type UpdateProjectInput,
+} from '@/services/projectsService'
+
+import type { Project } from '@/types'
+
+export const projectsQueryKey = ['projects']
+
+export function useProjects() {
+  return useQuery({
+    queryKey: projectsQueryKey,
+    queryFn: getProjects,
+  })
 }
+
+export function useCreateProject() {
+  return useInvalidateQuery(
+    projectsQueryKey,
+    {
+      mutationFn: (
+        input: CreateProjectInput,
+      ) => createProject(input),
+    },
+  )
+}
+
+interface UpdateProjectVariables {
+  projectId: string
+  input: UpdateProjectInput
+}
+
+export function useUpdateProject() {
+  return useInvalidateQuery(
+    projectsQueryKey,
+    {
+      mutationFn: ({
+        projectId,
+        input,
+      }: UpdateProjectVariables) =>
+        updateProject(projectId, input),
+    },
+  )
+}
+
+export function useDeleteProject() {
+  return useInvalidateQuery(
+    projectsQueryKey,
+    {
+      mutationFn: (
+        projectId: string,
+      ) => deleteProject(projectId),
+    },
+  )
+}
+
+interface IncrementProjectSessionVariables {
+  project: Project
+  minutes: number
+}
+
+export function useIncrementProjectSession() {
+  return useInvalidateQuery(
+    projectsQueryKey,
+    {
+      mutationFn: ({
+        project,
+        minutes,
+      }: IncrementProjectSessionVariables) =>
+        incrementProjectSession(
+          project,
+          minutes,
+        ),
+    },
+  )
+}===== PROJECTS SERVICE =====
+import { supabase } from '@/lib/supabase'
+
+import type { Project } from '@/types'
+
+interface ProjectRow {
+  id: string
+  name: string
+  description: string | null
+  color: string | null
+  emoji: string
+  total_sessions: number
+  completed_sessions: number
+  total_focus_minutes: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateProjectInput {
+  name: string
+  description: string
+  color: string
+  emoji: string
+}
+
+export interface UpdateProjectInput {
+  name?: string
+  description?: string
+  color?: string
+  emoji?: string
+  totalSessions?: number
+  completedSessions?: number
+  totalFocusMinutes?: number
+}
+
+const PROJECT_SELECT = `
+  id,
+  name,
+  description,
+  color,
+  emoji,
+  total_sessions,
+  completed_sessions,
+  total_focus_minutes,
+  created_at,
+  updated_at
+`
+
+function mapProjectRow(
+  row: ProjectRow,
+): Project {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? '',
+    color: row.color ?? '#10b981',
+    emoji: row.emoji,
+    totalSessions: row.total_sessions,
+    completedSessions:
+      row.completed_sessions,
+    totalFocusMinutes:
+      row.total_focus_minutes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export async function getProjects(): Promise<
+  Project[]
+> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select(PROJECT_SELECT)
+    .order('created_at', {
+      ascending: true,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return (data as ProjectRow[]).map(
+    mapProjectRow,
+  )
+}
+
+export async function createProject(
+  input: CreateProjectInput,
+): Promise<Project> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError) {
+    throw userError
+  }
+
+  if (!user) {
+    throw new Error(
+      'You must be authenticated to create a project.',
+    )
+  }
+
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({
+      user_id: user.id,
+      name: input.name.trim(),
+      description:
+        input.description.trim() || null,
+      color: input.color,
+      emoji: input.emoji,
+    })
+    .select(PROJECT_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapProjectRow(data as ProjectRow)
+}
+
+export async function updateProject(
+  projectId: string,
+  input: UpdateProjectInput,
+): Promise<Project> {
+  const updates: Record<string, unknown> = {}
+
+  if (input.name !== undefined) {
+    updates.name = input.name.trim()
+  }
+
+  if (input.description !== undefined) {
+    updates.description =
+      input.description.trim() || null
+  }
+
+  if (input.color !== undefined) {
+    updates.color = input.color
+  }
+
+  if (input.emoji !== undefined) {
+    updates.emoji = input.emoji
+  }
+
+  if (input.totalSessions !== undefined) {
+    updates.total_sessions =
+      input.totalSessions
+  }
+
+  if (
+    input.completedSessions !== undefined
+  ) {
+    updates.completed_sessions =
+      input.completedSessions
+  }
+
+  if (
+    input.totalFocusMinutes !== undefined
+  ) {
+    updates.total_focus_minutes =
+      input.totalFocusMinutes
+  }
+
+  updates.updated_at =
+    new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('projects')
+    .update(updates)
+    .eq('id', projectId)
+    .select(PROJECT_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapProjectRow(data as ProjectRow)
+}
+
+export async function deleteProject(
+  projectId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId)
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function incrementProjectSession(
+  project: Project,
+  minutes: number,
+): Promise<Project> {
+  return updateProject(project.id, {
+    totalSessions:
+      project.totalSessions + 1,
+    completedSessions:
+      project.completedSessions + 1,
+    totalFocusMinutes:
+      project.totalFocusMinutes + minutes,
+  })
+}===== PROJECT TYPE =====
+9-  | 'urgent'
+10-  | 'long_term'
+11-
+12-// ─── Project ────────────────────────────────────────────────────────────────────
+13-
+14:export interface Project {
+15-  id: string
+16-  name: string
+17-  color: string
+18-  emoji: string
+19-  description?: string
+20-  totalSessions: number
+21-  completedSessions: number
+22-  totalFocusMinutes: number
+23-  createdAt: string
+24-  updatedAt: string
+25-}
+26-
+27-// ─── Task ───────────────────────────────────────────────────────────────────────
+28-
+29-export interface Task {
+30-  id: string
+31-  title: string
+32-  completed: boolean
+33-  projectId?: string
+34-  priority: TaskPriority
+35-  category: TaskCategory
+36-  estimatedPomodoros: number
+37-  completedPomodoros: number
+38-  createdAt: string
+39-  completedAt?: string
+===== PROJECT TRANSLATIONS PT =====
+332-          'Mantenha uma sequência de 2.000 dias.',
+333-      },
+334-    },
+335-  },
+336-
+337:  projectsPage: {
+338-    title: 'Projetos',
+339-    loading: 'Carregando projetos',
+340-    unableToLoad:
+341-      'Não foi possível carregar os projetos',
+342-    loadError:
+343-      'Ocorreu um erro inesperado ao carregar seus projetos.',
+344-    active_one: '{{count}} projeto ativo',
+345-    active_other: '{{count}} projetos ativos',
+346-
+347-    newProject: 'Novo projeto',
+348-    editProject: 'Editar projeto',
+349-    createProject: 'Criar projeto',
+350-
+351-    form: {
+352-      icon: 'Ícone',
+353-      selectIcon: 'Selecionar ícone {{emoji}}',
+354-      name: 'Nome',
+355-      namePlaceholder: 'Nome do projeto',
+356-      description: 'Descrição',
+357-      descriptionPlaceholder:
+358-        'Descrição opcional',
+359-      color: 'Cor',
+360-      selectColor:
+361-        'Selecionar cor do projeto {{color}}',
+362-      custom: 'Personalizada',
+363-      customColor:
+364-        'Escolher uma cor personalizada para o projeto',
+365-      colorHelp:
+366-        'Escolha uma cor predefinida ou crie a sua própria.',
+367-      saveError:
+368-        'Não foi possível salvar o projeto. Tente novamente.',
+369-      saving: 'Salvando...',
+370-      saveChanges: 'Salvar alterações',
+371-      create: 'Criar projeto',
+372-    },
+373-
+374-    delete: {
+375-      title: 'Excluir projeto',
+376-      confirmation:
+377-        'Excluir este projeto permanentemente?',
+378-      error:
+379-        'Não foi possível excluir o projeto. Tente novamente.',
+380-      cancel: 'Cancelar',
+381-      deleting: 'Excluindo...',
+382-      delete: 'Excluir',
+383-    },
+384-
+385-    card: {
+386-      edit: 'Editar {{name}}',
+387-      delete: 'Excluir {{name}}',
+388-    },
+389-
+390-    empty: {
+391-      title: 'Nenhum projeto ainda',
+392-      description: 'Crie seu primeiro projeto',
+393-      action: 'Criar projeto',
+394-    },
+395-  },
+396-
+397-  tasksPage: {
+398-    title: 'Tarefas',
+399-    loading: 'Carregando tarefas',
+400-    unableToLoad:
+401-      'Não foi possível carregar as tarefas',
+402-    loadError:
+403-      'Ocorreu um erro inesperado ao carregar suas tarefas.',
+404-    count_one: '{{count}} tarefa ativa',
+405-    count_other: '{{count}} tarefas ativas',
+406-    add: 'Adicionar tarefa',
+407-    addShort: 'Adicionar',
+408-    updateError:
+409-      'Não foi possível atualizar a tarefa. Tente novamente.',
+410-    empty: 'Nenhuma tarefa ainda',
+411-    emptyAction: 'Criar primeira tarefa',
+412-    reopen: 'Reabrir {{title}}',
+413-    complete: 'Concluir {{title}}',
+414-    edit: 'Editar {{title}}',
+415-    newTask: 'Nova tarefa',
+416-    editTask: 'Editar tarefa',
+417-    placeholder: 'Nome da tarefa...',
+418-    createError:
+419-      'Não foi possível criar a tarefa. Tente novamente.',
+420-    editError:
+421-      'Não foi possível salvar a tarefa. Tente novamente.',
+422-    creating: 'Criando...',
+423-    create: 'Criar tarefa',
+424-    saving: 'Salvando...',
+425-    save: 'Salvar alterações',
+426-    pomodoroCount_one: '{{count}} pomodoro',
+427-    pomodoroCount_other: '{{count}} pomodoros',
+428-
+429-    filters: {
+430-      status: 'Filtrar por status',
+431-      pending: 'Pendentes',
+432-      completed: 'Concluídas',
+433-      all: 'Todas',
+434-      empty:
+435-        'Nenhuma tarefa corresponde aos filtros selecionados.',
+436-    },
+437-
+===== PROJECT TRANSLATIONS EN =====
+325-          'Maintain a 2,000-day streak.',
+326-      },
+327-    },
+328-  },
+329-
+330:  projectsPage: {
+331-    title: 'Projects',
+332-    loading: 'Loading projects',
+333-    unableToLoad: 'Unable to load projects',
+334-    loadError:
+335-      'An unexpected error occurred while loading your projects.',
+336-    active_one: '{{count}} active project',
+337-    active_other: '{{count}} active projects',
+338-
+339-    newProject: 'New Project',
+340-    editProject: 'Edit Project',
+341-    createProject: 'Create Project',
+342-
+343-    form: {
+344-      icon: 'Icon',
+345-      selectIcon: 'Select {{emoji}} icon',
+346-      name: 'Name',
+347-      namePlaceholder: 'Project name',
+348-      description: 'Description',
+349-      descriptionPlaceholder:
+350-        'Optional description',
+351-      color: 'Color',
+352-      selectColor:
+353-        'Select project color {{color}}',
+354-      custom: 'Custom',
+355-      customColor:
+356-        'Choose a custom project color',
+357-      colorHelp:
+358-        'Choose a preset or create your own color.',
+359-      saveError:
+360-        'Unable to save the project. Please try again.',
+361-      saving: 'Saving...',
+362-      saveChanges: 'Save Changes',
+363-      create: 'Create Project',
+364-    },
+365-
+366-    delete: {
+367-      title: 'Delete Project',
+368-      confirmation:
+369-        'Delete this project permanently?',
+370-      error:
+371-        'Unable to delete the project. Please try again.',
+372-      cancel: 'Cancel',
+373-      deleting: 'Deleting...',
+374-      delete: 'Delete',
+375-    },
+376-
+377-    card: {
+378-      edit: 'Edit {{name}}',
+379-      delete: 'Delete {{name}}',
+380-    },
+381-
+382-    empty: {
+383-      title: 'No projects yet',
+384-      description: 'Create your first project',
+385-      action: 'Create Project',
+386-    },
+387-  },
+388-
+389-  tasksPage: {
+390-    title: 'Tasks',
+391-    loading: 'Loading tasks',
+392-    unableToLoad: 'Unable to load tasks',
+393-    loadError:
+394-      'An unexpected error occurred while loading your tasks.',
+395-    count_one: '{{count}} active task',
+396-    count_other: '{{count}} active tasks',
+397-    add: 'Add Task',
+398-    addShort: 'Add',
+399-    updateError:
+400-      'Unable to update the task. Please try again.',
+401-    empty: 'No tasks yet',
+402-    emptyAction: 'Create first task',
+403-    reopen: 'Reopen {{title}}',
+404-    complete: 'Complete {{title}}',
+405-    edit: 'Edit {{title}}',
+406-    newTask: 'New Task',
+407-    editTask: 'Edit Task',
+408-    placeholder: 'Task name...',
+409-    createError:
+410-      'Unable to create the task. Please try again.',
+411-    editError:
+412-      'Unable to save the task. Please try again.',
+413-    creating: 'Creating...',
+414-    create: 'Create Task',
+415-    saving: 'Saving...',
+416-    save: 'Save Changes',
+417-    pomodoroCount_one: '{{count}} Pomodoro',
+418-    pomodoroCount_other: '{{count}} Pomodoros',
+419-
+420-    filters: {
+421-      status: 'Filter by status',
+422-      pending: 'Pending',
+423-      completed: 'Completed',
+424-      all: 'All',
+425-      empty:
+426-        'No tasks match the selected filters.',
+427-    },
+428-
+429-    categories: {
+430-      all: 'All categories',
