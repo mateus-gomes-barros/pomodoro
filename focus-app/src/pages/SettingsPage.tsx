@@ -19,6 +19,9 @@ import {
 
 import { usePomodoroStore } from '../store/pomodoroStore'
 import { PageHeader } from '../components/ui/PageHeader'
+import {
+  DeleteAccountSection,
+} from '@/components/settings/DeleteAccountSection'
 
 export function SettingsPage() {
   const navigate = useNavigate()
@@ -317,6 +320,8 @@ export function SettingsPage() {
                   ? t('settings.account.signingOut')
                   : t('settings.account.signOut')}
               </button>
+
+              <DeleteAccountSection />
             </>
           ) : isDemoMode ? (
             <>

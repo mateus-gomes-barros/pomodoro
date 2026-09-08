@@ -1,0 +1,60 @@
+===== TABLES USED BY SERVICES =====
+src/services/focusMeMonthlyService.ts:1050:      .from('activity_events')
+src/services/focusMeMonthlyService.ts:1067:      .from('pomodoro_sessions')
+src/services/focusMeMonthlyService.ts:1079:      .from('tasks')
+src/services/focusMeMonthlyService.ts:1089:      .from('tasks')
+src/services/focusMeMonthlyService.ts:1099:      .from('projects')
+src/services/focusMeMonthlyService.ts:1110:      .from('goals')
+src/services/tasksService.ts:95:    .from('tasks')
+src/services/tasksService.ts:109:    .from('tasks')
+src/services/tasksService.ts:131:    .from('tasks')
+src/services/tasksService.ts:167:      .from('tasks')
+src/services/tasksService.ts:179:    .from('tasks')
+src/services/tasksService.ts:278:    .from('tasks')
+src/services/tasksService.ts:337:    .from('tasks')
+src/services/tasksService.ts:376:    .from('tasks')
+src/services/tasksService.ts:413:    .from('tasks')
+src/services/tasksService.ts:472:        .from('tasks')
+src/services/focusMeReportsService.ts:104:    .from('focusme_reports')
+src/services/focusMeReportsService.ts:165:  return Array.from(
+src/services/focusMeReportsService.ts:187:  return Array.from(
+src/services/focusMeReportsService.ts:385:    .from('focusme_reports')
+src/services/focusMeReportsService.ts:510:    .from('focusme_reports')
+src/services/focusMeReportsService.ts:557:      .from('focusme_reports')
+src/services/projectsService.ts:86:    .from('projects')
+src/services/projectsService.ts:120:    .from('projects')
+src/services/projectsService.ts:211:    .from('projects')
+src/services/projectsService.ts:257:    .from('projects')
+src/services/weeklyActivityWidgetService.ts:164:      Array.from(
+src/services/focusMeNarrativesService.ts:79:    .from('focusme_report_narratives')
+src/services/goalsService.ts:60:    .from('goals')
+src/services/goalsService.ts:100:      .from('goals')
+src/services/goalsService.ts:112:    .from('goals')
+src/services/goalsService.ts:167:    .from('goals')
+src/services/goalsService.ts:186:    .from('goals')
+src/services/goalsService.ts:215:        .from('goals')
+src/services/monthlyActivityWidgetService.ts:131:      Array.from(
+src/services/focusMeService.ts:262:      .from('activity_events')
+src/services/focusMeService.ts:279:      .from('pomodoro_sessions')
+src/services/focusMeService.ts:294:      .from('tasks')
+src/services/focusMeService.ts:300:      .from('tasks')
+src/services/focusMeService.ts:306:      .from('projects')
+src/services/focusMeService.ts:312:      .from('projects')
+src/services/focusMeService.ts:318:      .from('projects')
+src/services/focusMeService.ts:327:      .from('goals')
+src/services/focusMeService.ts:333:      .from('goals')
+src/services/focusHomeService.ts:82:      .from('focushome_profiles')
+src/services/focusHomeService.ts:155:    .from('focushome_assessments')
+src/services/focusHomeService.ts:196:    .from('focusme_reports')
+src/services/focusHomeService.ts:261:      .from('focushome_assessments')
+src/services/pomodoroSessionsService.ts:55:    .from('pomodoro_sessions')
+src/services/pomodoroSessionsService.ts:95:    .from('pomodoro_sessions')
+src/services/pomodoroSessionsService.ts:122:    .from('pomodoro_sessions')
+src/services/activityEventsService.ts:127:      .from('activity_events')
+src/hooks/analytics/useAnalytics.ts:97:  return Array.from(
+src/hooks/analytics/useAnalytics.ts:496:    Array.from(
+src/hooks/analytics/useAnalytics.ts:543:  const monthStarts = Array.from(
+src/hooks/analytics/useAnalytics.ts:610:          Array.from(
+src/hooks/analytics/useAnalytics.ts:720:    Array.from(
+===== DATABASE TYPES =====
+===== DATA SERVICES =====

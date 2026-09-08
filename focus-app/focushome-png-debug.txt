@@ -1,0 +1,1925 @@
+===== SHARE CARD =====
+import {
+  useRef,
+  useState,
+} from 'react'
+import {
+  Capacitor,
+} from '@capacitor/core'
+import {
+  Directory,
+  Filesystem,
+} from '@capacitor/filesystem'
+import {
+  Share,
+} from '@capacitor/share'
+import {
+  Check,
+  LoaderCircle,
+  Share2,
+} from 'lucide-react'
+import {
+  toPng,
+} from 'html-to-image'
+import {
+  useTranslation,
+} from 'react-i18next'
+
+import {
+  FocusHomeSymbol,
+  type FocusHomeKey,
+} from '@/components/focusme/FocusHomeSymbol'
+import {
+  FocusMeIcon,
+} from '@/components/icons/FocusMeIcon'
+import {
+  useFocusHomeAssessments,
+} from '@/hooks/focusme/useFocusHomeProfile'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+import type {
+  FocusMeStoredReport,
+} from '@/services/focusMeReportsService'
+import type {
+  FocusMeWeeklyReport,
+} from '@/services/focusMeService'
+
+interface FocusMeShareCardProps {
+  report: FocusMeStoredReport
+}
+
+const FOCUS_HOME_KEYS:
+  FocusHomeKey[] = [
+    'aster',
+    'atlas',
+    'forge',
+    'pulse',
+    'loom',
+    'orbit',
+    'tide',
+    'ember',
+    'nova',
+    'prism',
+    'vanguard',
+    'verdant',
+  ]
+
+function isFocusHomeKey(
+  value?: string,
+): value is FocusHomeKey {
+  return Boolean(
+    value &&
+      FOCUS_HOME_KEYS.includes(
+        value as FocusHomeKey,
+      ),
+  )
+}
+
+function formatMinutes(
+  minutes: number,
+): string {
+  if (minutes < 60) {
+    return `${minutes} min`
+  }
+
+  const hours =
+    Math.floor(minutes / 60)
+
+  const remainder =
+    minutes % 60
+
+  return remainder > 0
+    ? `${hours}h ${remainder}min`
+    : `${hours}h`
+}
+
+function sanitizeFilename(
+  value: string,
+): string {
+  return value
+    .normalize('NFD')
+    .replace(
+      /[\u0300-\u036f]/g,
+      '',
+    )
+    .replace(
+      /[^a-zA-Z0-9-]+/g,
+      '-',
+    )
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+}
+
+export function FocusMeShareCard({
+  report,
+}: FocusMeShareCardProps) {
+  const {
+    t,
+    i18n,
+  } = useTranslation()
+
+  const cardRef =
+    useRef<HTMLDivElement>(null)
+
+  const [
+    state,
+    setState,
+  ] = useState<
+    'idle' |
+    'generating' |
+    'success' |
+    'error'
+  >('idle')
+
+  const assessmentsQuery =
+    useFocusHomeAssessments()
+
+  const assessment =
+    assessmentsQuery.data?.find(
+      (item) =>
+        item.reportId === report.id,
+    )
+
+  const weekly =
+    report.type === 'weekly'
+      ? report.metrics as
+          FocusMeWeeklyReport
+      : null
+
+  const monthly =
+    report.type === 'monthly'
+      ? report.metrics as
+          FocusMeMonthlyReport
+      : null
+
+  const focusMinutes =
+    weekly?.focus.totalMinutes ??
+    monthly?.current.focusMinutes ??
+    0
+
+  const sessions =
+    weekly?.focus.completedSessions ??
+    monthly?.current
+      .completedSessions ??
+    0
+
+  const activeDays =
+    weekly?.focus.activeDays ??
+    monthly?.current.activeDays ??
+    0
+
+  const tasksCompleted =
+    weekly?.tasks.completed ??
+    monthly?.current.tasks.completed ??
+    0
+
+  const focusHome =
+    assessment?.focusHome ??
+    (
+      isFocusHomeKey(
+        report.focusHomeKey,
+      )
+        ? report.focusHomeKey
+        : undefined
+    )
+
+  const locale =
+    i18n.resolvedLanguage === 'pt-BR'
+      ? 'pt-BR'
+      : 'en-US'
+
+  function formatPeriod(): string {
+    const start =
+      new Date(
+        `${report.periodStart}T12:00:00`,
+      )
+
+    const end =
+      new Date(
+        `${report.periodEnd}T12:00:00`,
+      )
+
+    end.setDate(
+      end.getDate() - 1,
+    )
+
+    if (report.type === 'monthly') {
+      return new Intl.DateTimeFormat(
+        locale,
+        {
+          month: 'long',
+          year: 'numeric',
+        },
+      ).format(start)
+    }
+
+    const formatter =
+      new Intl.DateTimeFormat(
+        locale,
+        {
+          day: '2-digit',
+          month: 'short',
+        },
+      )
+
+    return (
+      `${formatter.format(start)} – ` +
+      formatter.format(end)
+    )
+  }
+
+  async function downloadOnWeb(
+    dataUrl: string,
+    filename: string,
+  ) {
+    const response =
+      await fetch(dataUrl)
+
+    const blob =
+      await response.blob()
+
+    const file =
+      new File(
+        [blob],
+        filename,
+        {
+          type: 'image/png',
+        },
+      )
+
+    if (
+      navigator.share &&
+      (
+        !navigator.canShare ||
+        navigator.canShare({
+          files: [file],
+        })
+      )
+    ) {
+      await navigator.share({
+        title: 'FocusMe',
+        text: t(
+          'focusMeReportPage.share.shareText',
+        ),
+        files: [file],
+      })
+
+      return
+    }
+
+    const link =
+      document.createElement('a')
+
+    link.href = dataUrl
+    link.download = filename
+    link.click()
+  }
+
+  async function handleShare() {
+    if (
+      !cardRef.current ||
+      state === 'generating'
+    ) {
+      return
+    }
+
+    setState('generating')
+
+    try {
+      if (
+        'fonts' in document
+      ) {
+        await document.fonts.ready
+      }
+
+      const dataUrl =
+        await toPng(
+          cardRef.current,
+          {
+            width: 540,
+            height: 960,
+            pixelRatio: 2,
+            cacheBust: true,
+            backgroundColor:
+              '#080a09',
+          },
+        )
+
+      const filename =
+        `focusme-${sanitizeFilename(
+          formatPeriod(),
+        )}.png`
+
+      if (
+        Capacitor.isNativePlatform()
+      ) {
+        const base64 =
+          dataUrl.split(',')[1]
+
+        if (!base64) {
+          throw new Error(
+            'Invalid generated image.',
+          )
+        }
+
+        const saved =
+          await Filesystem.writeFile({
+            path: filename,
+            data: base64,
+            directory:
+              Directory.Cache,
+          })
+
+        await Share.share({
+          title: 'FocusMe',
+          text: t(
+            'focusMeReportPage.share.shareText',
+          ),
+          files: [saved.uri],
+          dialogTitle: t(
+            'focusMeReportPage.share.dialogTitle',
+          ),
+        })
+      } else {
+        await downloadOnWeb(
+          dataUrl,
+          filename,
+        )
+      }
+
+      setState('success')
+
+      window.setTimeout(
+        () => setState('idle'),
+        2200,
+      )
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        error.name === 'AbortError'
+      ) {
+        setState('idle')
+        return
+      }
+
+      console.error(
+        'Unable to share FocusMe recap:',
+        error,
+      )
+
+      setState('error')
+    }
+  }
+
+  const period =
+    formatPeriod()
+
+  return (
+    <>
+      <div className="mb-4 flex flex-col items-end gap-2">
+        <button
+          type="button"
+          onClick={handleShare}
+          disabled={
+            state === 'generating'
+          }
+          className="btn-primary flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {state === 'generating' ? (
+            <LoaderCircle
+              size={16}
+              className="animate-spin"
+            />
+          ) : state === 'success' ? (
+            <Check size={16} />
+          ) : (
+            <Share2 size={16} />
+          )}
+
+          {t(
+            state === 'generating'
+              ? 'focusMeReportPage.share.generating'
+              : state === 'success'
+                ? 'focusMeReportPage.share.ready'
+                : 'focusMeReportPage.share.button',
+          )}
+        </button>
+
+        {state === 'error' && (
+          <p className="text-xs text-red-300">
+            {t(
+              'focusMeReportPage.share.error',
+            )}
+          </p>
+        )}
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed -left-[10000px] top-0"
+      >
+        <div
+          ref={cardRef}
+          style={{
+            width: 540,
+            height: 960,
+            background:
+              'radial-gradient(circle at 82% 9%, rgba(16,185,129,0.20), transparent 30%), radial-gradient(circle at 12% 90%, rgba(16,185,129,0.10), transparent 28%), #080a09',
+          }}
+          className="relative flex overflow-hidden p-12 text-white"
+        >
+          <div className="absolute left-8 top-8 h-40 w-40 rounded-full border border-emerald-400/[0.07]" />
+          <div className="absolute left-14 top-14 h-28 w-28 rounded-full border border-emerald-400/[0.05]" />
+          <div className="absolute -bottom-24 -right-20 h-72 w-72 rounded-full border border-emerald-400/[0.08]" />
+
+          <div className="relative flex w-full flex-col">
+            <header className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FocusMeIcon
+                  size={30}
+                  className="text-emerald-400"
+                />
+
+                <span className="text-xl font-bold tracking-tight">
+                  FocusMe
+                </span>
+              </div>
+
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                {t(
+                  `focusMeReportPage.share.types.${report.type}`,
+                )}
+              </span>
+            </header>
+
+            <div className="mt-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                {t(
+                  'focusMeReportPage.share.eyebrow',
+                )}
+              </p>
+
+              <h1 className="mt-4 max-w-[420px] text-5xl font-bold capitalize leading-[1.05] tracking-[-0.04em] text-white">
+                {period}
+              </h1>
+            </div>
+
+            {focusHome ? (
+              <div className="mt-12 flex items-center gap-8 rounded-[32px] border border-emerald-400/15 bg-white/[0.035] p-7">
+                <FocusHomeSymbol
+                  type={focusHome}
+                  size={142}
+                />
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-400">
+                    FocushoMe
+                  </p>
+
+                  <p className="mt-2 text-3xl font-bold capitalize text-white">
+                    {focusHome}
+                  </p>
+
+                  {assessment && (
+                    <p className="mt-3 text-sm leading-relaxed text-white/55">
+                      {t(
+                        `focusHomeIdentity.archetypes.${assessment.archetype}`,
+                      )}
+                      {' · '}
+                      {t(
+                        `focusHomeIdentity.temporal.${assessment.temporalExpression}`,
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-12 rounded-[32px] border border-emerald-400/15 bg-white/[0.035] p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+                  FocusMe
+                </p>
+
+                <p className="mt-3 text-2xl font-semibold leading-snug text-white">
+                  {t(
+                    'focusMeReportPage.share.focusStory',
+                  )}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-auto grid grid-cols-2 gap-4">
+              {[
+                {
+                  label: t(
+                    'focusMeReportPage.focusTime',
+                  ),
+                  value:
+                    formatMinutes(
+                      focusMinutes,
+                    ),
+                },
+                {
+                  label: t(
+                    'focusMeReportPage.sessions',
+                  ),
+                  value: sessions,
+                },
+                {
+                  label: t(
+                    'focusMeReportPage.activeDays',
+                  ),
+                  value: activeDays,
+                },
+                {
+                  label: t(
+                    'focusMeReportPage.tasksCompleted',
+                  ),
+                  value:
+                    tasksCompleted,
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-3xl border border-white/[0.07] bg-white/[0.035] p-6"
+                >
+                  <p className="text-3xl font-semibold text-white">
+                    {item.value}
+                  </p>
+
+                  <p className="mt-2 text-xs text-white/45">
+                    {item.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <footer className="mt-8 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-white/30">
+              <span>
+                {t(
+                  'focusMeReportPage.share.footer',
+                )}
+              </span>
+
+              <span>
+                Focus 4.0
+              </span>
+            </footer>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+===== FOCUSHOME SYMBOL =====
+import type {
+  SVGProps,
+} from 'react'
+
+export const FOCUS_HOME_KEYS = [
+  'aster',
+  'atlas',
+  'forge',
+  'pulse',
+  'loom',
+  'orbit',
+  'tide',
+  'ember',
+  'nova',
+  'prism',
+  'vanguard',
+  'verdant',
+] as const
+
+export type FocusHomeKey =
+  typeof FOCUS_HOME_KEYS[number]
+
+export const FOCUS_HOME_COLORS: Record<
+  FocusHomeKey,
+  string
+> = {
+  aster: '#A78BFA',
+  atlas: '#4F8EF7',
+  forge: '#F59E0B',
+  pulse: '#FB7185',
+  loom: '#22D3EE',
+  orbit: '#818CF8',
+  tide: '#2DD4BF',
+  ember: '#F97316',
+  nova: '#FBBF24',
+  prism: '#E879F9',
+  vanguard: '#F43F5E',
+  verdant: '#34D399',
+}
+
+interface FocusHomeSymbolProps
+  extends SVGProps<SVGSVGElement> {
+  type: FocusHomeKey
+  size?: number
+  compact?: boolean
+  colored?: boolean
+}
+
+function SymbolCore({
+  type,
+}: {
+  type: FocusHomeKey
+}) {
+  switch (type) {
+    case 'aster':
+      return (
+        <g>
+          <circle
+            cx="32"
+            cy="32"
+            r="3.5"
+          />
+          <path d="M32 28.5C31 22 33 17 38 13" />
+          <path d="M28.8 30C23 26 18 26 13 29" />
+          <path d="M29.5 35C25 40 24 45 26 51" />
+          <path d="M35 34C40 38 45 38 51 35" />
+          <path d="M34.5 29C39 25 43 21 44 16" />
+        </g>
+      )
+
+    case 'atlas':
+      return (
+        <g>
+          <path d="M14 43L24 29L32 39L40 23L51 43" />
+          <path d="M18 47H47" />
+          <path d="M21 21C28 16 38 16 45 21" />
+          <path d="M26 43V38M38 43V35" />
+        </g>
+      )
+
+    case 'forge':
+      return (
+        <g>
+          <path d="M32 20L42 31L32 43L22 31Z" />
+          <path d="M12 20L24 28" />
+          <path d="M52 20L40 28" />
+          <path d="M12 43L24 35" />
+          <path d="M52 43L40 35" />
+          <circle
+            cx="32"
+            cy="31.5"
+            r="3"
+          />
+        </g>
+      )
+
+    case 'pulse':
+      return (
+        <g>
+          <path d="M11 34H20L25 23L31 44L37 18L42 34H53" />
+          <path d="M15 41C22 48 42 49 49 40" />
+        </g>
+      )
+
+    case 'loom':
+      return (
+        <g>
+          <path d="M18 16C18 28 46 35 46 48" />
+          <path d="M46 16C46 28 18 35 18 48" />
+          <path d="M14 24H50" />
+          <path d="M14 40H50" />
+          <circle
+            cx="32"
+            cy="32"
+            r="3"
+          />
+        </g>
+      )
+
+    case 'orbit':
+      return (
+        <g>
+          <ellipse
+            cx="32"
+            cy="32"
+            rx="20"
+            ry="9"
+            transform="rotate(-18 32 32)"
+          />
+          <ellipse
+            cx="32"
+            cy="32"
+            rx="9"
+            ry="20"
+            transform="rotate(28 32 32)"
+          />
+          <circle
+            cx="32"
+            cy="32"
+            r="3.5"
+          />
+          <circle
+            cx="48"
+            cy="24"
+            r="2"
+            fill="currentColor"
+            stroke="none"
+          />
+        </g>
+      )
+
+    case 'tide':
+      return (
+        <g>
+          <path d="M11 26C18 18 25 18 32 26C39 34 46 34 53 26" />
+          <path d="M11 35C18 27 25 27 32 35C39 43 46 43 53 35" />
+          <path d="M16 44C22 39 27 39 32 44C37 49 42 49 48 44" />
+        </g>
+      )
+
+    case 'ember':
+      return (
+        <g>
+          <path d="M32 12C35 22 44 25 43 36C42 46 36 51 32 52C24 50 19 44 20 36C21 28 27 25 27 18C30 20 32 24 32 28C36 25 36 19 32 12Z" />
+          <path d="M23 36C27 31 37 31 41 36C37 41 27 41 23 36Z" />
+          <circle
+            cx="32"
+            cy="36"
+            r="2.7"
+          />
+          <circle
+            cx="32"
+            cy="36"
+            r="1"
+            fill="currentColor"
+            stroke="none"
+          />
+        </g>
+      )
+
+    case 'nova':
+      return (
+        <g>
+          <circle
+            cx="32"
+            cy="32"
+            r="7"
+          />
+          <path d="M32 11V20" />
+          <path d="M32 44V53" />
+          <path d="M11 32H20" />
+          <path d="M44 32H53" />
+          <path d="M17 17L23 23" />
+          <path d="M41 41L47 47" />
+          <path d="M47 17L41 23" />
+          <path d="M23 41L17 47" />
+        </g>
+      )
+
+    case 'prism':
+      return (
+        <g>
+          <path d="M32 12L51 45H13Z" />
+          <path d="M32 12L32 45" />
+          <path d="M20 33L44 33" />
+          <path d="M32 45L43 33L32 24L20 33Z" />
+        </g>
+      )
+
+    case 'vanguard':
+      return (
+        <g>
+          <path d="M17 14H47V30C47 40 41 48 32 52C23 48 17 40 17 30Z" />
+          <path d="M22 34L32 24L42 34" />
+          <path d="M32 24V44" />
+        </g>
+      )
+
+    case 'verdant':
+      return (
+        <g>
+          <path d="M32 51V18" />
+          <path d="M32 29C26 23 21 22 16 24C18 30 23 33 32 33" />
+          <path d="M32 39C39 32 45 31 50 34C47 41 41 44 32 44" />
+          <path d="M32 23C35 18 38 15 43 14C44 20 40 24 32 27" />
+          <circle
+            cx="32"
+            cy="52"
+            r="2"
+            fill="currentColor"
+            stroke="none"
+          />
+        </g>
+      )
+  }
+}
+
+export function FocusHomeSymbol({
+  type,
+  size = 88,
+  compact = false,
+  colored = true,
+  className,
+  style,
+  ...props
+}: FocusHomeSymbolProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={{
+        color: colored
+          ? FOCUS_HOME_COLORS[type]
+          : undefined,
+        ...style,
+      }}
+      aria-hidden="true"
+      {...props}
+    >
+      {!compact && (
+        <g>
+          <path
+            d="M13 10.5C5.5 17.4 2.8 27.8 4.9 38.2C7.5 51.2 18.6 59.2 31.4 60.5C44.9 61.9 56.9 54.1 60.2 41.5C61.1 38.1 61.4 34.8 61 31.6"
+            strokeWidth="1.45"
+            opacity="0.72"
+          />
+
+          <path
+            d="M9 35C7.5 22 15 11 26 7C39 3 52 8 58 20C64 32 60 47 50 55"
+            strokeWidth="1.15"
+            opacity="0.34"
+          />
+        </g>
+      )}
+
+      <g
+        strokeWidth={
+          compact ? 2.2 : 1.8
+        }
+      >
+        <SymbolCore type={type} />
+      </g>
+    </svg>
+  )
+}
+===== FOCUSHOME PROFILE HOOK =====
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+
+import {
+  assessFocusHome,
+  getFocusHomeAssessmentReportId,
+  getFocusHomeAssessments,
+  getFocusHomeProfile,
+  type FocusHomeAssessmentType,
+} from '@/services/focusHomeService'
+import {
+  focusMeReportsQueryKey,
+} from '@/hooks/focusme/useFocusMeReports'
+import type {
+  FocusMeStoredReport,
+} from '@/services/focusMeReportsService'
+
+export const focusHomeProfileQueryKey = [
+  'focusme',
+  'focushome',
+  'profile',
+]
+
+export const focusHomeAssessmentsQueryKey = [
+  'focusme',
+  'focushome',
+  'assessments',
+]
+
+export function useFocusHomeAssessments() {
+  return useQuery({
+    queryKey:
+      focusHomeAssessmentsQueryKey,
+    queryFn:
+      getFocusHomeAssessments,
+  })
+}
+
+export function useFocusHomeProfile() {
+  return useQuery({
+    queryKey:
+      focusHomeProfileQueryKey,
+    queryFn:
+      getFocusHomeProfile,
+  })
+}
+
+export function useAssessFocusHome() {
+  const queryClient =
+    useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      report,
+      assessmentType,
+    }: {
+      report: FocusMeStoredReport
+      assessmentType:
+        FocusHomeAssessmentType
+    }) =>
+      assessFocusHome(
+        report,
+        assessmentType,
+      ),
+
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey:
+            focusHomeProfileQueryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            focusMeReportsQueryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            focusHomeAssessmentsQueryKey,
+        }),
+      ])
+    },
+  })
+}
+
+
+export function useFocusHomeAssessmentReportId(
+  assessmentId?: string,
+) {
+  return useQuery({
+    queryKey: [
+      ...focusHomeProfileQueryKey,
+      'assessment-report',
+      assessmentId,
+    ],
+    queryFn: () =>
+      getFocusHomeAssessmentReportId(
+        assessmentId as string,
+      ),
+    enabled: Boolean(assessmentId),
+  })
+}
+===== FOCUSHOME SERVICE =====
+import type {
+  FocusHomeKey,
+} from '@/components/focusme/FocusHomeSymbol'
+import { supabase } from '@/lib/supabase'
+import type {
+  FocusHomeClassification,
+  FocusHomeTemporalExpression,
+  FocusHomeTrait,
+} from '@/services/focusHomeClassifier'
+import type {
+  FocusHomeArchetype,
+} from '@/services/focusHomeCatalog'
+import type {
+  FocusMeStoredReport,
+} from '@/services/focusMeReportsService'
+
+export type FocusHomeAssessmentType =
+  | 'initial'
+  | 'retest'
+
+interface FocusHomeProfileRow {
+  user_id: string
+  current_assessment_id: string
+  focushome_key: FocusHomeKey
+  archetype: FocusHomeArchetype
+  secondary_archetype:
+    FocusHomeArchetype
+  temporal_expression:
+    FocusHomeTemporalExpression
+  traits: FocusHomeTrait[]
+  confidence: number
+  first_awarded_at: string
+  last_assessed_at: string
+  updated_at: string
+}
+
+export interface FocusHomeProfile {
+  userId: string
+  currentAssessmentId: string
+  focusHome: FocusHomeKey
+  archetype:
+    FocusHomeArchetype
+  secondaryArchetype:
+    FocusHomeArchetype
+  temporalExpression:
+    FocusHomeTemporalExpression
+  traits: FocusHomeTrait[]
+  confidence: number
+  firstAwardedAt: string
+  lastAssessedAt: string
+  updatedAt: string
+}
+
+function mapProfile(
+  row: FocusHomeProfileRow,
+): FocusHomeProfile {
+  return {
+    userId: row.user_id,
+    currentAssessmentId:
+      row.current_assessment_id,
+    focusHome:
+      row.focushome_key,
+    archetype: row.archetype,
+    secondaryArchetype:
+      row.secondary_archetype,
+    temporalExpression:
+      row.temporal_expression,
+    traits: row.traits ?? [],
+    confidence: row.confidence,
+    firstAwardedAt:
+      row.first_awarded_at,
+    lastAssessedAt:
+      row.last_assessed_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export async function getFocusHomeProfile():
+  Promise<FocusHomeProfile | null> {
+  const { data, error } =
+    await supabase
+      .from('focushome_profiles')
+      .select(`
+        user_id,
+        current_assessment_id,
+        focushome_key,
+        archetype,
+        secondary_archetype,
+        temporal_expression,
+        traits,
+        confidence,
+        first_awarded_at,
+        last_assessed_at,
+        updated_at
+      `)
+      .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  return data
+    ? mapProfile(
+        data as FocusHomeProfileRow,
+      )
+    : null
+}
+
+interface FocusHomeAssessmentRow {
+  id: string
+  report_id: string
+  assessment_type:
+    FocusHomeAssessmentType
+  focushome_key: FocusHomeKey
+  archetype: FocusHomeArchetype
+  secondary_archetype:
+    FocusHomeArchetype
+  temporal_expression:
+    FocusHomeTemporalExpression
+  traits: FocusHomeTrait[]
+  confidence: number
+  created_at: string
+}
+
+interface FocusHomeAssessmentPeriodRow {
+  id: string
+  period_start: string
+  period_end: string
+}
+
+export interface FocusHomeAssessment {
+  id: string
+  reportId: string
+  assessmentType:
+    FocusHomeAssessmentType
+  focusHome: FocusHomeKey
+  archetype: FocusHomeArchetype
+  secondaryArchetype:
+    FocusHomeArchetype
+  temporalExpression:
+    FocusHomeTemporalExpression
+  traits: FocusHomeTrait[]
+  confidence: number
+  periodStart?: string
+  periodEnd?: string
+  createdAt: string
+}
+
+export async function getFocusHomeAssessments():
+  Promise<FocusHomeAssessment[]> {
+  const {
+    data: assessments,
+    error: assessmentsError,
+  } = await supabase
+    .from('focushome_assessments')
+    .select(`
+      id,
+      report_id,
+      assessment_type,
+      focushome_key,
+      archetype,
+      secondary_archetype,
+      temporal_expression,
+      traits,
+      confidence,
+      created_at
+    `)
+    .order('created_at', {
+      ascending: false,
+    })
+
+  if (assessmentsError) {
+    throw assessmentsError
+  }
+
+  const rows =
+    (assessments ??
+      []) as FocusHomeAssessmentRow[]
+
+  if (rows.length === 0) {
+    return []
+  }
+
+  const reportIds =
+    [...new Set(
+      rows.map(
+        (assessment) =>
+          assessment.report_id,
+      ),
+    )]
+
+  const {
+    data: reportPeriods,
+    error: reportsError,
+  } = await supabase
+    .from('focusme_reports')
+    .select(`
+      id,
+      period_start,
+      period_end
+    `)
+    .in('id', reportIds)
+
+  if (reportsError) {
+    throw reportsError
+  }
+
+  const periodsByReport =
+    new Map(
+      (
+        (reportPeriods ??
+          []) as
+          FocusHomeAssessmentPeriodRow[]
+      ).map((report) => [
+        report.id,
+        report,
+      ]),
+    )
+
+  return rows.map(
+    (assessment) => {
+      const period =
+        periodsByReport.get(
+          assessment.report_id,
+        )
+
+      return {
+        id: assessment.id,
+        reportId:
+          assessment.report_id,
+        assessmentType:
+          assessment.assessment_type,
+        focusHome:
+          assessment.focushome_key,
+        archetype:
+          assessment.archetype,
+        secondaryArchetype:
+          assessment.secondary_archetype,
+        temporalExpression:
+          assessment.temporal_expression,
+        traits:
+          assessment.traits ?? [],
+        confidence:
+          assessment.confidence,
+        periodStart:
+          period?.period_start,
+        periodEnd:
+          period?.period_end,
+        createdAt:
+          assessment.created_at,
+      }
+    },
+  )
+}
+
+export async function getFocusHomeAssessmentReportId(
+  assessmentId: string,
+): Promise<string | null> {
+  const { data, error } =
+    await supabase
+      .from('focushome_assessments')
+      .select('report_id')
+      .eq('id', assessmentId)
+      .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  return data?.report_id ?? null
+}
+
+export async function assessFocusHome(
+  report: FocusMeStoredReport,
+  assessmentType:
+    FocusHomeAssessmentType,
+): Promise<{
+  assessmentId: string
+  classification:
+    FocusHomeClassification
+}> {
+  if (report.type !== 'monthly') {
+    throw new Error(
+      'FocushoMe requires a monthly report.',
+    )
+  }
+
+  if (report.schemaVersion < 2) {
+    throw new Error(
+      'This report predates behavioral analysis.',
+    )
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.functions.invoke(
+    'assess-focushome',
+    {
+      body: {
+        reportId: report.id,
+        assessmentType,
+      },
+    },
+  )
+
+  if (error) {
+    throw error
+  }
+
+  const result = data as {
+    assessmentId?: unknown
+    classification?: unknown
+  }
+
+  if (
+    typeof result.assessmentId !==
+      'string' ||
+    !result.classification ||
+    typeof result.classification !==
+      'object'
+  ) {
+    throw new Error(
+      'FocushoMe assessment returned an invalid response.',
+    )
+  }
+
+  return {
+    assessmentId:
+      result.assessmentId,
+    classification:
+      result.classification as
+        FocusHomeClassification,
+  }
+}
+===== REPORT PAGE =====
+import {
+  ArrowLeft,
+  BarChart3,
+  CalendarDays,
+  CheckSquare2,
+  FolderOpen,
+  LoaderCircle,
+  Play,
+  Target,
+  Timer,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+import {
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
+
+import {
+  FocusHomeReportIdentity,
+} from '@/components/focusme/FocusHomeReportIdentity'
+import {
+  FocusMeMonthlyNarrativeSection,
+} from '@/components/focusme/FocusMeMonthlyNarrativeSection'
+import {
+  FocusMeShareCard,
+} from '@/components/focusme/FocusMeShareCard'
+import {
+  FocusMeWeeklyNarrativeCard,
+} from '@/components/focusme/FocusMeWeeklyNarrativeCard'
+import {
+  FocusMeIcon,
+} from '@/components/icons/FocusMeIcon'
+import {
+  PageHeader,
+} from '@/components/ui/PageHeader'
+import {
+  useFocusMeReport,
+} from '@/hooks/focusme/useFocusMeReports'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+import type {
+  FocusMeWeeklyReport,
+} from '@/services/focusMeService'
+
+function formatMinutes(
+  minutes: number,
+): string {
+  if (minutes < 60) {
+    return `${minutes} min`
+  }
+
+  const hours =
+    Math.floor(minutes / 60)
+
+  const remainder =
+    minutes % 60
+
+  return remainder > 0
+    ? `${hours}h ${remainder}min`
+    : `${hours}h`
+}
+
+export function FocusMeReportPage() {
+  const {
+    t,
+    i18n,
+  } = useTranslation()
+
+  const navigate = useNavigate()
+
+  const {
+    reportId,
+  } = useParams<{
+    reportId: string
+  }>()
+
+  const reportQuery =
+    useFocusMeReport(reportId)
+
+  const report =
+    reportQuery.data
+
+  const locale =
+    i18n.resolvedLanguage === 'pt-BR'
+      ? 'pt-BR'
+      : 'en-US'
+
+
+
+
+  function formatPeriod(
+    startValue: string,
+    endValue: string,
+    type: 'weekly' | 'monthly',
+  ): string {
+    const start = new Date(
+      `${startValue}T12:00:00`,
+    )
+
+    const end = new Date(
+      `${endValue}T12:00:00`,
+    )
+
+    end.setDate(
+      end.getDate() - 1,
+    )
+
+    if (type === 'monthly') {
+      return new Intl.DateTimeFormat(
+        locale,
+        {
+          month: 'long',
+          year: 'numeric',
+        },
+      ).format(start)
+    }
+
+    const formatter =
+      new Intl.DateTimeFormat(
+        locale,
+        {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        },
+      )
+
+    return (
+      `${formatter.format(start)} – ` +
+      formatter.format(end)
+    )
+  }
+
+  if (reportQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <LoaderCircle
+          size={30}
+          className="animate-spin text-accent-green"
+        />
+      </div>
+    )
+  }
+
+  if (
+    reportQuery.isError ||
+    !report
+  ) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 pb-12 lg:px-10">
+        <button
+          type="button"
+          onClick={() =>
+            navigate(
+              '/focusme/history',
+            )
+          }
+          className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition hover:text-accent-white"
+        >
+          <ArrowLeft size={17} />
+
+          {t(
+            'focusMeReportPage.back',
+          )}
+        </button>
+
+        <div className="card p-6 text-sm text-red-300">
+          {t(
+            'focusMeReportPage.error',
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const isWeekly =
+    report.type === 'weekly'
+
+  const weekly = isWeekly
+    ? report.metrics as
+        FocusMeWeeklyReport
+    : null
+
+  const monthly = !isWeekly
+    ? report.metrics as
+        FocusMeMonthlyReport
+    : null
+
+  const focusMinutes =
+    weekly
+      ? weekly.focus.totalMinutes
+      : monthly?.current
+          .focusMinutes ?? 0
+
+  const sessions =
+    weekly
+      ? weekly.focus
+          .completedSessions
+      : monthly?.current
+          .completedSessions ?? 0
+
+  const activeDays =
+    weekly
+      ? weekly.focus.activeDays
+      : monthly?.current
+          .activeDays ?? 0
+
+  const tasksCreated =
+    weekly
+      ? weekly.tasks.created
+      : monthly?.current.tasks
+          .created ?? 0
+
+  const tasksCompleted =
+    weekly
+      ? weekly.tasks.completed
+      : monthly?.current.tasks
+          .completed ?? 0
+
+  const projectsCreated =
+    weekly
+      ? weekly.projects.created
+      : monthly?.current.projects
+          .created ?? 0
+
+  const projectsCompleted =
+    weekly
+      ? weekly.projects.completed
+      : monthly?.current.projects
+          .completed ?? 0
+
+  const goalsCreated =
+    weekly
+      ? weekly.goals.created
+      : monthly?.current.goals
+          .created ?? 0
+
+  const goalsCompleted =
+    weekly
+      ? weekly.goals.completed
+      : monthly?.current.goals
+          .completed ?? 0
+
+  const graphItems = weekly
+    ? weekly.focus.days.map(
+        (day, index) => ({
+          key: day.date,
+          label:
+            new Intl.DateTimeFormat(
+              locale,
+              {
+                weekday: 'short',
+              },
+            )
+              .format(
+                new Date(
+                  `${day.date}T12:00:00`,
+                ),
+              )
+              .slice(0, 3),
+          minutes:
+            day.focusMinutes,
+          order: index + 1,
+        }),
+      )
+    : (
+        monthly?.current.weeks ??
+        []
+      ).map((week) => ({
+        key: String(week.week),
+        label: t(
+          'focusMeReportPage.week',
+          {
+            number: week.week,
+          },
+        ),
+        minutes:
+          week.focusMinutes,
+        order: week.week,
+      }))
+
+  const maxGraphMinutes =
+    Math.max(
+      ...graphItems.map(
+        (item) => item.minutes,
+      ),
+      1,
+    )
+
+  const topProject =
+    weekly
+      ? weekly.projects.topProject
+      : monthly?.current.projects
+          ?.topProjects?.[0] ?? null
+
+  const summaryItems = [
+    {
+      key: 'focus',
+      label: t(
+        'focusMeReportPage.focusTime',
+      ),
+      value:
+        formatMinutes(focusMinutes),
+      icon: Timer,
+    },
+    {
+      key: 'sessions',
+      label: t(
+        'focusMeReportPage.sessions',
+      ),
+      value: sessions,
+      icon: Play,
+    },
+    {
+      key: 'days',
+      label: t(
+        'focusMeReportPage.activeDays',
+      ),
+      value: activeDays,
+      icon: CalendarDays,
+    },
+    {
+      key: 'tasks',
+      label: t(
+        'focusMeReportPage.tasksCompleted',
+      ),
+      value: tasksCompleted,
+      icon: CheckSquare2,
+    },
+  ]
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 pb-12 lg:px-10 lg:pb-16">
+      <button
+        type="button"
+        onClick={() =>
+          navigate('/focusme/history')
+        }
+        className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition hover:text-accent-white"
+      >
+        <ArrowLeft size={17} />
+
+        {t(
+          'focusMeReportPage.back',
+        )}
+      </button>
+
+      <PageHeader
+        title={formatPeriod(
+          report.periodStart,
+          report.periodEnd,
+          report.type,
+        )}
+        subtitle={t(
+          `focusMeReportPage.types.${report.type}`,
+        )}
+      />
+
+      <FocusMeShareCard
+        report={report}
+      />
+
+      <div className="space-y-4">
+        <section className="card relative overflow-hidden p-5 sm:p-7">
+          <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-accent-green/[0.08] blur-3xl" />
+
+          <div className="relative">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-green/10 text-accent-green">
+                <FocusMeIcon
+                  size={25}
+                />
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
+                  FocusMe
+                </p>
+
+                <p className="mt-1 text-xs text-accent-subtle">
+                  {t(
+                    'focusMeReportPage.preserved',
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {summaryItems.map(
+                ({
+                  key,
+                  label,
+                  value,
+                  icon: Icon,
+                }) => (
+                  <div
+                    key={key}
+                    className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4"
+                  >
+                    <Icon
+                      size={17}
+                      className="text-accent-green"
+                    />
+
+                    <p className="mt-4 text-xl font-semibold text-accent-white">
+                      {value}
+                    </p>
+
+                    <p className="mt-1 text-xs text-accent-subtle">
+                      {label}
+                    </p>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+        </section>
+
+        {!isWeekly && (
+          <FocusHomeReportIdentity
+            reportId={report.id}
+            storedFocusHomeKey={
+              report.focusHomeKey
+            }
+            storedTraits={
+              report.focusHomeTraits
+            }
+          />
+        )}
+
+        <section className="card p-5">
+          <div className="flex items-center gap-3">
+            <BarChart3
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h2 className="text-sm font-semibold text-accent-white">
+              {isWeekly
+                ? t(
+                    'focusMeReportPage.dailyEvolution',
+                  )
+                : t(
+                    'focusMeReportPage.weeklyEvolution',
+                  )}
+            </h2>
+          </div>
+
+          {graphItems.length > 0 ? (
+            <div
+              className="mt-6 grid h-40 items-end gap-2"
+              style={{
+                gridTemplateColumns:
+                  `repeat(${graphItems.length}, minmax(0, 1fr))`,
+              }}
+            >
+              {graphItems.map(
+                (item) => {
+                  const height =
+                    item.minutes > 0
+                      ? Math.max(
+                          8,
+                          (
+                            item.minutes /
+                            maxGraphMinutes
+                          ) * 100,
+                        )
+                      : 3
+
+                  return (
+                    <div
+                      key={item.key}
+                      className="flex h-full min-w-0 flex-col items-center justify-end gap-2"
+                    >
+                      <span className="hidden text-[10px] text-accent-subtle sm:block">
+                        {item.minutes > 0
+                          ? formatMinutes(
+                              item.minutes,
+                            )
+                          : ''}
+                      </span>
+
+                      <div className="flex h-24 w-full items-end justify-center">
+                        <div
+                          className="w-full max-w-9 rounded-t-lg bg-gradient-to-t from-emerald-500/55 to-emerald-300"
+                          style={{
+                            height: `${height}%`,
+                          }}
+                        />
+                      </div>
+
+                      <span className="truncate text-[10px] capitalize text-accent-subtle">
+                        {item.label}
+                      </span>
+                    </div>
+                  )
+                },
+              )}
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-accent-subtle">
+              {t(
+                'focusMeReportPage.noFocus',
+              )}
+            </p>
+          )}
+        </section>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <section className="card p-5">
+            <CheckSquare2
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h2 className="mt-4 text-sm font-semibold text-accent-white">
+              {t(
+                'focusMeReportPage.tasks',
+              )}
+            </h2>
+
+            <p className="mt-3 text-xl font-semibold text-accent-white">
+              {tasksCompleted}
+              <span className="ml-2 text-xs font-normal text-accent-subtle">
+                /
+                {' '}
+                {tasksCreated}
+              </span>
+            </p>
+          </section>
+
+          <section className="card p-5">
+            <FolderOpen
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h2 className="mt-4 text-sm font-semibold text-accent-white">
+              {t(
+                'focusMeReportPage.projects',
+              )}
+            </h2>
+
+            <p className="mt-3 text-xl font-semibold text-accent-white">
+              {projectsCompleted}
+              <span className="ml-2 text-xs font-normal text-accent-subtle">
+                /
+                {' '}
+                {projectsCreated}
+              </span>
+            </p>
+          </section>
+
+          <section className="card p-5">
+            <Target
+              size={18}
+              className="text-accent-green"
+            />
+
+            <h2 className="mt-4 text-sm font-semibold text-accent-white">
+              {t(
+                'focusMeReportPage.goals',
+              )}
+            </h2>
+
+            <p className="mt-3 text-xl font-semibold text-accent-white">
+              {goalsCompleted}
+              <span className="ml-2 text-xs font-normal text-accent-subtle">
+                /
+                {' '}
+                {goalsCreated}
+              </span>
+            </p>
+          </section>
+        </div>
+
+        {topProject && (
+          <section className="card p-5">
+            <p className="text-xs text-accent-subtle">
+              {t(
+                'focusMeReportPage.topProject',
+              )}
+            </p>
+
+            <p className="mt-2 text-sm font-semibold text-accent-white">
+              {topProject.emoji}
+              {' '}
+              {topProject.name}
+              {' · '}
+              {formatMinutes(
+                topProject.focusMinutes,
+              )}
+            </p>
+          </section>
+        )}
+
+        {!isWeekly && monthly && (
+          <FocusMeMonthlyNarrativeSection
+            storedReport={report}
+            report={monthly}
+          />
+        )}
+
+        {isWeekly && weekly && (
+          <FocusMeWeeklyNarrativeCard
+            report={weekly}
+          />
+        )}
+
+
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,207 @@
+===== IMPORT =====
+===== ACCOUNT BUTTON AREA =====
+117-        'string'
+118-      ) {
+119-        setDisplayName(savedName)
+120-      }
+121-
+122-      setDisplayNameMessage(
+123-        t('settings.account.saved'),
+124-      )
+125-    } catch (error) {
+126-      const message =
+127-        error instanceof Error
+128-          ? error.message
+129-          : 'Could not save your display name.'
+130-
+131-      console.error(
+132-        'Failed to update display name:',
+133-        error,
+134-      )
+135-
+136-      setErrorMessage(message)
+137-    } finally {
+138-      setIsSavingDisplayName(false)
+139-    }
+140-  }
+141-
+142:  async function handleSignOut() {
+143-    try {
+144-      setIsSigningOut(true)
+145-      setErrorMessage(null)
+146-
+147-      await signOut()
+148-
+149-      navigate(
+150-        '/login',
+151-        {
+152-          replace: true,
+153-        },
+154-      )
+155-    } catch (error) {
+156-      const message =
+157-        error instanceof Error
+158-          ? error.message
+159-          : 'Could not sign out.'
+160-
+161-      console.error(
+162-        'Failed to sign out:',
+163-        error,
+164-      )
+165-
+166-      setErrorMessage(message)
+167-    } finally {
+168-      setIsSigningOut(false)
+169-    }
+170-  }
+171-
+172-  function handleExitDemoMode() {
+173-    exitDemoMode()
+174-
+175-    navigate(
+176-      '/login',
+177-      {
+178-        replace: true,
+179-      },
+180-    )
+181-  }
+182-
+183-  return (
+184-    <div className="p-6 lg:p-10 max-w-xl mx-auto">
+185-      <PageHeader
+186-        title={t('settings.title')}
+187-        subtitle={t('settings.subtitle')}
+--
+287-    transition
+288-    duration-200
+289-    hover:brightness-110
+290-    active:scale-[0.98]
+291-    disabled:cursor-not-allowed
+292-    disabled:opacity-40
+293-    sm:w-auto
+294-    sm:min-w-[130px]
+295-  "
+296->
+297-  {isSavingDisplayName
+298-    ? t('settings.account.saving')
+299-    : t('settings.account.save')}
+300-</button>
+301-                </div>
+302-
+303-                {displayNameMessage && (
+304-                  <p className="mt-3 text-sm text-accent-green">
+305-                    {displayNameMessage}
+306-                  </p>
+307-                )}
+308-              </div>
+309-
+310-              <button
+311-                type="button"
+312:                onClick={handleSignOut}
+313-                disabled={isSigningOut}
+314-                className="mt-5 w-full rounded-xl border border-white/10 px-4 py-3 font-medium text-accent-subtle transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+315-              >
+316-                {isSigningOut
+317-                  ? t('settings.account.signingOut')
+318-                  : t('settings.account.signOut')}
+319-              </button>
+320-            </>
+321-          ) : isDemoMode ? (
+322-            <>
+323-              <p className="text-sm text-accent-white">
+324-                {t('settings.account.guestMode')}
+325-              </p>
+326-
+327-              <p className="mt-2 text-sm text-accent-subtle">
+328-                {t('settings.account.guestDescription')}
+329-              </p>
+330-
+331-              <div className="mt-5 flex flex-col gap-3">
+332-                <button
+333-                  type="button"
+334-                  onClick={handleGoogleLogin}
+335-                  disabled={isSigningIn}
+336-                  className="rounded-xl bg-accent-green px-4 py-3 font-medium text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+337-                >
+338-                  {isSigningIn
+339-                    ? t('settings.account.redirecting')
+340-                    : t('settings.account.continueGoogle')}
+341-                </button>
+342-
+343-                <button
+344-                  type="button"
+345-                  onClick={handleExitDemoMode}
+346-                  disabled={isSigningIn}
+347-                  className="rounded-xl border border-white/10 px-4 py-3 font-medium text-accent-subtle transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+348-                >
+349-                  {t('settings.account.exitGuest')}
+350-                </button>
+351-              </div>
+352-            </>
+353-          ) : (
+354-            <>
+355-              <p className="text-sm text-accent-white">
+356-                {t('settings.account.noAccount')}
+357-              </p>
+===== COMPONENT EXISTS =====
+ls: src/components/settings/DeleteAccountSection.tsx: No such file or directory
+===== TRANSLATIONS =====
+1531-      english: 'English',
+1532-      portugueseBrazil:
+1533-        'Português (Brasil)',
+1534-    },
+1535-
+1536:    accountDeletion: {
+1537-      button: 'Excluir minha conta',
+1538-      title: 'Excluir conta permanentemente?',
+1539-      subtitle:
+1540-        'Esta ação não poderá ser desfeita.',
+1541-      description:
+1542-        'Sua conta do Focus e todos os dados associados a ela serão removidos.',
+1543-      warning:
+1544-        'Sessões, tarefas, projetos, metas, relatórios, narrativas e sua jornada FocushoMe serão excluídos permanentemente.',
+1545-      cancel: 'Cancelar',
+1546-      confirm: 'Excluir definitivamente',
+1547-      deleting: 'Excluindo...',
+1548-      error:
+1549-        'Não foi possível excluir sua conta. Tente novamente.',
+1550-    },
+1551-
+1552-    account: {
+1553-      title: 'Conta',
+1554-      connected: 'Conta conectada',
+1555-      googleConnected:
+1556-        'Conta Google conectada',
+1557-      displayName:
+1558-        'Nome de exibição',
+1559-      displayNameDescription:
+1560-        'Este nome aparecerá na saudação do Dashboard.',
+1561-      placeholder: 'Seu nome',
+1562-      saving: 'Salvando...',
+1563-      save: 'Salvar nome',
+1564-      saved: 'Nome salvo.',
+1565-      signOut: 'Sair',
+1566-      signingOut: 'Saindo...',
+===== BUILD =====
+
+> focus-app@4.0.0 build
+> tsc -b && vite build
+
+vite v8.1.0 building client environment for production...
+[2Ktransforming...✓ 1343 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.64 kB │ gzip:   0.38 kB
+dist/assets/index-4v5p9jAW.css     76.92 kB │ gzip:  12.14 kB
+dist/assets/web-mTDfYY8v.js         0.36 kB │ gzip:   0.24 kB
+dist/assets/web-DjZEjZzA.js         0.36 kB │ gzip:   0.25 kB
+dist/assets/web-lpJxh3y1.js         0.84 kB │ gzip:   0.40 kB
+dist/assets/web-gNG8ccBC.js         8.45 kB │ gzip:   2.81 kB
+dist/assets/index-DPDcFkB3.js   1,463.93 kB │ gzip: 413.69 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 490ms

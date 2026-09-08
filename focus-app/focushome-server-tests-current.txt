@@ -1,0 +1,1324 @@
+===== CLASS FIXTURES =====
+import type {
+  FocusHomeKey,
+} from '@/components/focusme/FocusHomeSymbol'
+import type {
+  FocusMeMonthlyMetrics,
+  TimeBlock,
+} from '@/services/focusMeMonthlyService'
+
+export interface FocusHomeFixture {
+  key: string
+  expected: FocusHomeKey
+  metrics:
+    FocusMeMonthlyMetrics
+}
+
+export function blocks(
+  morning = 0,
+  afternoon = 0,
+  evening = 0,
+  lateNight = 0,
+): Record<TimeBlock, number> {
+  return {
+    morning,
+    afternoon,
+    evening,
+    late_night: lateNight,
+  }
+}
+
+export function baseMetrics():
+  FocusMeMonthlyMetrics {
+  return {
+    focusMinutes: 600,
+    completedSessions: 20,
+    activeDays: 10,
+    averageMinutesPerActiveDay: 60,
+    weeks: [
+      {
+        week: 1,
+        focusMinutes: 150,
+        sessions: 5,
+      },
+      {
+        week: 2,
+        focusMinutes: 150,
+        sessions: 5,
+      },
+      {
+        week: 3,
+        focusMinutes: 150,
+        sessions: 5,
+      },
+      {
+        week: 4,
+        focusMinutes: 150,
+        sessions: 5,
+      },
+    ],
+    timeBlocks:
+      blocks(150, 150, 150, 150),
+    dominantTimeBlock: null,
+
+    tasks: {
+      created: 10,
+      completed: 10,
+      reopened: 0,
+      deleted: 0,
+      restored: 0,
+      categories: [
+        {
+          category: 'quick',
+          created: 2,
+          completed: 2,
+        },
+        {
+          category: 'planned',
+          created: 4,
+          completed: 4,
+        },
+        {
+          category: 'urgent',
+          created: 2,
+          completed: 2,
+        },
+        {
+          category: 'long_term',
+          created: 2,
+          completed: 2,
+        },
+      ],
+    },
+
+    projects: {
+      created: 1,
+      completed: 1,
+      reopened: 0,
+      topProjects: [
+        {
+          id: 'project-1',
+          name: 'Project',
+          emoji: '•',
+          color: '#34D399',
+          focusMinutes: 300,
+          sessions: 10,
+        },
+      ],
+    },
+
+    goals: {
+      created: 1,
+      completed: 1,
+      reopened: 0,
+    },
+
+    rhythm: {
+      starts: 20,
+      pauses: 2,
+      resumes: 2,
+      abandoned: 1,
+    },
+
+    behavior: {
+      planningTimeBlocks:
+        blocks(3, 3, 3, 3),
+      executionTimeBlocks:
+        blocks(3, 3, 3, 3),
+      taskCreationTimeBlocks:
+        blocks(2, 3, 3, 2),
+      taskCompletionTimeBlocks:
+        blocks(2, 3, 3, 2),
+      projectCreationTimeBlocks:
+        blocks(1, 0, 0, 0),
+      goalCreationTimeBlocks:
+        blocks(0, 1, 0, 0),
+      categoryDiversity: 4,
+      focusTimeDiversity: 4,
+      projectFocusShare: 50,
+      strongestWeekShare: 25,
+      completionBalance: 100,
+      abandonmentRate: 5,
+      recoveryActions: 2,
+    },
+
+    coverage: {
+      meaningfulActions: 32,
+      featureAreasUsed: 4,
+      activityEvents: 50,
+    },
+  }
+}
+
+function fixture(
+  key: string,
+  expected: FocusHomeKey,
+  mutate: (
+    metrics:
+      FocusMeMonthlyMetrics,
+  ) => void,
+): FocusHomeFixture {
+  const metrics =
+    baseMetrics()
+
+  mutate(metrics)
+
+  return {
+    key,
+    expected,
+    metrics,
+  }
+}
+
+export const FOCUS_HOME_FIXTURES:
+  FocusHomeFixture[] = [
+    fixture(
+      'visionary',
+      'aster',
+      (metrics) => {
+        metrics.goals.created = 5
+        metrics.goals.completed = 0
+        metrics.projects.created = 4
+        metrics.projects.completed = 0
+        metrics.tasks.created = 24
+        metrics.tasks.completed = 5
+        metrics.behavior
+          .completionBalance = 21
+        metrics.behavior
+          .planningTimeBlocks =
+          blocks(2, 3, 12, 10)
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 1,
+            completed: 0,
+          },
+          {
+            category: 'planned',
+            created: 9,
+            completed: 2,
+          },
+          {
+            category: 'urgent',
+            created: 1,
+            completed: 1,
+          },
+          {
+            category: 'long_term',
+            created: 13,
+            completed: 2,
+          },
+        ]
+      },
+    ),
+
+    fixture(
+      'builder',
+      'atlas',
+      (metrics) => {
+        metrics.focusMinutes = 1800
+        metrics.completedSessions = 40
+        metrics.activeDays = 16
+        metrics.behavior
+          .projectFocusShare = 92
+        metrics.projects.topProjects[0]
+          .focusMinutes = 1656
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 0,
+            completed: 0,
+          },
+          {
+            category: 'planned',
+            created: 3,
+            completed: 3,
+          },
+          {
+            category: 'urgent',
+            created: 0,
+            completed: 0,
+          },
+          {
+            category: 'long_term',
+            created: 10,
+            completed: 8,
+          },
+        ]
+      },
+    ),
+
+    fixture(
+      'finisher',
+      'forge',
+      (metrics) => {
+        metrics.tasks.created = 12
+        metrics.tasks.completed = 24
+        metrics.projects.completed = 3
+        metrics.goals.completed = 2
+        metrics.behavior
+          .completionBalance = 200
+        metrics.behavior
+          .executionTimeBlocks =
+          blocks(8, 8, 8, 8)
+        metrics.rhythm.abandoned = 0
+        metrics.behavior
+          .abandonmentRate = 0
+      },
+    ),
+
+    fixture(
+      'quick-executor',
+      'pulse',
+      (metrics) => {
+        metrics.focusMinutes = 480
+        metrics.completedSessions = 32
+        metrics.tasks.created = 28
+        metrics.tasks.completed = 27
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 25,
+            completed: 24,
+          },
+          {
+            category: 'planned',
+            created: 2,
+            completed: 2,
+          },
+          {
+            category: 'urgent',
+            created: 1,
+            completed: 1,
+          },
+          {
+            category: 'long_term',
+            created: 0,
+            completed: 0,
+          },
+        ]
+        metrics.behavior
+          .categoryDiversity = 3
+      },
+    ),
+
+    fixture(
+      'integrator',
+      'loom',
+      (metrics) => {
+        metrics.coverage
+          .featureAreasUsed = 4
+        metrics.behavior
+          .categoryDiversity = 4
+        metrics.behavior
+          .completionBalance = 100
+        metrics.projects.created = 3
+        metrics.projects.completed = 2
+        metrics.goals.created = 2
+        metrics.goals.completed = 2
+        metrics.projects.topProjects = [
+          {
+            id: 'p1',
+            name: 'One',
+            emoji: '•',
+            color: '#34D399',
+            focusMinutes: 210,
+            sessions: 7,
+          },
+          {
+            id: 'p2',
+            name: 'Two',
+            emoji: '•',
+            color: '#34D399',
+            focusMinutes: 200,
+            sessions: 7,
+          },
+          {
+            id: 'p3',
+            name: 'Three',
+            emoji: '•',
+            color: '#34D399',
+            focusMinutes: 190,
+            sessions: 6,
+          },
+        ]
+        metrics.behavior
+          .projectFocusShare = 35
+      },
+    ),
+
+    fixture(
+      'rhythmist',
+      'orbit',
+      (metrics) => {
+        metrics.activeDays = 24
+        metrics.completedSessions = 32
+        metrics.behavior
+          .strongestWeekShare = 24
+        metrics.behavior
+          .abandonmentRate = 0
+        metrics.rhythm.abandoned = 0
+      },
+    ),
+
+    fixture(
+      'restorer',
+      'tide',
+      (metrics) => {
+        metrics.behavior
+          .recoveryActions = 12
+        metrics.behavior
+          .focusTimeDiversity = 4
+        metrics.tasks.reopened = 4
+        metrics.tasks.restored = 3
+        metrics.projects.reopened = 2
+        metrics.goals.reopened = 1
+        metrics.rhythm.resumes = 8
+      },
+    ),
+
+    fixture(
+      'planner',
+      'ember',
+      (metrics) => {
+        metrics.focusMinutes = 1000
+        metrics.completedSessions = 20
+        metrics.tasks.created = 7
+        metrics.tasks.completed = 6
+        metrics.behavior
+          .planningTimeBlocks =
+          blocks(2, 3, 14, 9)
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 0,
+            completed: 0,
+          },
+          {
+            category: 'planned',
+            created: 12,
+            completed: 10,
+          },
+          {
+            category: 'urgent',
+            created: 0,
+            completed: 0,
+          },
+          {
+            category: 'long_term',
+            created: 2,
+            completed: 2,
+          },
+        ]
+        metrics.behavior
+          .categoryDiversity = 2
+      },
+    ),
+
+    fixture(
+      'catalyst',
+      'nova',
+      (metrics) => {
+        metrics.tasks.created = 30
+        metrics.tasks.completed = 5
+        metrics.projects.created = 6
+        metrics.projects.completed = 0
+        metrics.goals.created = 4
+        metrics.goals.completed = 0
+        metrics.behavior
+          .completionBalance = 17
+        metrics.behavior
+          .strongestWeekShare = 78
+        metrics.behavior
+          .planningTimeBlocks =
+          blocks(5, 5, 5, 5)
+      },
+    ),
+
+    fixture(
+      'explorer',
+      'prism',
+      (metrics) => {
+        metrics.behavior
+          .categoryDiversity = 4
+        metrics.behavior
+          .focusTimeDiversity = 4
+        metrics.behavior
+          .projectFocusShare = 24
+        metrics.coverage
+          .featureAreasUsed = 4
+        metrics.projects.topProjects = [
+          {
+            id: 'p1',
+            name: 'One',
+            emoji: '•',
+            color: '#34D399',
+            focusMinutes: 160,
+            sessions: 5,
+          },
+          {
+            id: 'p2',
+            name: 'Two',
+            emoji: '•',
+            color: '#34D399',
+            focusMinutes: 150,
+            sessions: 5,
+          },
+          {
+            id: 'p3',
+            name: 'Three',
+            emoji: '•',
+            color: '#34D399',
+            focusMinutes: 140,
+            sessions: 5,
+          },
+        ]
+      },
+    ),
+
+    fixture(
+      'strategist',
+      'vanguard',
+      (metrics) => {
+        metrics.tasks.created = 18
+        metrics.tasks.completed = 17
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 1,
+            completed: 1,
+          },
+          {
+            category: 'planned',
+            created: 2,
+            completed: 2,
+          },
+          {
+            category: 'urgent',
+            created: 15,
+            completed: 14,
+          },
+          {
+            category: 'long_term',
+            created: 0,
+            completed: 0,
+          },
+        ]
+        metrics.behavior
+          .categoryDiversity = 3
+        metrics.behavior
+          .strongestWeekShare = 65
+        metrics.behavior
+          .executionTimeBlocks =
+          blocks(8, 8, 8, 8)
+      },
+    ),
+
+    fixture(
+      'guardian',
+      'verdant',
+      (metrics) => {
+        metrics.activeDays = 20
+        metrics.behavior
+          .strongestWeekShare = 26
+        metrics.projects.completed = 2
+        metrics.goals.completed = 1
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 0,
+            completed: 0,
+          },
+          {
+            category: 'planned',
+            created: 2,
+            completed: 2,
+          },
+          {
+            category: 'urgent',
+            created: 0,
+            completed: 0,
+          },
+          {
+            category: 'long_term',
+            created: 14,
+            completed: 12,
+          },
+        ]
+        metrics.behavior
+          .categoryDiversity = 2
+      },
+    ),
+  ]
+===== BEHAVIOR FIXTURES =====
+import {
+  baseMetrics,
+  blocks,
+} from '@/features/focusme/focusHomeClassifierFixtures'
+import type {
+  FocusHomeTemporalExpression,
+  FocusHomeTrait,
+} from '@/services/focusHomeClassifier'
+import type {
+  FocusMeMonthlyMetrics,
+} from '@/services/focusMeMonthlyService'
+
+export interface BehaviorFixture {
+  key: string
+  metrics:
+    FocusMeMonthlyMetrics
+  expectedTemporal?:
+    FocusHomeTemporalExpression
+  expectedTrait?:
+    FocusHomeTrait
+  expectedEligible?: boolean
+  maxScoreGap?: number
+}
+
+function fixture(
+  key: string,
+  mutate: (
+    metrics:
+      FocusMeMonthlyMetrics,
+  ) => void,
+  expectations:
+    Omit<
+      BehaviorFixture,
+      'key' | 'metrics'
+    >,
+): BehaviorFixture {
+  const metrics =
+    baseMetrics()
+
+  mutate(metrics)
+
+  return {
+    key,
+    metrics,
+    ...expectations,
+  }
+}
+
+export const FOCUS_HOME_BEHAVIOR_FIXTURES:
+  BehaviorFixture[] = [
+    fixture(
+      'planeja à noite e executa de manhã',
+      (metrics) => {
+        metrics.behavior
+          .planningTimeBlocks =
+          blocks(1, 1, 4, 16)
+        metrics.behavior
+          .executionTimeBlocks =
+          blocks(15, 2, 1, 1)
+        metrics.timeBlocks =
+          blocks(480, 60, 30, 30)
+        metrics.dominantTimeBlock =
+          'morning'
+      },
+      {
+        expectedTemporal: 'aurora',
+        expectedTrait:
+          'night_planner_morning_executor',
+      },
+    ),
+
+    fixture(
+      'planeja de manhã e executa à noite',
+      (metrics) => {
+        metrics.behavior
+          .planningTimeBlocks =
+          blocks(15, 2, 1, 0)
+        metrics.behavior
+          .executionTimeBlocks =
+          blocks(1, 2, 15, 1)
+        metrics.timeBlocks =
+          blocks(50, 50, 460, 40)
+        metrics.dominantTimeBlock =
+          'evening'
+      },
+      {
+        expectedTemporal: 'vesper',
+        expectedTrait:
+          'morning_planner_night_executor',
+      },
+    ),
+
+    fixture(
+      'muitas metas ainda abertas',
+      (metrics) => {
+        metrics.goals.created = 5
+        metrics.goals.completed = 0
+      },
+      {
+        expectedTrait:
+          'goal_rich_open_horizons',
+      },
+    ),
+
+    fixture(
+      'foco concentrado em um projeto',
+      (metrics) => {
+        metrics.behavior
+          .projectFocusShare = 88
+      },
+      {
+        expectedTrait:
+          'project_concentrated',
+      },
+    ),
+
+    fixture(
+      'finalizador de urgências',
+      (metrics) => {
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 1,
+            completed: 1,
+          },
+          {
+            category: 'planned',
+            created: 2,
+            completed: 2,
+          },
+          {
+            category: 'urgent',
+            created: 10,
+            completed: 9,
+          },
+          {
+            category: 'long_term',
+            created: 0,
+            completed: 0,
+          },
+        ]
+      },
+      {
+        expectedTrait:
+          'urgent_closer',
+      },
+    ),
+
+    fixture(
+      'horizonte longo',
+      (metrics) => {
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 1,
+            completed: 1,
+          },
+          {
+            category: 'planned',
+            created: 2,
+            completed: 2,
+          },
+          {
+            category: 'urgent',
+            created: 0,
+            completed: 0,
+          },
+          {
+            category: 'long_term',
+            created: 10,
+            completed: 8,
+          },
+        ]
+      },
+      {
+        expectedTrait:
+          'long_horizon',
+      },
+    ),
+
+    fixture(
+      'resolvedor rápido',
+      (metrics) => {
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 14,
+            completed: 13,
+          },
+          {
+            category: 'planned',
+            created: 2,
+            completed: 1,
+          },
+          {
+            category: 'urgent',
+            created: 0,
+            completed: 0,
+          },
+          {
+            category: 'long_term',
+            created: 0,
+            completed: 0,
+          },
+        ]
+      },
+      {
+        expectedTrait:
+          'quick_solver',
+      },
+    ),
+
+    fixture(
+      'retorna após interrupções',
+      (metrics) => {
+        metrics.behavior
+          .recoveryActions = 9
+      },
+      {
+        expectedTrait:
+          'comeback_pattern',
+      },
+    ),
+
+    fixture(
+      'constância entre semanas',
+      (metrics) => {
+        metrics.activeDays = 18
+        metrics.behavior
+          .strongestWeekShare = 28
+      },
+      {
+        expectedTrait:
+          'steady_weeks',
+      },
+    ),
+
+    fixture(
+      'produtividade em picos',
+      (metrics) => {
+        metrics.behavior
+          .strongestWeekShare = 72
+      },
+      {
+        expectedTrait:
+          'peak_driven',
+      },
+    ),
+
+    fixture(
+      'ritmo temporal equilibrado',
+      (metrics) => {
+        metrics.timeBlocks =
+          blocks(150, 150, 150, 150)
+        metrics.dominantTimeBlock =
+          null
+      },
+      {
+        expectedTemporal:
+          'equinox',
+      },
+    ),
+
+    fixture(
+      'madrugada predominante',
+      (metrics) => {
+        metrics.timeBlocks =
+          blocks(30, 30, 60, 480)
+        metrics.dominantTimeBlock =
+          'late_night'
+      },
+      {
+        expectedTemporal:
+          'lunaris',
+      },
+    ),
+
+    fixture(
+      'dados insuficientes',
+      (metrics) => {
+        metrics.focusMinutes = 25
+        metrics.completedSessions = 1
+        metrics.activeDays = 1
+        metrics.tasks.created = 1
+        metrics.tasks.completed = 0
+        metrics.projects.created = 0
+        metrics.projects.completed = 0
+        metrics.goals.created = 0
+        metrics.goals.completed = 0
+        metrics.coverage
+          .meaningfulActions = 1
+        metrics.coverage
+          .featureAreasUsed = 1
+        metrics.coverage
+          .activityEvents = 2
+      },
+      {
+        expectedEligible: false,
+      },
+    ),
+
+    fixture(
+      'perfil intencionalmente ambíguo',
+      (metrics) => {
+        metrics.activeDays = 16
+        metrics.focusMinutes = 900
+        metrics.completedSessions = 24
+        metrics.behavior
+          .projectFocusShare = 60
+        metrics.behavior
+          .strongestWeekShare = 32
+        metrics.behavior
+          .completionBalance = 100
+        metrics.tasks.categories = [
+          {
+            category: 'quick',
+            created: 3,
+            completed: 3,
+          },
+          {
+            category: 'planned',
+            created: 4,
+            completed: 4,
+          },
+          {
+            category: 'urgent',
+            created: 2,
+            completed: 2,
+          },
+          {
+            category: 'long_term',
+            created: 5,
+            completed: 5,
+          },
+        ]
+      },
+      {
+        maxScoreGap: 12,
+      },
+    ),
+  ]
+===== DIAGNOSTICS PAGE =====
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Minus,
+  XCircle,
+} from 'lucide-react'
+import {
+  useNavigate,
+} from 'react-router-dom'
+
+import {
+  FocusHomeSymbol,
+} from '@/components/focusme/FocusHomeSymbol'
+import {
+  PageHeader,
+} from '@/components/ui/PageHeader'
+import {
+  FOCUS_HOME_BEHAVIOR_FIXTURES,
+} from '@/features/focusme/focusHomeBehaviorFixtures'
+import {
+  FOCUS_HOME_FIXTURES,
+} from '@/features/focusme/focusHomeClassifierFixtures'
+import {
+  classifyFocusHome,
+} from '@/services/focusHomeClassifier'
+import {
+  evaluateFocusHomeEligibility,
+} from '@/services/focusMeEligibility'
+
+export function FocusHomeDiagnosticsPage() {
+  const navigate = useNavigate()
+
+  const classResults =
+    FOCUS_HOME_FIXTURES.map(
+      (fixture) => ({
+        fixture,
+        result:
+          classifyFocusHome(
+            fixture.metrics,
+          ),
+      }),
+    )
+
+  const classPassed =
+    classResults.filter(
+      ({ fixture, result }) =>
+        fixture.expected ===
+        result.focusHome,
+    ).length
+
+  const behaviorResults =
+    FOCUS_HOME_BEHAVIOR_FIXTURES.map(
+      (fixture) => {
+        const result =
+          classifyFocusHome(
+            fixture.metrics,
+          )
+
+        const eligibility =
+          evaluateFocusHomeEligibility(
+            fixture.metrics,
+            true,
+          )
+
+        const checks: boolean[] = []
+
+        if (
+          fixture.expectedTemporal
+        ) {
+          checks.push(
+            result.temporalExpression ===
+              fixture.expectedTemporal,
+          )
+        }
+
+        if (fixture.expectedTrait) {
+          checks.push(
+            result.traits.includes(
+              fixture.expectedTrait,
+            ),
+          )
+        }
+
+        if (
+          fixture.expectedEligible !==
+          undefined
+        ) {
+          checks.push(
+            eligibility.eligible ===
+              fixture.expectedEligible,
+          )
+        }
+
+        if (
+          fixture.maxScoreGap !==
+          undefined
+        ) {
+          checks.push(
+            result.scoreGap <=
+              fixture.maxScoreGap,
+          )
+        }
+
+        return {
+          fixture,
+          result,
+          eligibility,
+          passed:
+            checks.length > 0 &&
+            checks.every(Boolean),
+        }
+      },
+    )
+
+  const behaviorPassed =
+    behaviorResults.filter(
+      (item) => item.passed,
+    ).length
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 pb-12 lg:px-10 lg:pb-16">
+      <button
+        type="button"
+        onClick={() =>
+          navigate(
+            '/settings/focusme',
+          )
+        }
+        className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition hover:text-accent-white"
+      >
+        <ArrowLeft size={17} />
+        Voltar
+      </button>
+
+      <PageHeader
+        title="Diagnóstico FocushoMe"
+        subtitle="Validação interna antes de analisar usuários reais."
+      />
+
+      <div className="mb-8">
+        <div className="card mb-4 p-5">
+          <p className="text-xs uppercase tracking-wide text-accent-subtle">
+            Classes principais
+          </p>
+
+          <p className="mt-2 text-2xl font-semibold text-accent-white">
+            {classPassed}
+            {' / '}
+            {classResults.length}
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {classResults.map(
+            ({
+              fixture,
+              result,
+            }) => {
+              const correct =
+                fixture.expected ===
+                result.focusHome
+
+              return (
+                <article
+                  key={fixture.key}
+                  className="card p-5"
+                >
+                  <div className="flex items-start gap-4">
+                    <FocusHomeSymbol
+                      type={
+                        result.focusHome
+                      }
+                      size={58}
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs uppercase tracking-wide text-accent-subtle">
+                          {fixture.key}
+                        </p>
+
+                        {correct ? (
+                          <CheckCircle2
+                            size={17}
+                            className="text-accent-green"
+                          />
+                        ) : (
+                          <XCircle
+                            size={17}
+                            className="text-red-400"
+                          />
+                        )}
+                      </div>
+
+                      <p className="mt-2 text-sm capitalize text-accent-white">
+                        {result.focusHome}
+                      </p>
+
+                      <p className="mt-1 text-xs text-accent-subtle">
+                        confiança
+                        {' '}
+                        {result.confidence}%
+                        {' · '}
+                        diferença
+                        {' '}
+                        {result.scoreGap}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2 border-t border-white/[0.06] pt-4">
+                    {result.scores
+                      .slice(0, 3)
+                      .map((score) => (
+                        <span
+                          key={score.key}
+                          className="rounded-lg bg-white/[0.04] px-2 py-1 text-[10px] capitalize text-accent-subtle"
+                        >
+                          {score.key}
+                          {' '}
+                          {score.score}
+                        </span>
+                      ))}
+                  </div>
+                </article>
+              )
+            },
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div className="card mb-4 p-5">
+          <p className="text-xs uppercase tracking-wide text-accent-subtle">
+            Comportamentos e exceções
+          </p>
+
+          <p className="mt-2 text-2xl font-semibold text-accent-white">
+            {behaviorPassed}
+            {' / '}
+            {behaviorResults.length}
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {behaviorResults.map(
+            ({
+              fixture,
+              result,
+              eligibility,
+              passed,
+            }) => (
+              <article
+                key={fixture.key}
+                className="card p-5"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-accent-white">
+                      {fixture.key}
+                    </p>
+
+                    <p className="mt-2 text-xs text-accent-subtle">
+                      <span className="capitalize">
+                        {result.focusHome}
+                      </span>
+                      {' · '}
+                      {result.temporalExpression}
+                      {' · '}
+                      confiança
+                      {' '}
+                      {result.confidence}%
+                      {' · '}
+                      diferença
+                      {' '}
+                      {result.scoreGap}
+                    </p>
+                  </div>
+
+                  {passed ? (
+                    <CheckCircle2
+                      size={18}
+                      className="shrink-0 text-accent-green"
+                    />
+                  ) : (
+                    <XCircle
+                      size={18}
+                      className="shrink-0 text-red-400"
+                    />
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {result.traits.length > 0 ? (
+                    result.traits.map(
+                      (trait) => (
+                        <span
+                          key={trait}
+                          className="rounded-lg bg-white/[0.04] px-2 py-1 text-[10px] text-accent-subtle"
+                        >
+                          {trait}
+                        </span>
+                      ),
+                    )
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-accent-subtle">
+                      <Minus size={12} />
+                      sem traço específico
+                    </span>
+                  )}
+                </div>
+
+                {fixture.expectedEligible !==
+                  undefined && (
+                  <p className="mt-3 text-xs text-accent-subtle">
+                    Elegível:
+                    {' '}
+                    {eligibility.eligible
+                      ? 'sim'
+                      : 'não'}
+                    {' · '}
+                    progresso
+                    {' '}
+                    {eligibility.progress}%
+                  </p>
+                )}
+              </article>
+            ),
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+===== APP ROUTES =====
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+} from 'react-router-dom'
+
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { Layout } from './components/layout/Layout'
+
+import { useTimer } from './hooks/useTimer'
+
+import { AboutFocusMePage } from './pages/AboutFocusMePage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
+import { ChangesPage } from './pages/ChangesPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { FocusHomeDiagnosticsPage } from './pages/FocusHomeDiagnosticsPage'
+import { FocusHomeRevealPage } from './pages/FocusHomeRevealPage'
+import { FocusHomeRetestPage } from './pages/FocusHomeRetestPage'
+import { FocusMeHistoryPage } from './pages/FocusMeHistoryPage'
+import { FocusMePage } from './pages/FocusMePage'
+import { FocusMeReportPage } from './pages/FocusMeReportPage'
+import { GoalsPage } from './pages/GoalsPage'
+import { LoginPage } from './pages/LoginPage'
+import { ProjectsPage } from './pages/ProjectsPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { StreaksPage } from './pages/StreaksPage'
+import { TasksPage } from './pages/TasksPage'
+import { TasksTrashPage } from './pages/TasksTrashPage'
+import { TimerPage } from './pages/TimerPage'
+
+function TimerDriver() {
+  useTimer()
+  return null
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <TimerDriver />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/timer" element={<TimerPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route
+              path="/tasks/trash"
+              element={<TasksTrashPage />}
+            />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/streaks" element={<StreaksPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/focusme" element={<FocusMePage />} />
+            <Route
+              path="/focusme/history"
+              element={<FocusMeHistoryPage />}
+            />
+            <Route
+              path="/focusme/diagnostics"
+              element={<FocusHomeDiagnosticsPage />}
+            />
+            <Route
+              path="/focusme/reveal/:reportId"
+              element={<FocusHomeRevealPage />}
+            />
+            <Route
+              path="/focusme/retest/:reportId"
+              element={<FocusHomeRetestPage />}
+            />
+            <Route
+              path="/focusme/reports/:reportId"
+              element={<FocusMeReportPage />}
+            />
+            <Route
+              path="/settings/focusme"
+              element={<AboutFocusMePage />}
+            />
+            <Route
+              path="/settings/changes"
+              element={<ChangesPage />}
+            />
+          </Route>
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+export default App

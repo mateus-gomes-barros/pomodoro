@@ -1,0 +1,1089 @@
+===== STREAKS PAGE DATA =====
+import { enUS, ptBR } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { motion } from 'framer-motion'
+import {
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  LoaderCircle,
+  Lock,
+  Trophy,
+  Zap,
+} from 'lucide-react'
+import {
+  eachDayOfInterval,
+  endOfMonth,
+  format,
+  startOfMonth,
+  subDays,
+  subMonths,
+} from 'date-fns'
+
+import { useAnalytics } from '@/hooks/analytics/useAnalytics'
+import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
+import { StatCard } from '@/components/ui/Card'
+import { PageHeader } from '@/components/ui/PageHeader'
+import {
+  getNextStreakBadge,
+  getStreakBadge,
+  getStreakBadgeProgress,
+  STREAK_BADGES,
+} from '@/lib/streakBadges'
+import { cn, formatDuration } from '@/utils'
+
+import type {
+  DailyStats,
+  PomodoroSession,
+  StreakData,
+} from '@/types'
+
+const BADGES_PER_PAGE = 4
+
+const ACHIEVEMENTS = [
+  {
+    id: 'first_session',
+    icon: '🎯',
+    titleKey: 'streaksPage.achievements.firstSession.title',
+    descKey: 'streaksPage.achievements.firstSession.description',
+  },
+  {
+    id: 'week_streak',
+    icon: '🔥',
+    titleKey: 'streaksPage.achievements.weekStreak.title',
+    descKey: 'streaksPage.achievements.weekStreak.description',
+  },
+  {
+    id: 'month_streak',
+    icon: '🏆',
+    titleKey: 'streaksPage.achievements.monthStreak.title',
+    descKey: 'streaksPage.achievements.monthStreak.description',
+  },
+  {
+    id: 'ten_hours',
+    icon: '⚡',
+    titleKey: 'streaksPage.achievements.tenHours.title',
+    descKey: 'streaksPage.achievements.tenHours.description',
+  },
+]
+
+function buildDailyStats(
+  sessions: PomodoroSession[],
+): Record<string, DailyStats> {
+  return sessions.reduce<
+    Record<string, DailyStats>
+  >((stats, session) => {
+    if (session.type !== 'work') {
+      return stats
+    }
+
+    const existing = stats[session.date] ?? {
+      date: session.date,
+      focusMinutes: 0,
+      sessionsCompleted: 0,
+      tasksCompleted: 0,
+    }
+
+    stats[session.date] = {
+      ...existing,
+      focusMinutes:
+        existing.focusMinutes +
+        session.durationMinutes,
+      sessionsCompleted:
+        existing.sessionsCompleted + 1,
+    }
+
+    return stats
+  }, {})
+}
+
+function buildStreak(
+  activeDates: string[],
+): StreakData {
+  const uniqueDates = [
+    ...new Set(activeDates),
+  ].sort()
+
+  if (uniqueDates.length === 0) {
+    return {
+      currentStreak: 0,
+      longestStreak: 0,
+      lastActiveDate: '',
+      activeDates: [],
+    }
+  }
+
+  const activeDateSet = new Set(
+    uniqueDates,
+  )
+
+  const today = new Date()
+
+  const todayString = format(
+    today,
+    'yyyy-MM-dd',
+  )
+
+  const yesterdayString = format(
+    subDays(today, 1),
+    'yyyy-MM-dd',
+  )
+
+  let currentStreak = 0
+
+  let currentDate = activeDateSet.has(
+    todayString,
+  )
+    ? today
+    : activeDateSet.has(
+          yesterdayString,
+        )
+      ? subDays(today, 1)
+      : null
+
+  while (currentDate) {
+    const dateString = format(
+      currentDate,
+      'yyyy-MM-dd',
+    )
+
+    if (!activeDateSet.has(dateString)) {
+      break
+    }
+
+    currentStreak += 1
+
+    currentDate = subDays(
+      currentDate,
+      1,
+    )
+  }
+
+  let longestStreak = 1
+  let runningStreak = 1
+
+  for (
+    let index = 1;
+    index < uniqueDates.length;
+    index += 1
+  ) {
+    const previousDate = new Date(
+      `${uniqueDates[index - 1]}T00:00:00`,
+    )
+
+    const expectedDate = format(
+      subDays(
+        new Date(
+          `${uniqueDates[index]}T00:00:00`,
+        ),
+        1,
+      ),
+      'yyyy-MM-dd',
+    )
+
+    if (
+      format(
+        previousDate,
+        'yyyy-MM-dd',
+      ) === expectedDate
+    ) {
+      runningStreak += 1
+
+      longestStreak = Math.max(
+        longestStreak,
+        runningStreak,
+      )
+    } else {
+      runningStreak = 1
+    }
+  }
+
+  return {
+    currentStreak,
+    longestStreak,
+    lastActiveDate:
+      uniqueDates[
+        uniqueDates.length - 1
+      ],
+    activeDates: uniqueDates,
+  }
+}
+
+function chunkBadges() {
+  return Array.from(
+    {
+      length: Math.ceil(
+        STREAK_BADGES.length /
+          BADGES_PER_PAGE,
+      ),
+    },
+    (_, pageIndex) =>
+      STREAK_BADGES.slice(
+        pageIndex *
+          BADGES_PER_PAGE,
+        pageIndex *
+          BADGES_PER_PAGE +
+          BADGES_PER_PAGE,
+      ),
+  )
+}
+
+export function StreaksPage() {
+  const { t } = useTranslation()
+
+  const carouselRef =
+    useRef<HTMLDivElement>(null)
+
+  const [
+    activeBadgePage,
+    setActiveBadgePage,
+  ] = useState(0)
+
+  const {
+    totalFocusMinutes,
+    isLoading: isAnalyticsLoading,
+    isError: isAnalyticsError,
+    error: analyticsError,
+  } = useAnalytics()
+
+  const sessionsQuery =
+    usePomodoroSessions()
+
+  const sessions =
+    sessionsQuery.data ?? []
+
+  const dailyStats = useMemo(
+    () => buildDailyStats(sessions),
+    [sessions],
+  )
+
+  const streak = useMemo(() => {
+    const activeDates = sessions
+      .filter(
+        (session) =>
+          session.type === 'work',
+      )
+      .map(
+        (session) => session.date,
+      )
+
+    return buildStreak(activeDates)
+  }, [sessions])
+
+  const badgePages = useMemo(
+    () => chunkBadges(),
+    [],
+  )
+
+  const today = new Date()
+
+  const months = [
+    subMonths(today, 2),
+    subMonths(today, 1),
+    today,
+  ]
+
+  const currentBadge =
+    getStreakBadge(
+      streak.currentStreak,
+    )
+
+  const nextBadge =
+    getNextStreakBadge(
+      streak.currentStreak,
+    )
+
+  const badgeProgress =
+    getStreakBadgeProgress(
+      streak.currentStreak,
+    )
+
+  const progressPercentage =
+    Math.round(
+      badgeProgress * 100,
+    )
+
+  const daysUntilNextBadge =
+    nextBadge
+      ? nextBadge.minimumDays -
+        streak.currentStreak
+      : 0
+
+
+  const currentBadgeIndex =
+    STREAK_BADGES.findIndex(
+      (badge) =>
+        badge.minimumDays ===
+        currentBadge.minimumDays,
+    )
+
+  const currentBadgePage =
+    Math.floor(
+      Math.max(
+        currentBadgeIndex,
+        0,
+      ) / BADGES_PER_PAGE,
+    )
+
+  const isLoading =
+    isAnalyticsLoading ||
+    sessionsQuery.isLoading
+
+  const isError =
+    isAnalyticsError ||
+    sessionsQuery.isError
+
+  const error =
+    analyticsError ??
+    sessionsQuery.error
+
+  useEffect(() => {
+    const carousel =
+      carouselRef.current
+
+    if (!carousel || isLoading) {
+      return
+    }
+
+    setActiveBadgePage(
+      currentBadgePage,
+    )
+
+    carousel.scrollTo({
+      left:
+        currentBadgePage *
+        carousel.clientWidth,
+      behavior: 'auto',
+    })
+  }, [
+    currentBadgePage,
+    isLoading,
+  ])
+
+  function goToBadgePage(
+    pageIndex: number,
+  ) {
+    const carousel =
+      carouselRef.current
+
+    if (!carousel) {
+      return
+    }
+
+    const safePageIndex = Math.max(
+===== SIDEBAR BADGE DATA =====
+import {
+  useMemo,
+  useState,
+} from 'react'
+import {
+  NavLink,
+  useNavigate,
+} from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import {
+  BarChart3,
+  CheckSquare,
+  Flame,
+  FolderOpen,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  Settings,
+  Target,
+  Timer,
+} from 'lucide-react'
+
+import { FocusMeIcon } from '@/components/icons/FocusMeIcon'
+import {
+  format,
+  subDays,
+} from 'date-fns'
+
+import { useAuth } from '@/contexts/AuthContext'
+import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
+import { getStreakBadge } from '@/lib/streakBadges'
+import { signOut } from '@/services/authService'
+import { cn } from '@/utils'
+
+const navItems = [
+  {
+    icon: LayoutDashboard,
+    labelKey: 'navigation.dashboard',
+    path: '/',
+  },
+  {
+    icon: Timer,
+    labelKey: 'navigation.timer',
+    path: '/timer',
+  },
+  {
+    icon: FolderOpen,
+    labelKey: 'navigation.projects',
+    path: '/projects',
+  },
+  {
+    icon: CheckSquare,
+    labelKey: 'navigation.tasks',
+    path: '/tasks',
+  },
+  {
+    icon: Target,
+    labelKey: 'navigation.goals',
+    path: '/goals',
+  },
+  {
+    icon: Flame,
+    labelKey: 'navigation.streaks',
+    path: '/streaks',
+  },
+  {
+    icon: BarChart3,
+    labelKey: 'navigation.analytics',
+    path: '/analytics',
+  },
+]
+
+function calculateCurrentStreak(
+  activeDates: string[],
+): number {
+  const uniqueDates = new Set(
+    activeDates,
+  )
+
+  const today = new Date()
+
+  const todayString = format(
+    today,
+    'yyyy-MM-dd',
+  )
+
+  const yesterday = subDays(
+    today,
+    1,
+  )
+
+  const yesterdayString = format(
+    yesterday,
+    'yyyy-MM-dd',
+  )
+
+  let currentDate: Date | null =
+    uniqueDates.has(todayString)
+      ? today
+      : uniqueDates.has(
+            yesterdayString,
+          )
+        ? yesterday
+        : null
+
+  let currentStreak = 0
+
+  while (currentDate) {
+    const dateString = format(
+      currentDate,
+      'yyyy-MM-dd',
+    )
+
+    if (
+      !uniqueDates.has(dateString)
+    ) {
+      break
+    }
+
+    currentStreak += 1
+
+    currentDate = subDays(
+      currentDate,
+      1,
+    )
+  }
+
+  return currentStreak
+}
+
+export function SidebarDesktop() {
+  const { t } = useTranslation()
+
+  const navigate = useNavigate()
+
+  const {
+    user,
+    isDemoMode,
+    exitDemoMode,
+  } = useAuth()
+
+  const sessionsQuery =
+    usePomodoroSessions()
+
+  const [
+    isSigningOut,
+    setIsSigningOut,
+  ] = useState(false)
+
+  const workSessions = useMemo(
+    () =>
+      (sessionsQuery.data ?? []).filter(
+        (session) =>
+          session.type === 'work',
+      ),
+    [sessionsQuery.data],
+  )
+
+  const currentStreak = useMemo(
+    () =>
+      calculateCurrentStreak(
+        workSessions.map(
+          (session) => session.date,
+        ),
+      ),
+    [workSessions],
+  )
+
+  const currentBadge =
+    getStreakBadge(currentStreak)
+
+  const totalPomodoros =
+    workSessions.length
+
+  const streakLabel = t(
+    'layout.streakDays',
+    {
+      count: currentStreak,
+    },
+  )
+
+  async function handleSignOut() {
+    try {
+      setIsSigningOut(true)
+
+      await signOut()
+
+      navigate(
+        '/login',
+        {
+          replace: true,
+        },
+      )
+    } catch (error) {
+      console.error(
+        'Failed to sign out:',
+        error,
+      )
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
+
+  function handleLogin() {
+    navigate('/login')
+  }
+
+  function handleExitDemoMode() {
+    exitDemoMode()
+
+===== MOBILE BADGE DATA =====
+import { motion } from 'framer-motion'
+import { Menu } from 'lucide-react'
+import {
+  format,
+  subDays,
+} from 'date-fns'
+import { useTranslation } from 'react-i18next'
+  
+  import {
+    usePomodoroSessions,
+  } from '@/hooks/pomodoro/usePomodoroSessions'
+  import {
+    getStreakBadge,
+  } from '@/lib/streakBadges'
+  
+  type MobileTopBarProps = {
+    onOpenMenu: () => void
+  }
+  
+  function calculateCurrentStreak(
+    activeDates: string[],
+  ): number {
+    const uniqueDates = new Set(
+      activeDates,
+    )
+  
+    const today = new Date()
+  
+    const todayString = format(
+      today,
+      'yyyy-MM-dd',
+    )
+  
+    const yesterday = subDays(
+      today,
+      1,
+    )
+  
+    const yesterdayString = format(
+      yesterday,
+      'yyyy-MM-dd',
+    )
+  
+    let currentDate: Date | null =
+      uniqueDates.has(todayString)
+        ? today
+        : uniqueDates.has(
+              yesterdayString,
+            )
+          ? yesterday
+          : null
+  
+    let currentStreak = 0
+  
+    while (currentDate) {
+      const dateString = format(
+        currentDate,
+        'yyyy-MM-dd',
+      )
+  
+      if (
+        !uniqueDates.has(dateString)
+      ) {
+        break
+      }
+  
+      currentStreak += 1
+  
+      currentDate = subDays(
+        currentDate,
+        1,
+      )
+    }
+  
+    return currentStreak
+  }
+  
+  export function MobileTopBar({
+    onOpenMenu,
+  }: MobileTopBarProps) {
+  const { t } = useTranslation()
+
+    const sessionsQuery =
+      usePomodoroSessions()
+  
+    const sessions =
+      sessionsQuery.data ?? []
+  
+    const workSessions =
+      sessions.filter(
+        (session) =>
+          session.type === 'work',
+      )
+  
+    const currentStreak =
+      calculateCurrentStreak(
+        workSessions.map(
+          (session) => session.date,
+        ),
+      )
+  
+    const totalPomodoros =
+      workSessions.length
+  
+    const badge =
+      getStreakBadge(currentStreak)
+  
+    const streakLabel = t(
+      'layout.streakDays',
+      {
+        count: currentStreak,
+      },
+    )
+  
+    return (
+      <header
+        className="
+          sticky
+          top-0
+          z-30
+          flex
+          h-[calc(72px+env(safe-area-inset-top))]
+          pt-[env(safe-area-inset-top)]
+          items-center
+          justify-between
+          border-b
+          border-white/[0.06]
+          bg-[#0a0a0a]/85
+          px-5
+          backdrop-blur-2xl
+          lg:hidden
+        "
+      >
+        <button
+          type="button"
+===== STORES AND STREAK HOOKS =====
+
+===== src/hooks/useTimer.ts =====
+import {
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react'
+import {
+  format,
+  subDays,
+} from 'date-fns'
+
+import {
+  useCreatePomodoroSession,
+  usePomodoroSessions,
+} from '@/hooks/pomodoro/usePomodoroSessions'
+import {
+  useIncrementProjectSession,
+  useProjects,
+} from '@/hooks/projects/useProjects'
+import {
+  useIncrementTaskPomodoro,
+  useTasks,
+} from '@/hooks/tasks/useTasks'
+import { getStreakBadge } from '@/lib/streakBadges'
+import {
+  endFocusLiveActivity,
+  startFocusLiveActivity,
+} from '@/services/focusLiveActivityService'
+import {
+  clearTimerNotification,
+  showTimerNotification,
+  addNotificationActionListener,
+} from '@/services/timerNotificationService'
+import { usePomodoroStore } from '@/store/pomodoroStore'
+
+import type {
+  SessionType,
+  TimerSettings,
+} from '@/types'
+
+function getSessionDuration(
+  type: SessionType,
+  settings: TimerSettings,
+): number {
+  switch (type) {
+    case 'work':
+      return settings.workDuration
+    case 'short_break':
+      return settings.shortBreakDuration
+    case 'long_break':
+      return settings.longBreakDuration
+  }
+}
+
+function getLiveActivityRemainingSeconds(
+  endsAt: number | null,
+  secondsLeft: number,
+): number {
+  if (endsAt === null) {
+    return secondsLeft
+  }
+  return Math.max(
+    0,
+    Math.ceil((endsAt - Date.now()) / 1000),
+  )
+}
+
+function calculateCurrentStreak(activeDates: string[]): number {
+  const uniqueDates = new Set(activeDates)
+  const today = new Date()
+  const todayString = format(today, 'yyyy-MM-dd')
+  const yesterday = subDays(today, 1)
+  const yesterdayString = format(yesterday, 'yyyy-MM-dd')
+
+  let currentDate: Date | null =
+    uniqueDates.has(todayString)
+      ? today
+      : uniqueDates.has(yesterdayString)
+        ? yesterday
+        : null
+
+  let currentStreak = 0
+  while (currentDate) {
+    const dateString = format(currentDate, 'yyyy-MM-dd')
+    if (!uniqueDates.has(dateString)) break
+    currentStreak += 1
+    currentDate = subDays(currentDate, 1)
+  }
+  return currentStreak
+}
+
+export function useTimer() {
+  const {
+    status,
+    sessionType,
+    settings,
+    secondsLeft,
+    endsAt,
+    tick,
+    activeTaskId,
+    activeProjectId,
+  } = usePomodoroStore()
+
+  const tasksQuery = useTasks()
+  const projectsQuery = useProjects()
+  const sessionsQuery = usePomodoroSessions()
+
+  const createPomodoroSessionMutation = useCreatePomodoroSession()
+  const incrementTaskPomodoroMutation = useIncrementTaskPomodoro()
+  const incrementProjectSessionMutation = useIncrementProjectSession()
+
+  const currentBadge = useMemo(() => {
+    const workSessionDates = (sessionsQuery.data ?? [])
+      .filter((session) => session.type === 'work')
+      .map((session) => session.date)
+
+    const currentStreak = calculateCurrentStreak(workSessionDates)
+    return getStreakBadge(currentStreak)
+  }, [sessionsQuery.data])
+
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const previousStatusRef = useRef(status)
+  const previousSessionTypeRef = useRef(sessionType)
+  const previousSettingsRef = useRef(settings)
+  const liveActivityStateRef = useRef<string | null>(null)
+  const hasSyncedLiveActivityRef = useRef(false)
+
+  // 1. Hook para salvar a sessão no banco ao concluir
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current
+    const completedSessionType = previousSessionTypeRef.current
+    const completedSessionSettings = previousSettingsRef.current
+
+    const sessionWasCompleted =
+      previousStatus === 'running' && status === 'completed'
+
+    if (sessionWasCompleted) {
+      const durationMinutes = getSessionDuration(
+        completedSessionType,
+        completedSessionSettings,
+      )
+      const completedAt = new Date().toISOString()
+
+      void createPomodoroSessionMutation
+        .mutateAsync({
+          type: completedSessionType,
+          projectId: activeProjectId ?? undefined,
+          taskId: activeTaskId ?? undefined,
+          durationMinutes,
+          completedAt,
+          date: completedAt.split('T')[0],
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to save pomodoro session:', error)
+        })
+
+      if (completedSessionType === 'work') {
+        if (activeTaskId) {
+          const activeTask = tasksQuery.data?.find((t) => t.id === activeTaskId)
+          if (activeTask) {
+            void incrementTaskPomodoroMutation.mutateAsync(activeTask).catch(console.error)
+          }
+        }
+        if (activeProjectId) {
+          const activeProject = projectsQuery.data?.find((p) => p.id === activeProjectId)
+          if (activeProject) {
+            void incrementProjectSessionMutation
+              .mutateAsync({ project: activeProject, minutes: durationMinutes })
+              .catch(console.error)
+          }
+        }
+      }
+
+      if (completedSessionSettings.soundEnabled) {
+        playCompletionSound()
+      }
+    }
+
+    previousStatusRef.current = status
+    previousSessionTypeRef.current = sessionType
+    previousSettingsRef.current = settings
+  }, [
+    status,
+    sessionType,
+    settings,
+    activeTaskId,
+    activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
+    createPomodoroSessionMutation,
+    incrementTaskPomodoroMutation,
+    incrementProjectSessionMutation,
+  ])
+
+  // 2. Hook para sincronizar atividades nativas (Live Activity iOS + Notification Android)
+  useEffect(() => {
+    if (status !== 'running' && status !== 'paused') {
+      const needsToEndActivity =
+        !hasSyncedLiveActivityRef.current || liveActivityStateRef.current !== null
+
+      if (needsToEndActivity) {
+        hasSyncedLiveActivityRef.current = true
+        liveActivityStateRef.current = null
+        
+        // Limpa estado nativo em ambas as plataformas
+        void endFocusLiveActivity()
+        void clearTimerNotification()
+      }
+      return
+    }
+
+    const activeTask = tasksQuery.data?.find((t) => t.id === activeTaskId)
+    const resolvedProjectId = activeProjectId ?? activeTask?.projectId ?? null
+    const activeProject = projectsQuery.data?.find((p) => p.id === resolvedProjectId)
+
+    const remainingSeconds = getLiveActivityRemainingSeconds(
+      status === 'running' ? endsAt : null,
+      secondsLeft,
+    )
+
+    const activityStateSignature = [
+      status,
+      sessionType,
+      endsAt ?? 'no-end-date',
+      status === 'paused' ? remainingSeconds : 'countdown',
+      activeProject?.name ?? '',
+      activeTask?.title ?? '',
+      currentBadge.icon,
+    ].join('|')
+
+    const stateHasNotChanged =
+      hasSyncedLiveActivityRef.current &&
+      liveActivityStateRef.current === activityStateSignature
+
+    if (stateHasNotChanged) {
+      return
+    }
+
+    hasSyncedLiveActivityRef.current = true
+    liveActivityStateRef.current = activityStateSignature
+
+    // Atualiza Live Activity (iOS)
+    void startFocusLiveActivity({
+      sessionType,
+      status,
+      endDate: status === 'running' ? endsAt : null,
+      remainingSeconds,
+      projectName: activeProject?.name,
+      taskName: activeTask?.title,
+      badgeIcon: currentBadge.icon,
+    })
+
+    // Atualiza Notificação Fixa / Now Bar (Android)
+    // O cronômetro é controlado nativamente pelo Android através do endTime.
+    // Não enviamos o tempo como texto para evitar que ele fique duplicado/estático.
+
+    const focusEmoji = activeProject?.emoji ?? '⏱️'
+
+const focusName =
+  activeTask?.title ??
+  activeProject?.name ??
+  (sessionType === 'work'
+    ? 'Foco'
+    : sessionType === 'short_break'
+      ? 'Pausa Curta'
+      : 'Pausa Longa')
+
+const notificationTitle = `${focusEmoji} ${focusName}`
+
+const notificationBody =
+  activeTask?.title && activeProject?.name
+    ? activeProject.name
+    : ''
+
+void showTimerNotification(
+  notificationTitle,
+  notificationBody,
+  status === 'running' ? (endsAt ?? 0) : 0,
+  currentBadge.icon,
+)
+  }, [
+    status,
+    sessionType,
+    secondsLeft,
+    endsAt,
+    activeTaskId,
+    activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
+    currentBadge.icon,
+  ])
+
+  // 3. Hook para ouvir ações da notificação (Android)
+  useEffect(() => {
+    const handleAction = (action: string) => {
+      const { status, start, pause, reset } = usePomodoroStore.getState()
+      console.log('⚡ [useTimer] Ação recebida da notificação:', action)
+
+      if (action === 'com.mateusgomes.focusapp.ACTION_PAUSE') {
+        if (status === 'running') {
+          pause()
+        } else {
+          start()
+        }
+      } else if (action === 'com.mateusgomes.focusapp.ACTION_STOP') {
+        reset()
+      }
+    }
+
+    const listener = addNotificationActionListener(handleAction)
+
+    return () => {
+      if (listener && 'then' in listener) {
+        void (listener as any).then((h: any) => h.remove())
+      }
+    }
+  }, [])
+
+  // 4. Hook para o Ticking interval
+  useEffect(() => {
+    if (status === 'running') {
+      intervalRef.current = setInterval(() => {
+        tick()
+      }, 1000)
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+  }, [status, tick])
+}
+
+function playCompletionSound() {
+  try {
+    const context = new AudioContext()
+    const notes = [523.25, 659.25, 783.99]
+    notes.forEach((frequency, index) => {
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.frequency.value = frequency
+      oscillator.type = 'sine'
+      gain.gain.setValueAtTime(0, context.currentTime + index * 0.18)
+      gain.gain.linearRampToValueAtTime(0.15, context.currentTime + index * 0.18 + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + index * 0.18 + 0.4)
+      oscillator.start(context.currentTime + index * 0.18)
+      oscillator.stop(context.currentTime + index * 0.18 + 0.5)
+    })
+  } catch {
+    // AudioContext unavailable
+  }
+}

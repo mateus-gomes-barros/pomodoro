@@ -1,0 +1,422 @@
+===== BADGE FILES =====
+src/lib/streakBadges.ts
+===== BADGE REFERENCES =====
+src/types/index.ts:104:// ─── Achievement ────────────────────────────────────────────────────────────────
+src/types/index.ts:106:export interface Achievement {
+src/index.css:189:  .badge-green {
+src/components/layout/SidebarDesktop.tsx:31:import { getStreakBadge } from '@/lib/streakBadges'
+src/components/layout/SidebarDesktop.tsx:169:  const currentBadge =
+src/components/layout/SidebarDesktop.tsx:170:    getStreakBadge(currentStreak)
+src/components/layout/SidebarDesktop.tsx:328:              {currentBadge.icon}
+src/components/layout/SidebarDesktop.tsx:342:                  `streaksPage.badges.${currentBadge.minimumDays}.name`,
+src/components/layout/MobileTopBar.tsx:13:    getStreakBadge,
+src/components/layout/MobileTopBar.tsx:14:  } from '@/lib/streakBadges'
+src/components/layout/MobileTopBar.tsx:105:    const badge =
+src/components/layout/MobileTopBar.tsx:106:      getStreakBadge(currentStreak)
+src/components/layout/MobileTopBar.tsx:185:                `streaksPage.badges.${badge.minimumDays}.name`,
+src/components/layout/MobileTopBar.tsx:218:            {badge.icon}
+src/components/layout/MobileTopBar.tsx:229:                `streaksPage.badges.${badge.minimumDays}.name`,
+src/components/layout/MobileTopBar.tsx:252:                `streaksPage.badges.${badge.minimumDays}.name`,
+src/hooks/useTimer.ts:23:import { getStreakBadge } from '@/lib/streakBadges'
+src/hooks/useTimer.ts:111:  const currentBadge = useMemo(() => {
+src/hooks/useTimer.ts:117:    return getStreakBadge(currentStreak)
+src/hooks/useTimer.ts:227:      currentBadge.icon,
+src/hooks/useTimer.ts:249:      badgeIcon: currentBadge.icon,
+src/hooks/useTimer.ts:278:  currentBadge.icon,
+src/hooks/useTimer.ts:289:    currentBadge.icon,
+src/lib/streakBadges.ts:1:export type StreakBadge = {
+src/lib/streakBadges.ts:8:  export const STREAK_BADGES: StreakBadge[] = [
+src/lib/streakBadges.ts:12:      name: 'First Drop',
+src/lib/streakBadges.ts:137:  export function getStreakBadge(
+src/lib/streakBadges.ts:139:  ): StreakBadge {
+src/lib/streakBadges.ts:146:      [...STREAK_BADGES]
+src/lib/streakBadges.ts:149:          (badge) =>
+src/lib/streakBadges.ts:151:            badge.minimumDays,
+src/lib/streakBadges.ts:152:        ) ?? STREAK_BADGES[0]
+src/lib/streakBadges.ts:156:  export function getNextStreakBadge(
+src/lib/streakBadges.ts:158:  ): StreakBadge | null {
+src/lib/streakBadges.ts:165:      STREAK_BADGES.find(
+src/lib/streakBadges.ts:166:        (badge) =>
+src/lib/streakBadges.ts:167:          badge.minimumDays >
+src/lib/streakBadges.ts:173:  export function getStreakBadgeProgress(
+src/lib/streakBadges.ts:181:    const currentBadge =
+src/lib/streakBadges.ts:182:      getStreakBadge(normalizedDays)
+src/lib/streakBadges.ts:184:    const nextBadge =
+src/lib/streakBadges.ts:185:      getNextStreakBadge(normalizedDays)
+src/lib/streakBadges.ts:187:    if (!nextBadge) {
+src/lib/streakBadges.ts:192:      nextBadge.minimumDays -
+src/lib/streakBadges.ts:193:      currentBadge.minimumDays
+src/lib/streakBadges.ts:197:      currentBadge.minimumDays
+src/i18n/locales/pt-BR.ts:188:    currentBadge: 'Insígnia atual',
+src/i18n/locales/pt-BR.ts:191:    nextBadge: 'Próxima insígnia',
+src/i18n/locales/pt-BR.ts:200:    achievementsTitle: 'Conquistas',
+src/i18n/locales/pt-BR.ts:203:      title: 'Jornada de insígnias',
+src/i18n/locales/pt-BR.ts:208:        'Página anterior de insígnias',
+src/i18n/locales/pt-BR.ts:210:        'Próxima página de insígnias',
+src/i18n/locales/pt-BR.ts:212:        'Ir para a página {{page}} de insígnias',
+src/i18n/locales/pt-BR.ts:220:    achievements: {
+src/i18n/locales/pt-BR.ts:243:    badges: {
+src/i18n/locales/pt-BR.ts:560:    achievements: {
+src/i18n/locales/pt-BR.ts:971:        'Mais do que uma insígnia',
+src/i18n/locales/pt-BR.ts:1389:              'Sequências, insígnias, análises e histórico de foco.',
+src/i18n/locales/pt-BR.ts:1535:      badge: 'Focus 4.0',
+src/i18n/locales/en.ts:184:    currentBadge: 'Current badge',
+src/i18n/locales/en.ts:187:    nextBadge: 'Next badge',
+src/i18n/locales/en.ts:196:    achievementsTitle: 'Achievements',
+src/i18n/locales/en.ts:199:      title: 'Badge Journey',
+src/i18n/locales/en.ts:203:      previous: 'Previous badge page',
+src/i18n/locales/en.ts:204:      next: 'Next badge page',
+src/i18n/locales/en.ts:205:      goToPage: 'Go to badge page {{page}}',
+src/i18n/locales/en.ts:213:    achievements: {
+src/i18n/locales/en.ts:236:    badges: {
+src/i18n/locales/en.ts:238:        name: 'First Drop',
+src/i18n/locales/en.ts:550:    achievements: {
+src/i18n/locales/en.ts:551:      title: 'Achievements this year',
+src/i18n/locales/en.ts:554:      empty: 'No achievements yet',
+src/i18n/locales/en.ts:557:      label: 'Achievement',
+src/i18n/locales/en.ts:924:        'FocusMe will bring together your sessions, tasks, goals, projects, and achievements to show not only how much you accomplished, but how your routine truly unfolded.',
+src/i18n/locales/en.ts:960:      title: 'More than a badge',
+src/i18n/locales/en.ts:1070:            'Allowing internal work to become visible by sharing progress and recognizing personal achievements.',
+src/i18n/locales/en.ts:1378:              'Streaks, badges, analytics, and focus history.',
+src/i18n/locales/en.ts:1418:            'A complete summary of your days, sessions, tasks, goals, projects, and achievements.',
+src/i18n/locales/en.ts:1519:      badge: 'Focus 4.0',
+src/pages/GoalsPage.tsx:637:                'goalsPage.achievements.title',
+src/pages/GoalsPage.tsx:644:              'goalsPage.achievements.description',
+src/pages/GoalsPage.tsx:680:                'goalsPage.achievements.empty',
+src/pages/GoalsPage.tsx:686:                'goalsPage.achievements.emptyDescription',
+src/pages/GoalsPage.tsx:737:                        'goalsPage.achievements.label',
+src/pages/AnalyticsPage.tsx:50:interface ProjectChangeBadgeProps {
+src/pages/AnalyticsPage.tsx:143:function ProjectChangeBadge({
+src/pages/AnalyticsPage.tsx:147:}: ProjectChangeBadgeProps) {
+src/pages/AnalyticsPage.tsx:1199:                              <ProjectChangeBadge
+src/pages/AnalyticsPage.tsx:1332:                              <ProjectChangeBadge
+src/pages/SettingsPage.tsx:625:                  'settings.focusMe.badge',
+src/pages/StreaksPage.tsx:35:  getNextStreakBadge,
+src/pages/StreaksPage.tsx:36:  getStreakBadge,
+src/pages/StreaksPage.tsx:37:  getStreakBadgeProgress,
+src/pages/StreaksPage.tsx:38:  STREAK_BADGES,
+src/pages/StreaksPage.tsx:39:} from '@/lib/streakBadges'
+src/pages/StreaksPage.tsx:48:const BADGES_PER_PAGE = 4
+src/pages/StreaksPage.tsx:50:const ACHIEVEMENTS = [
+src/pages/StreaksPage.tsx:54:    titleKey: 'streaksPage.achievements.firstSession.title',
+src/pages/StreaksPage.tsx:55:    descKey: 'streaksPage.achievements.firstSession.description',
+src/pages/StreaksPage.tsx:60:    titleKey: 'streaksPage.achievements.weekStreak.title',
+src/pages/StreaksPage.tsx:61:    descKey: 'streaksPage.achievements.weekStreak.description',
+src/pages/StreaksPage.tsx:66:    titleKey: 'streaksPage.achievements.monthStreak.title',
+src/pages/StreaksPage.tsx:67:    descKey: 'streaksPage.achievements.monthStreak.description',
+src/pages/StreaksPage.tsx:72:    titleKey: 'streaksPage.achievements.tenHours.title',
+src/pages/StreaksPage.tsx:73:    descKey: 'streaksPage.achievements.tenHours.description',
+src/pages/StreaksPage.tsx:219:function chunkBadges() {
+src/pages/StreaksPage.tsx:223:        STREAK_BADGES.length /
+src/pages/StreaksPage.tsx:224:          BADGES_PER_PAGE,
+src/pages/StreaksPage.tsx:228:      STREAK_BADGES.slice(
+src/pages/StreaksPage.tsx:230:          BADGES_PER_PAGE,
+src/pages/StreaksPage.tsx:232:          BADGES_PER_PAGE +
+src/pages/StreaksPage.tsx:233:          BADGES_PER_PAGE,
+src/pages/StreaksPage.tsx:245:    activeBadgePage,
+src/pages/StreaksPage.tsx:246:    setActiveBadgePage,
+src/pages/StreaksPage.tsx:280:  const badgePages = useMemo(
+src/pages/StreaksPage.tsx:281:    () => chunkBadges(),
+src/pages/StreaksPage.tsx:293:  const currentBadge =
+src/pages/StreaksPage.tsx:294:    getStreakBadge(
+src/pages/StreaksPage.tsx:298:  const nextBadge =
+src/pages/StreaksPage.tsx:299:    getNextStreakBadge(
+src/pages/StreaksPage.tsx:303:  const badgeProgress =
+src/pages/StreaksPage.tsx:304:    getStreakBadgeProgress(
+src/pages/StreaksPage.tsx:310:      badgeProgress * 100,
+src/pages/StreaksPage.tsx:313:  const daysUntilNextBadge =
+src/pages/StreaksPage.tsx:314:    nextBadge
+src/pages/StreaksPage.tsx:315:      ? nextBadge.minimumDays -
+src/pages/StreaksPage.tsx:320:  const currentBadgeIndex =
+src/pages/StreaksPage.tsx:321:    STREAK_BADGES.findIndex(
+src/pages/StreaksPage.tsx:322:      (badge) =>
+src/pages/StreaksPage.tsx:323:        badge.minimumDays ===
+src/pages/StreaksPage.tsx:324:        currentBadge.minimumDays,
+src/pages/StreaksPage.tsx:327:  const currentBadgePage =
+src/pages/StreaksPage.tsx:330:        currentBadgeIndex,
+src/pages/StreaksPage.tsx:332:      ) / BADGES_PER_PAGE,
+src/pages/StreaksPage.tsx:355:    setActiveBadgePage(
+src/pages/StreaksPage.tsx:356:      currentBadgePage,
+src/pages/StreaksPage.tsx:361:        currentBadgePage *
+src/pages/StreaksPage.tsx:366:    currentBadgePage,
+src/pages/StreaksPage.tsx:370:  function goToBadgePage(
+src/pages/StreaksPage.tsx:384:        badgePages.length - 1,
+src/pages/StreaksPage.tsx:395:    setActiveBadgePage(
+src/pages/StreaksPage.tsx:416:    setActiveBadgePage(
+src/pages/StreaksPage.tsx:421:          badgePages.length - 1,
+src/pages/StreaksPage.tsx:529:              `streaksPage.badges.${currentBadge.minimumDays}.name`,
+src/pages/StreaksPage.tsx:548:            {currentBadge.icon}
+src/pages/StreaksPage.tsx:552:            {t('streaksPage.currentBadge')}
+src/pages/StreaksPage.tsx:557:              `streaksPage.badges.${currentBadge.minimumDays}.name`,
+src/pages/StreaksPage.tsx:563:              `streaksPage.badges.${currentBadge.minimumDays}.description`,
+src/pages/StreaksPage.tsx:583:          {nextBadge ? (
+src/pages/StreaksPage.tsx:591:                    {nextBadge.icon}
+src/pages/StreaksPage.tsx:596:                      {t('streaksPage.nextBadge')}
+src/pages/StreaksPage.tsx:601:                        `streaksPage.badges.${nextBadge.minimumDays}.name`,
+src/pages/StreaksPage.tsx:609:                    {daysUntilNextBadge}
+src/pages/StreaksPage.tsx:617:                          daysUntilNextBadge,
+src/pages/StreaksPage.tsx:647:                      currentBadge.minimumDays,
+src/pages/StreaksPage.tsx:661:                      nextBadge.minimumDays,
+src/pages/StreaksPage.tsx:706:          {t('streaksPage.achievementsTitle')}
+src/pages/StreaksPage.tsx:710:          {ACHIEVEMENTS.map(
+src/pages/StreaksPage.tsx:711:            (achievement) => {
+src/pages/StreaksPage.tsx:713:                achievement.id ===
+src/pages/StreaksPage.tsx:717:                  : achievement.id ===
+src/pages/StreaksPage.tsx:721:                    : achievement.id ===
+src/pages/StreaksPage.tsx:730:                  key={achievement.id}
+src/pages/StreaksPage.tsx:739:                    {achievement.icon}
+src/pages/StreaksPage.tsx:743:                    {t(achievement.titleKey)}
+src/pages/StreaksPage.tsx:747:                    {t(achievement.descKey)}
+src/pages/StreaksPage.tsx:787:                goToBadgePage(
+src/pages/StreaksPage.tsx:788:                  activeBadgePage - 1,
+src/pages/StreaksPage.tsx:792:                activeBadgePage === 0
+src/pages/StreaksPage.tsx:803:                goToBadgePage(
+src/pages/StreaksPage.tsx:804:                  activeBadgePage + 1,
+src/pages/StreaksPage.tsx:808:                activeBadgePage ===
+src/pages/StreaksPage.tsx:809:                badgePages.length - 1
+src/pages/StreaksPage.tsx:824:          {badgePages.map(
+src/pages/StreaksPage.tsx:825:            (badgePage, pageIndex) => (
+src/pages/StreaksPage.tsx:827:                key={`badge-page-${pageIndex}`}
+src/pages/StreaksPage.tsx:830:                {badgePage.map(
+src/pages/StreaksPage.tsx:831:                  (badge) => {
+src/pages/StreaksPage.tsx:834:                      badge.minimumDays
+src/pages/StreaksPage.tsx:837:                      badge.minimumDays ===
+src/pages/StreaksPage.tsx:838:                      currentBadge.minimumDays
+src/pages/StreaksPage.tsx:842:                        badge.minimumDays -
+src/pages/StreaksPage.tsx:850:                          badge.minimumDays
+src/pages/StreaksPage.tsx:878:                          {badge.icon}
+src/pages/StreaksPage.tsx:891:                              `streaksPage.badges.${badge.minimumDays}.name`,
+src/pages/StreaksPage.tsx:904:                              `streaksPage.badges.${badge.minimumDays}.description`,
+src/pages/StreaksPage.tsx:938:                                      badge.minimumDays,
+src/pages/StreaksPage.tsx:963:              goToBadgePage(
+src/pages/StreaksPage.tsx:964:                activeBadgePage - 1,
+src/pages/StreaksPage.tsx:968:              activeBadgePage === 0
+src/pages/StreaksPage.tsx:977:            {badgePages.map(
+src/pages/StreaksPage.tsx:980:                  key={`badge-dot-${pageIndex}`}
+src/pages/StreaksPage.tsx:983:                    goToBadgePage(
+src/pages/StreaksPage.tsx:996:                    activeBadgePage ===
+src/pages/StreaksPage.tsx:1009:              goToBadgePage(
+src/pages/StreaksPage.tsx:1010:                activeBadgePage + 1,
+src/pages/StreaksPage.tsx:1014:              activeBadgePage ===
+src/pages/StreaksPage.tsx:1015:              badgePages.length - 1
+src/pages/StreaksPage.tsx:1029:              activeBadgePage + 1,
+src/pages/StreaksPage.tsx:1031:              badgePages.length,
+src/pages/DashboardPage.tsx:618:                  className="badge-green flex items-center gap-2 px-3 py-1.5"
+src/services/timerNotificationService.ts:8:    badgeIcon?: string
+src/services/timerNotificationService.ts:41:  badgeIcon?: string,
+src/services/timerNotificationService.ts:50:      badgeIcon,
+src/services/focusLiveActivityService.ts:22:    badgeIcon?: string
+===== BADGE COMPONENTS AND SERVICES =====
+
+===== src/lib/streakBadges.ts =====
+export type StreakBadge = {
+    minimumDays: number
+    icon: string
+    name: string
+    description: string
+  }
+  
+  export const STREAK_BADGES: StreakBadge[] = [
+    {
+      minimumDays: 0,
+      icon: '💧',
+      name: 'First Drop',
+      description:
+        'Begin your focus journey.',
+    },
+    {
+      minimumDays: 3,
+      icon: '🌱',
+      name: 'First Steps',
+      description:
+        'Maintain a 3-day streak.',
+    },
+    {
+      minimumDays: 7,
+      icon: '🔥',
+      name: 'On Fire',
+      description:
+        'Maintain a 7-day streak.',
+    },
+    {
+      minimumDays: 14,
+      icon: '❤️‍🔥',
+      name: 'Flame Keeper',
+      description:
+        'Maintain a 14-day streak.',
+    },
+    {
+      minimumDays: 30,
+      icon: '⚡',
+      name: 'Momentum',
+      description:
+        'Maintain a 30-day streak.',
+    },
+    {
+      minimumDays: 50,
+      icon: '🚀',
+      name: 'Liftoff',
+      description:
+        'Maintain a 50-day streak.',
+    },
+    {
+      minimumDays: 75,
+      icon: '🌙',
+      name: 'Steady Orbit',
+      description:
+        'Maintain a 75-day streak.',
+    },
+    {
+      minimumDays: 100,
+      icon: '⭐',
+      name: 'Focus Star',
+      description:
+        'Maintain a 100-day streak.',
+    },
+    {
+      minimumDays: 150,
+      icon: '🌟',
+      name: 'Bright Mind',
+      description:
+        'Maintain a 150-day streak.',
+    },
+    {
+      minimumDays: 200,
+      icon: '🏅',
+      name: 'Focus Champion',
+      description:
+        'Maintain a 200-day streak.',
+    },
+    {
+      minimumDays: 300,
+      icon: '🥉',
+      name: 'Bronze Master',
+      description:
+        'Maintain a 300-day streak.',
+    },
+    {
+      minimumDays: 365,
+      icon: '🥈',
+      name: 'Year of Focus',
+      description:
+        'Maintain a full 365-day streak.',
+    },
+    {
+      minimumDays: 500,
+      icon: '🥇',
+      name: 'Golden Focus',
+      description:
+        'Maintain a 500-day streak.',
+    },
+    {
+      minimumDays: 600,
+      icon: '💎',
+      name: 'Diamond Mind',
+      description:
+        'Maintain a 600-day streak.',
+    },
+    {
+      minimumDays: 750,
+      icon: '🔮',
+      name: 'Focus Sage',
+      description:
+        'Maintain a 750-day streak.',
+    },
+    {
+      minimumDays: 1000,
+      icon: '👑',
+      name: 'Focus Legend',
+      description:
+        'Maintain a 1,000-day streak.',
+    },
+    {
+      minimumDays: 1500,
+      icon: '🏆',
+      name: 'Grandmaster',
+      description:
+        'Maintain a 1,500-day streak.',
+    },
+    {
+      minimumDays: 2000,
+      icon: '♾️',
+      name: 'Infinite Focus',
+      description:
+        'Maintain a 2,000-day streak.',
+    },
+  ]
+  
+  export function getStreakBadge(
+    streakDays: number,
+  ): StreakBadge {
+    const normalizedDays = Math.max(
+      0,
+      streakDays,
+    )
+  
+    return (
+      [...STREAK_BADGES]
+        .reverse()
+        .find(
+          (badge) =>
+            normalizedDays >=
+            badge.minimumDays,
+        ) ?? STREAK_BADGES[0]
+    )
+  }
+  
+  export function getNextStreakBadge(
+    streakDays: number,
+  ): StreakBadge | null {
+    const normalizedDays = Math.max(
+      0,
+      streakDays,
+    )
+  
+    return (
+      STREAK_BADGES.find(
+        (badge) =>
+          badge.minimumDays >
+          normalizedDays,
+      ) ?? null
+    )
+  }
+  
+  export function getStreakBadgeProgress(
+    streakDays: number,
+  ): number {
+    const normalizedDays = Math.max(
+      0,
+      streakDays,
+    )
+  
+    const currentBadge =
+      getStreakBadge(normalizedDays)
+  
+    const nextBadge =
+      getNextStreakBadge(normalizedDays)
+  
+    if (!nextBadge) {
+      return 1
+    }
+  
+    const levelRange =
+      nextBadge.minimumDays -
+      currentBadge.minimumDays
+  
+    const daysInCurrentLevel =
+      normalizedDays -
+      currentBadge.minimumDays
+  
+    if (levelRange <= 0) {
+      return 0
+    }
+  
+    return Math.min(
+      Math.max(
+        daysInCurrentLevel /
+          levelRange,
+        0,
+      ),
+      1,
+    )
+  }

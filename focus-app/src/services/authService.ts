@@ -138,3 +138,30 @@ export async function signOut() {
     throw new Error(error.message)
   }
 }
+
+export async function deleteAccount() {
+  const {
+    data,
+    error,
+  } = await supabase.functions.invoke(
+    'delete-account',
+  )
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (
+    !data ||
+    data.deleted !== true
+  ) {
+    throw new Error(
+      data?.error ??
+      'Account could not be deleted.',
+    )
+  }
+
+  await supabase.auth.signOut({
+    scope: 'local',
+  })
+}

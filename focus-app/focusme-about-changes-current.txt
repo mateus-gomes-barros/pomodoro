@@ -1,0 +1,2474 @@
+===== ABOUT FOCUSME FILES =====
+src/components/focusme/FocusMeMonthlyPanel.tsx
+src/components/focusme/FocusMeWeeklyNarrativeCard.tsx
+src/components/focusme/FocusMeMonthlyNarrativeCard.tsx
+src/components/focusme/FocusMeShareCard.tsx
+src/components/focusme/FocusMeMonthlyNarrativeSection.tsx
+src/components/icons/FocusMeIcon.tsx
+src/hooks/focusme/useFocusMeWeeklyReport.ts
+src/hooks/focusme/useFocusMeReports.ts
+src/hooks/focusme/useFocusMeNarrative.ts
+src/hooks/focusme/useFocusMeMonthlyReport.ts
+src/pages/FocusMePage.tsx
+src/pages/FocusMeHistoryPage.tsx
+src/pages/FocusMeReportPage.tsx
+src/pages/AboutFocusMePage.tsx
+src/services/focusMeMonthlyService.ts
+src/services/focusMeMonthlyNarrative.ts
+src/services/focusMeReportsService.ts
+src/services/focusMeNarrativesService.ts
+src/services/focusMeWeeklyNarrative.ts
+src/services/focusMeService.ts
+src/services/focusMeEligibility.ts
+===== ABOUT FOCUSME REFERENCES =====
+src/i18n/locales/pt-BR.ts:694:    back: 'Voltar para Sobre o FocusMe',
+src/i18n/locales/pt-BR.ts:971:        'Mais do que uma insígnia',
+src/i18n/locales/pt-BR.ts:1548:      title: 'Sobre o FocusMe',
+src/i18n/locales/en.ts:684:    back: 'Back to About FocusMe',
+src/i18n/locales/en.ts:960:      title: 'More than a badge',
+src/i18n/locales/en.ts:1532:      title: 'About FocusMe',
+===== CHANGES PAGE =====
+import { motion } from 'framer-motion'
+import {
+  Archive,
+  ArrowLeft,
+  BellRing,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  History,
+  Home,
+  Languages,
+  ListTodo,
+  Rocket,
+  Share2,
+  Sparkles,
+  TimerReset,
+  Trash2,
+} from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+
+import { PageHeader } from '../components/ui/PageHeader'
+
+const recentChanges = [
+  {
+    key: 'taskCategories',
+    icon: ListTodo,
+  },
+  {
+    key: 'taskTrash',
+    icon: Trash2,
+  },
+  {
+    key: 'projectLifecycle',
+    icon: CheckCircle2,
+  },
+  {
+    key: 'focusMePreview',
+    icon: Home,
+  },
+]
+
+const roadmapItems = [
+  {
+    key: 'weeklyRecaps',
+    icon: CalendarDays,
+    status: 'planned',
+  },
+  {
+    key: 'monthlyRecaps',
+    icon: Sparkles,
+    status: 'planned',
+  },
+  {
+    key: 'focusHome',
+    icon: Home,
+    status: 'planned',
+  },
+  {
+    key: 'sharing',
+    icon: Share2,
+    status: 'planned',
+  },
+  {
+    key: 'history',
+    icon: Archive,
+    status: 'planned',
+  },
+  {
+    key: 'notifications',
+    icon: BellRing,
+    status: 'planned',
+  },
+]
+
+const versions = [
+  {
+    version: '4.0',
+    key: 'v4',
+    icon: Sparkles,
+    current: true,
+    items: [
+      'taskEditing',
+      'taskCategories',
+      'taskTrash',
+      'projectLifecycle',
+      'focusMePreview',
+    ],
+  },
+  {
+    version: '3.0',
+    key: 'v3',
+    icon: Languages,
+    current: false,
+    items: [
+      'languages',
+      'androidWidgets',
+      'autoStart',
+      'widgetImprovements',
+    ],
+  },
+  {
+    version: '2.0',
+    key: 'v2',
+    icon: BellRing,
+    current: false,
+    items: [
+      'android',
+      'liveNotifications',
+      'appleExperience',
+      'tabletSupport',
+    ],
+  },
+  {
+    version: '1.0',
+    key: 'v1',
+    icon: Rocket,
+    current: false,
+    items: [
+      'pomodoro',
+      'organization',
+      'progress',
+      'accounts',
+    ],
+  },
+]
+
+export function ChangesPage() {
+  const navigate = useNavigate()
+  const { t } = useTranslation()
+
+  return (
+    <div className="mx-auto max-w-3xl px-6 pb-10 lg:px-10 lg:pb-14">
+      <button
+        type="button"
+        onClick={() => navigate('/settings')}
+        className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition-colors hover:text-accent-white"
+      >
+        <ArrowLeft size={17} />
+
+        {t('changesPage.back')}
+      </button>
+
+      <PageHeader
+        title={t('changesPage.title')}
+        subtitle={t('changesPage.subtitle')}
+      />
+
+      <div className="space-y-8">
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card overflow-hidden p-6"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <span className="inline-flex rounded-full border border-accent-green/30 bg-accent-green/10 px-3 py-1 text-xs font-semibold text-accent-green">
+                {t('changesPage.currentVersion')}
+              </span>
+
+              <h2 className="mt-4 text-xl font-semibold text-accent-white">
+                Focus 4.0
+              </h2>
+
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-accent-subtle">
+                {t('changesPage.currentDescription')}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-accent-green/10 p-3 text-accent-green">
+              <Sparkles size={22} />
+            </div>
+          </div>
+        </motion.section>
+
+        <section>
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-xl bg-accent-green/10 p-2 text-accent-green">
+              <Sparkles size={18} />
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-accent-white">
+                {t('changesPage.recent.title')}
+              </h2>
+
+              <p className="text-xs text-accent-subtle">
+                {t('changesPage.recent.subtitle')}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {recentChanges.map(
+              ({ key, icon: Icon }, index) => (
+                <motion.div
+                  key={key}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: index * 0.04,
+                  }}
+                  className="card flex items-start gap-4 p-5"
+                >
+                  <div className="rounded-xl bg-white/[0.045] p-2.5 text-accent-green">
+                    <Icon size={18} />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-sm font-semibold text-accent-white">
+                        {t(
+                          `changesPage.recent.items.${key}.title`,
+                        )}
+                      </h3>
+
+                      <span className="rounded-full border border-accent-green/40 bg-accent-green/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-green">
+                        {t('changesPage.new')}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-sm leading-relaxed text-accent-subtle">
+                      {t(
+                        `changesPage.recent.items.${key}.description`,
+                      )}
+                    </p>
+                  </div>
+                </motion.div>
+              ),
+            )}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-xl bg-white/[0.045] p-2 text-accent-white">
+              <History size={18} />
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-accent-white">
+                {t('changesPage.history.title')}
+              </h2>
+
+              <p className="text-xs text-accent-subtle">
+                {t('changesPage.history.subtitle')}
+              </p>
+            </div>
+          </div>
+
+          <div className="relative space-y-4 before:absolute before:bottom-7 before:left-[27px] before:top-7 before:w-px before:bg-white/10">
+            {versions.map(
+              (
+                {
+                  version,
+                  key,
+                  icon: Icon,
+                  current,
+                  items,
+                },
+                index,
+              ) => (
+                <motion.article
+                  key={version}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: index * 0.05,
+                  }}
+                  className="card relative p-5"
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`relative z-10 rounded-xl p-2.5 ${
+                        current
+                          ? 'bg-accent-green text-black'
+                          : 'bg-bg-secondary text-accent-subtle'
+                      }`}
+                    >
+                      <Icon size={18} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold text-accent-white">
+                          Focus {version}
+                        </h3>
+
+                        {current && (
+                          <span className="rounded-full border border-accent-green/30 bg-accent-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-green">
+                            {t(
+                              'changesPage.history.current',
+                            )}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-1 text-sm leading-relaxed text-accent-subtle">
+                        {t(
+                          `changesPage.history.versions.${key}.description`,
+                        )}
+                      </p>
+
+                      <div className="mt-4 space-y-2.5">
+                        {items.map((item) => (
+                          <div
+                            key={item}
+                            className="flex items-start gap-2.5"
+                          >
+                            <CheckCircle2
+                              size={15}
+                              className="mt-0.5 shrink-0 text-accent-green"
+                            />
+
+                            <span className="text-sm leading-relaxed text-accent-muted">
+                              {t(
+                                `changesPage.history.versions.${key}.items.${item}`,
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.article>
+              ),
+            )}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-xl bg-blue-500/10 p-2 text-blue-300">
+              <Clock3 size={18} />
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-accent-white">
+                {t('changesPage.roadmap.title')}
+              </h2>
+
+              <p className="text-xs text-accent-subtle">
+                {t('changesPage.roadmap.subtitle')}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {roadmapItems.map(
+              (
+                {
+                  key,
+                  icon: Icon,
+                  status,
+                },
+                index,
+              ) => (
+                <motion.div
+                  key={key}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: index * 0.04,
+                  }}
+                  className="card flex items-start gap-4 p-5"
+                >
+                  <div className="rounded-xl bg-blue-500/10 p-2.5 text-blue-300">
+                    <Icon size={18} />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-sm font-semibold text-accent-white">
+                        {t(
+                          `changesPage.roadmap.items.${key}.title`,
+                        )}
+                      </h3>
+
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          status ===
+                          'development'
+                            ? 'bg-amber-500/10 text-amber-300'
+                            : 'bg-blue-500/10 text-blue-300'
+                        }`}
+                      >
+                        {t(
+                          `changesPage.roadmap.status.${status}`,
+                        )}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-sm leading-relaxed text-accent-subtle">
+                      {t(
+                        `changesPage.roadmap.items.${key}.description`,
+                      )}
+                    </p>
+                  </div>
+
+                </motion.div>
+              ),
+            )}
+          </div>
+
+          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+            <TimerReset
+              size={17}
+              className="mt-0.5 shrink-0 text-accent-subtle"
+            />
+
+            <p className="text-xs leading-relaxed text-accent-subtle">
+              {t('changesPage.roadmap.disclaimer')}
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  )
+}
+===== SETTINGS FOCUSME AREA =====
+              }
+            />
+
+            <Setting
+              label={t('settings.timer.longBreak')}
+              value={
+                settings.longBreakDuration
+              }
+              unit="min"
+              min={5}
+              max={60}
+              onChange={(value) =>
+                updateSettings({
+                  longBreakDuration: value,
+                })
+              }
+            />
+
+            <Setting
+              label={t('settings.timer.sessionsUntilLongBreak')}
+              value={
+                settings.sessionsUntilLongBreak
+              }
+              unit=""
+              min={2}
+              max={8}
+              onChange={(value) =>
+                updateSettings({
+                  sessionsUntilLongBreak:
+                    value,
+                })
+              }
+            />
+          </div>
+        </motion.div>
+
+        {/* PREFERENCES */}
+
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.1,
+          }}
+          className="card p-6"
+        >
+          <h3 className="text-sm font-semibold text-accent-white mb-5">
+            {t('settings.preferences.title')}
+          </h3>
+
+          <div className="space-y-4">
+            <Toggle
+              label={t('settings.preferences.sound')}
+              value={settings.soundEnabled}
+              onChange={(value) =>
+                updateSettings({
+                  soundEnabled: value,
+                })
+              }
+            />
+
+            <Toggle
+              label={t('settings.preferences.autoBreak')}
+              value={
+                settings.autoStartBreaks
+              }
+              onChange={(value) =>
+                updateSettings({
+                  autoStartBreaks: value,
+                })
+              }
+            />
+
+            <Toggle
+              label={t('settings.preferences.autoWork')}
+              value={settings.autoStartWork}
+              onChange={(value) =>
+                updateSettings({
+                  autoStartWork: value,
+                })
+              }
+            />
+          </div>
+        </motion.div>
+
+        {/* FOCUSME */}
+
+        <motion.button
+          type="button"
+          onClick={() =>
+            navigate('/settings/focusme')
+          }
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.15,
+          }}
+          className="card flex w-full items-center gap-4 p-6 text-left transition hover:border-accent-green/20 hover:bg-accent-green/[0.025]"
+        >
+          <div className="rounded-xl bg-accent-green/10 p-3 text-accent-green">
+            <BarChart3 size={20} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold text-accent-white">
+                {t(
+                  'settings.focusMe.title',
+                )}
+              </h3>
+
+              <span className="rounded-full border border-accent-green/30 bg-accent-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-green">
+                {t(
+                  'settings.focusMe.badge',
+                )}
+              </span>
+            </div>
+
+            <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
+              {t(
+                'settings.focusMe.description',
+              )}
+            </p>
+          </div>
+
+          <ChevronRight
+            size={18}
+            className="shrink-0 text-accent-subtle"
+          />
+        </motion.button>
+
+        {/* CHANGES AND UPDATES */}
+
+        <motion.button
+          type="button"
+          onClick={() =>
+            navigate('/settings/changes')
+          }
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.15,
+          }}
+          className="card flex w-full items-center gap-4 p-6 text-left transition hover:border-white/15 hover:bg-white/[0.035]"
+        >
+          <div className="rounded-xl bg-accent-green/10 p-3 text-accent-green">
+            <Sparkles size={20} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-accent-white">
+              {t('settings.changes.title')}
+            </h3>
+
+            <p className="mt-1 text-xs leading-relaxed text-accent-subtle">
+              {t(
+                'settings.changes.description',
+              )}
+            </p>
+          </div>
+
+          <ChevronRight
+            size={18}
+            className="shrink-0 text-accent-subtle"
+          />
+        </motion.button>
+
+        {/* ABOUT */}
+
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.2,
+          }}
+          className="card p-6"
+        >
+          <h3 className="text-sm font-semibold text-accent-white mb-2">
+            {t('settings.about.title')}
+          </h3>
+
+          <p className="text-sm text-accent-subtle">
+            {t('settings.about.description')}
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+function Setting({
+  label,
+  value,
+  unit,
+  onChange,
+  min,
+  max,
+}: {
+  label: string
+  value: number
+  unit: string
+  onChange: (value: number) => void
+  min: number
+  max: number
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-accent-muted">
+        {label}
+      </span>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            onChange(
+              Math.max(
+                min,
+                value - 1,
+              ),
+            )
+          }
+          className="w-7 h-7 rounded-lg bg-bg-secondary flex items-center justify-center"
+          aria-label={`Decrease ${label}`}
+        >
+          −
+        </button>
+
+        <span className="text-sm font-mono text-accent-white w-12 text-center">
+          {value}
+          {unit}
+        </span>
+
+        <button
+          type="button"
+          onClick={() =>
+            onChange(
+===== PT-BR FOCUSME AND CHANGES =====
+806-      executor: 'O Executor',
+807-      organizer: 'O Organizador',
+808-      rhythmist: 'O Ritmista',
+809-      restorer: 'O Restaurador',
+810-      planner: 'O Planejador',
+811-      catalyst: 'O Catalisador',
+812-      explorer: 'O Explorador',
+813-      strategist: 'O Estrategista',
+814-      guardian: 'O Guardião',
+815-    },
+816-
+817-    temporal: {
+818-      aurora: 'Aurora',
+819-      solaris: 'Solaris',
+820-      vesper: 'Vesper',
+821-      lunaris: 'Lunaris',
+822-      equinox: 'Equinox',
+823-    },
+824-  },
+825-
+826:  focusMePage: {
+827-    back: 'Voltar para Configurações',
+828-    reportsSubtitle:
+829-      'Seus relatórios, padrões e descobertas reunidos em um só lugar.',
+830-    subtitle:
+831-      'Uma nova forma de compreender sua jornada de foco.',
+832-    coming: 'Em desenvolvimento no Focus 4.0',
+833-
+834-    view: {
+835-      week: 'Semana',
+836-      month: 'Mês',
+837-      label: 'Período do relatório',
+838-    },
+839-
+840-    monthlyReport: {
+841-      eyebrow: 'Seu mês até agora',
+842-      description:
+843-        'Acompanhe como seu ritmo está se formando antes da retrospectiva mensal.',
+844-      error:
+845-        'Não foi possível preparar os dados deste mês.',
+846-      focusTime: 'Tempo de foco',
+847-      sessions: 'Sessões',
+848-      activeDays: 'Dias ativos',
+849-      tasksCompleted: 'Tarefas concluídas',
+850-      noComparison: 'Sem mês anterior',
+851-      weeklyEvolution: 'Evolução por semana',
+852-      week: 'S{{number}}',
+853-      noFocus:
+854-        'As semanas aparecerão conforme você concluir sessões.',
+855-      timeDistribution: 'Quando seu foco acontece',
+856-      timeBlocks: {
+857-        morning: 'Manhã',
+858-        afternoon: 'Tarde',
+859-        evening: 'Noite',
+860-        late_night: 'Madrugada',
+861-      },
+862-      tasks: 'Tarefas',
+863-      projects: 'Projetos',
+864-      goals: 'Metas',
+865-      created: 'criadas',
+866-      completed: 'concluídos',
+867-      topProjects: 'Projetos com mais foco',
+868-      eligibility: {
+869-        building: {
+870-          title:
+871-            'Sua análise está ganhando forma',
+872-          description:
+873-            'Continue usando o Focus naturalmente. Cada sessão e conclusão ajuda a construir uma leitura mais confiável do seu mês.',
+874-        },
+875-        ready: {
+876-          title:
+877-            'Dados suficientes para sua análise',
+878-          description:
+879-            'Seu mês já possui profundidade suficiente. Quando ele terminar, sua análise FocushoMe poderá ser realizada.',
+880-        },
+881-        eligible: {
+882-          title:
+883-            'Análise FocushoMe disponível',
+884-          description:
+885-            'Este mês encerrado possui dados suficientes para revelar ou reavaliar sua FocushoMe.',
+886-        },
+887-      },
+888-    },
+889-
+890-    weeklyReport: {
+891-      available: 'Disponível agora',
+892-      eyebrow: 'Sua semana até agora',
+893-      title:
+894-        'O que seu foco já conta sobre você',
+895-      loading:
+896-        'Reunindo os dados da sua semana...',
+897-      error:
+898-        'Não foi possível preparar seu resumo agora.',
+899-      focusTime: 'Tempo de foco',
+900-      sessions: 'Sessões',
+901-      activeDays: 'Dias ativos',
+902-      tasksCompleted: 'Tarefas concluídas',
+903-      dailyRhythm: 'Ritmo diário',
+904-      bestDay: 'Dia com mais foco',
+905-      noFocus:
+906-        'Conclua uma sessão para começar a formar seu relatório.',
+907-      tasksTitle: 'Planejamento e execução',
+908-      created: 'Criadas',
+909-      completed: 'Concluídas',
+910-      rhythmTitle: 'Continuidade',
+911-      starts: 'Inícios',
+912-      pauses: 'Pausas',
+913-      resumes: 'Retomadas',
+914-      abandoned: 'Interrompidas',
+915-      topProject: 'Projeto em destaque',
+916-      noProject:
+917-        'Nenhum projeto recebeu sessões nesta semana.',
+918-      currentWeek:
+919-        'Este resumo evolui conforme você usa o Focus.',
+920-      historyTitle: 'Histórico de relatórios',
+921-      historyDescription:
+922-        'Consulte suas retrospectivas semanais e mensais preservadas ao longo do tempo.',
+923-      narrativeTitle:
+924-        'A história da sua semana',
+925-      narrativeDescription:
+926-        'Uma leitura construída somente a partir das suas ações no Focus.',
+927-    },
+928-
+929-
+930-    hero: {
+931-      title:
+932-        'Seu foco conta uma história.',
+933-      description:
+934-        'O FocusMe reunirá suas sessões, tarefas, metas, projetos e conquistas para mostrar não apenas quanto você produziu, mas como sua rotina realmente aconteceu.',
+935-    },
+936-
+937-    experience: {
+938-      title: 'Uma retrospectiva só sua',
+939-      subtitle:
+940-        'Cada parte do Focus ajudará a construir uma visão mais completa da sua jornada.',
+941-
+942-      items: {
+943-        weekly: {
+944-          title: 'Sua semana',
+945-          description:
+946-            'Entenda seus dias mais focados, tarefas concluídas, projetos em destaque e mudanças no seu ritmo.',
+947-        },
+948-
+949-        monthly: {
+950-          title: 'Seu mês',
+951-          description:
+952-            'Receba uma retrospectiva profunda, escrita de forma humana a partir de métricas calculadas pelo Focus.',
+953-        },
+954-
+955-        focusHome: {
+956-          title: 'Sua FocushoMe',
+957-          description:
+958-            'Descubra uma classe rara baseada na maneira como você planeja, executa, conclui e mantém seu foco.',
+959-        },
+960-
+961-        sharing: {
+962-          title: 'Sua história em uma imagem',
+963-          description:
+964-            'Transforme seus resultados em um recap personalizado pronto para compartilhar.',
+965-        },
+966-      },
+967-    },
+968-
+969-    focusHome: {
+970-      title:
+971-        'Mais do que uma insígnia',
+972-      description:
+973-        'Sua FocushoMe será uma identidade construída a partir do uso real do aplicativo. Ela não será definida apenas pelo horário em que você trabalha nem por deixar o timer rodando.',
+974-
+975-      items: {
+976-        rare:
+977-          'Conquistada somente depois de um mês com dados suficientes.',
+978-        complete:
+979-          'Baseada em sessões, tarefas, metas, projetos e padrões de conclusão.',
+980-        permanent:
+981-          'Permanece com você e só muda quando um novo teste mensal for solicitado.',
+982-      },
+983-    },
+984-
+985-    symbols: {
+986-      title: 'As doze FocushoMes',
+987-      subtitle:
+988-        'Toque em um símbolo para conhecer a identidade, a potência e o ponto de equilíbrio de cada FocushoMe.',
+989-      tap: 'Conhecer',
+990-      open: 'Conhecer a FocushoMe {{name}}',
+991-      close: 'Fechar',
+992-      strength: 'Sua potência',
+993-      balance: 'Ponto de equilíbrio',
+994-
+995-      items: {
+996-        aster: {
+997-          essence:
+998-            'A visão que antecede o caminho.',
+999-          description:
+1000-            'Aster pertence a quem enxerga possibilidades antes de transformá-las em ações. Metas, ideias e planos costumam nascer com facilidade, formando uma visão ampla do que ainda pode ser construído.',
+1001-          strength:
+1002-            'Imaginar futuros possíveis, estabelecer direções e dar significado ao trabalho antes mesmo de ele começar.',
+1003-          balance:
+1004-            'Escolher quais possibilidades realmente merecem avançar, evitando que novos horizontes escondam os caminhos já abertos.',
+1005-        },
+1006-
+1007-        atlas: {
+1008-          essence:
+1009-            'Profundidade para sustentar grandes jornadas.',
+1010-          description:
+1011-            'Atlas concentra energia em projetos importantes e permanece neles por longos períodos. Em vez de distribuir o foco entre muitas frentes, prefere carregar e desenvolver algo significativo.',
+1012-          strength:
+1013-            'Acumular profundidade, domínio e muitas horas de atenção em objetivos que exigem continuidade.',
+1014-          balance:
+1015-            'Reconhecer quando a responsabilidade assumida se tornou pesada demais e quando dividir o caminho pode fortalecer o resultado.',
+1016-        },
+1017-
+1018-        forge: {
+1019-          essence:
+1020-            'Intenção transformada em resultado.',
+1021-          description:
+1022-            'Forge encontra satisfação em concluir. Tarefas abertas, projetos avançando e metas alcançadas formam o combustível de alguém que transforma planejamento em algo concreto.',
+1023-          strength:
+1024-            'Finalizar, resolver pendências e converter esforço em entregas que podem ser vistas e reconhecidas.',
+1025-          balance:
+1026-            'Não transformar toda experiência em obrigação de produzir; algumas ideias precisam de espaço antes de serem levadas ao fogo.',
+1027-        },
+1028-
+1029-        pulse: {
+1030-          essence:
+1031-            'Movimento rápido que mantém o dia vivo.',
+1032-          description:
+1033-            'Pulse trabalha por impulsos curtos e frequentes. Pequenas tarefas, respostas rápidas e decisões imediatas criam uma sensação constante de progresso e movimento.',
+1034-          strength:
+1035-            'Destravar o cotidiano, reduzir pequenas pendências e reagir com agilidade ao que precisa acontecer agora.',
+1036-          balance:
+1037-            'Reservar períodos maiores para trabalhos que não entregam recompensa imediata, mas constroem resultados profundos.',
+1038-        },
+1039-
+1040-        loom: {
+1041-          essence:
+1042-            'Fios diferentes formando uma única história.',
+1043-          description:
+1044-            'Loom conecta tarefas, projetos, metas e sessões de foco. Seu padrão não depende de uma única ferramenta: cada parte do Focus participa de uma estrutura maior.',
+1045-          strength:
+1046-            'Integrar planejamento e execução, mantendo diferentes áreas da vida conectadas sem perder o sentido do conjunto.',
+1047-          balance:
+1048-            'Evitar criar estruturas complexas demais quando uma decisão simples já seria suficiente para continuar.',
+1049-        },
+1050-
+1051-        orbit: {
+1052-          essence:
+1053-            'Constância que cria seu próprio centro.',
+1054-          description:
+1055-            'Orbit retorna ao foco em horários e ciclos reconhecíveis. A força não está necessariamente em grandes picos, mas na capacidade de voltar ao mesmo eixo com regularidade.',
+1056-          strength:
+1057-            'Transformar o foco em rotina confiável, reduzindo a dependência de motivação momentânea.',
+1058-          balance:
+1059-            'Permitir mudanças quando a rotina deixa de servir, sem interpretar adaptação como perda de disciplina.',
+1060-        },
+1061-
+1062-        tide: {
+1063-          essence:
+1064-            'Adaptação sem perder a direção.',
+1065-          description:
+1066-            'Tide muda de intensidade, horário e estratégia conforme o contexto. Seu ritmo pode variar bastante, mas existe inteligência na forma como responde às condições do momento.',
+1067-          strength:
+1068-            'Reorganizar prioridades, encontrar novas janelas de produtividade e continuar mesmo quando o plano original não funciona.',
+1069-          balance:
+1070-            'Criar alguns pontos estáveis para que a adaptação não se transforme em dispersão permanente.',
+1071-        },
+1072-
+1073-        ember: {
+1074-          essence:
+1075-            'Uma intensidade que permanece acesa por dentro.',
+1076-          description:
+1077-            'Ember nem sempre produz o maior volume visível, mas mantém uma atenção profunda e silenciosa. Seu olho representa consciência: observar antes de agir e proteger a energia essencial.',
+1078-          strength:
+1079-            'Sustentar concentração interna, perceber detalhes e preservar motivação mesmo em períodos discretos.',
+1080-          balance:
+1081-            'Permitir que o trabalho interno se torne visível, compartilhando avanços e reconhecendo as próprias conquistas.',
+1082-        },
+1083-
+1084-        nova: {
+1085-          essence:
+1086-            'A energia que inaugura novos caminhos.',
+1087-          description:
+1088-            'Nova aparece onde projetos, tarefas e possibilidades começam com intensidade. Existe entusiasmo em experimentar, iniciar e provocar movimento onde antes havia apenas intenção.',
+1089-          strength:
+1090-            'Dar o primeiro passo, gerar impulso e transformar uma ideia parada em algo que já começou a existir.',
+1091-          balance:
+1092-            'Manter energia depois do brilho inicial, escolhendo quais começos merecem chegar até o fim.',
+1093-        },
+1094-
+1095-        prism: {
+1096-          essence:
+1097-            'Muitas formas de foco atravessando a mesma pessoa.',
+1098-          description:
+1099-            'Prism distribui atenção entre categorias, projetos, horários e formas diferentes de produzir. Sua identidade nasce da variedade e da capacidade de enxergar por vários ângulos.',
+1100-          strength:
+1101-            'Combinar perspectivas, alternar habilidades e encontrar soluções que não surgiriam de uma rotina completamente uniforme.',
+1102-          balance:
+1103-            'Criar prioridade entre tantas possibilidades para que variedade não se transforme em fragmentação.',
+1104-        },
+1105-
+1106-        vanguard: {
+1107-          essence:
+1108-            'Presença firme diante do que não pode esperar.',
+1109-          description:
+1110-            'Vanguard reage com força quando existe prioridade, urgência ou responsabilidade clara. A pressão não paralisa: ela organiza o campo e indica onde a energia deve ser aplicada.',
+1111-          strength:
+1112-            'Tomar decisões, proteger o essencial e avançar em situações que exigem resposta rápida e direção.',
+1113-          balance:
+1114-            'Não depender apenas da urgência para agir e reservar energia para o importante antes que ele se torne emergencial.',
+1115-        },
+1116-
+1117-        verdant: {
+1118-          essence:
+1119-            'Crescimento paciente que se torna duradouro.',
+1120-          description:
+1121-            'Verdant cultiva metas e projetos ao longo do tempo. Pequenos avanços podem parecer discretos isoladamente, mas formam raízes profundas quando observados durante todo o mês.',
+1122-          strength:
+1123-            'Construir resultados sustentáveis, respeitar processos longos e continuar mesmo quando a transformação',
+1124-          balance:
+1125-            'Celebrar etapas intermediárias para que a distância do resultado final não esconda tudo o que já cresceu.',
+1126-        },
+1127-      },
+1128-    },
+1129-
+1130-    privacy: {
+1131-      title:
+1132-        'Sua rotina continua sendo sua',
+1133-      description:
+1134-        'O FocusMe utilizará somente as ações registradas dentro do Focus. Nenhum monitoramento constante será necessário.',
+1135-
+1136-      items: {
+1137-        location:
+1138-          'Sem acesso à sua localização.',
+1139-        apps:
+1140-          'Sem acesso à atividade de outros aplicativos.',
+1141-        device:
+1142-          'Sem monitoramento permanente do dispositivo.',
+1143-      },
+1144-    },
+1145-
+1146-    development: {
+1147-      title:
+1148-        'O FocusMe está em desenvolvimento',
+1149-      description:
+1150-        'Esta página será atualizada conforme os recursos do Focus 4.0 forem concluídos.',
+1151-    },
+1152-  },
+1153-
+1154-  focusMeHistoryPage: {
+1155-    back: 'Voltar para o FocusMe',
+1156-    title: 'Histórico de relatórios',
+1157-    subtitle:
+1158-      'Revisite suas semanas, seus meses e a evolução da sua rotina.',
+1159-    filterLabel: 'Filtrar relatórios',
+1160-    error:
+1161-      'Não foi possível carregar seu histórico.',
+1162-    sessions: 'sessões',
+1163-    tasks: 'tarefas concluídas',
+1164-    types: {
+1165-      weekly: 'Semanal',
+1166-      monthly: 'Mensal',
+1167-    },
+1168-    filters: {
+1169-      all: 'Todos',
+1170-      weekly: 'Semanais',
+1171-      monthly: 'Mensais',
+1172-    },
+1173-    journey: {
+1174-      title: 'Sua jornada FocushoMe',
+1175-      description:
+1176-        'Acompanhe as identidades reveladas pelos seus meses e como sua forma de focar evoluiu.',
+1177-      current: 'Atual',
+1178-      assessmentTypes: {
+1179-        initial: 'Primeira análise',
+1180-        retest: 'Novo teste',
+1181-      },
+1182-      changed:
+1183-        'Sua jornada mudou de {{previous}} para {{current}}.',
+1184-      remained:
+1185-        'Sua identidade permaneceu {{name}}.',
+1186-    },
+1187-    empty: {
+1188-      title:
+1189-        'Seus relatórios aparecerão aqui',
+1190-      description:
+1191-        'Quando uma semana ou um mês for encerrado, o FocusMe preservará a retrospectiva para que ela não mude com o tempo.',
+1192-      schedule:
+1193-        'Semanas fecham na segunda-feira',
+1194-    },
+1195-  },
+1196-
+1197-  focusMeReportPage: {
+1198-    back: 'Voltar ao histórico',
+1199-    error:
+1200-      'Este relatório não foi encontrado ou não pôde ser carregado.',
+1201-    focusHome: {
+1202-      eyebrow: 'FocushoMe revelada neste mês',
+1203-      current: 'Identidade atual',
+1204-      historical: 'Identidade anterior',
+1205-      currentDescription:
+1206-        'Esta é a FocushoMe que representa atualmente a maneira como você planeja, executa e conclui.',
+1207-      historicalDescription:
+1208-        'Esta identidade foi preservada como parte da sua jornada e representa como você viveu este período.',
+1209-    },
+1210-    share: {
+1211-          currentBadge: 'Insígnia atual',
+1212-      previewTitle: 'Prévia da retrospectiva',
+1213-      previewDescription:
+1214-        'Confira a imagem antes de compartilhar ou salvar.',
+1215-      previewAlt:
+1216-        'Prévia do PNG da retrospectiva FocusMe',
+1217-      close: 'Fechar prévia',
+1218-      save: 'Salvar imagem',
+1219-      saving: 'Salvando...',
+1220-      saved: 'Imagem salva',
+1221-      savedLocation:
+1222-        'Imagem salva em Documentos/FocusMe.',
+1223-      shareAction: 'Compartilhar',
+1224-      sharing: 'Abrindo...',
+1225-      button: 'Compartilhar retrospectiva',
+1226-      generating: 'Criando imagem...',
+1227-      ready: 'Imagem pronta',
+1228-      error:
+1229-        'Não foi possível criar a imagem. Tente novamente.',
+1230-      dialogTitle:
+1231-        'Compartilhar retrospectiva FocusMe',
+1232-      shareText:
+1233-        'Minha retrospectiva no FocusMe.',
+1234-      eyebrow: 'Minha retrospectiva',
+1235-      focusStory:
+1236-        'Uma visão do ritmo que construí neste período.',
+1237-      footer:
+1238-        'Meu foco conta uma história',
+1239-      types: {
+1240-        weekly: 'Resumo semanal',
+1241-        monthly: 'Resumo mensal',
+1242-      },
+1243-    },
+1244-    types: {
+1245-      weekly: 'Retrospectiva semanal',
+1246-      monthly: 'Retrospectiva mensal',
+1247-    },
+1248-    preserved:
+1249-      'Relatório encerrado e preservado',
+1250-    focusTime: 'Tempo de foco',
+1251-    sessions: 'Sessões',
+1252-    activeDays: 'Dias ativos',
+1253-    tasksCompleted: 'Tarefas concluídas',
+1254-    dailyEvolution: 'Evolução diária',
+1255-    weeklyEvolution: 'Evolução semanal',
+1256-    week: 'S{{number}}',
+1257-    noFocus:
+1258-      'Nenhuma sessão de foco foi concluída neste período.',
+1259-    tasks: 'Tarefas concluídas / criadas',
+1260-    projects: 'Projetos concluídos / criados',
+1261-    goals: 'Metas concluídas / criadas',
+1262-    topProject: 'Projeto em destaque',
+1263-    yourStory: 'A história do seu período',
+1264-    monthlyNarrativeTitle:
+1265-      'A história do seu mês',
+1266-    monthlyNarrativeDescription:
+1267-      'Uma leitura editorial local enquanto sua narrativa personalizada não foi gerada.',
+1268-    monthlyNarrativeGeneratedDescription:
+1269-      'Uma narrativa personalizada construída apenas com métricas calculadas pelo Focus.',
+1270-    narrativePreparing:
+1271-      'O FocusMe está escrevendo sua retrospectiva personalizada. O relatório continua disponível enquanto isso.',
+1272-    narrativeFallback:
+1273-      'A escrita personalizada não ficou disponível. Sua retrospectiva local foi preservada.',
+1274-    narrativeRetry:
+1275-      'Tentar novamente',
+1276-    legacyNarrativeTitle:
+1277-      'Retrospectiva preservada',
+1278-    legacyNarrativeDescription:
+1279-      'Este relatório foi criado antes da nova análise comportamental do FocusMe. Suas métricas continuam disponíveis, mas não há dados suficientes para reconstruir uma narrativa mensal confiável.',
+1280-  },
+1281-
+1282-  changesPage: {
+1283-    back: 'Voltar para Configurações',
+1284-    title: 'Mudanças e novidades',
+1285-    subtitle:
+1286-      'Acompanhe tudo o que evoluiu no Focus e o que estamos preparando.',
+1287-    currentVersion: 'Versão atual',
+1288-    currentDescription:
+1289-      'Uma nova geração do Focus, com tarefas mais inteligentes, projetos concluíveis e a fundação do FocusMe.',
+1290-    new: 'Novo',
+1291-
+1292-    recent: {
+1293-      title: 'Novidades recentes',
+1294-      subtitle:
+1295-        'As melhorias mais novas disponíveis no aplicativo.',
+1296-
+1297-      items: {
+1298-        taskCategories: {
+1299-          title: 'Nova experiência de tarefas',
+1300-          description:
+1301-            'As tarefas agora possuem categorias, filtros combináveis, projeto associado e estimativa de Pomodoros.',
+1302-        },
+1303-
+1304-        taskTrash: {
+1305-          title: 'Lixeira de tarefas',
+1306-          description:
+1307-            'Tarefas removidas podem ser restauradas durante 30 dias antes da exclusão definitiva.',
+1308-        },
+1309-
+1310-        projectLifecycle: {
+1311-          title: 'Conclusão de projetos',
+1312-          description:
+1313-            'Projetos agora podem ser concluídos, consultados separadamente e reabertos sem perder seu histórico.',
+1314-        },
+1315-
+1316-        focusMePreview: {
+1317-          title: 'Conheça o FocusMe',
+1318-          description:
+1319-            'Uma nova página apresenta as retrospectivas, a FocushoMe e a visão do Focus para análises pessoais.',
+1320-        },
+1321-
+1322-        taskEditing: {
+1323-          title: 'Edição de tarefas',
+1324-          description:
+1325-            'Agora você pode corrigir ou atualizar o nome de uma tarefa sem precisar excluí-la e criar outra.',
+1326-        },
+1327-        responsive: {
+1328-          title: 'Melhorias de responsividade',
+1329-          description:
+1330-            'Textos, cabeçalhos e espaçamentos foram refinados para oferecer uma experiência melhor em celulares e tablets.',
+1331-        },
+1332-        changesCenter: {
+1333-          title: 'Central de mudanças',
+1334-          description:
+1335-            'Este novo espaço reúne o histórico do Focus, as novidades recentes e os próximos recursos.',
+1336-        },
+1337-      },
+1338-    },
+1339-
+1340-    history: {
+1341-      title: 'Histórico de versões',
+1342-      subtitle:
+1343-        'Veja como o Focus evoluiu desde sua primeira versão.',
+1344-      current: 'Atual',
+1345-
+1346-      versions: {
+1347-        v4: {
+1348-          description:
+1349-            'O Focus começou uma nova fase, conectando organização diária, conclusão e compreensão da rotina.',
+1350-          items: {
+1351-            taskEditing:
+1352-              'Edição completa de tarefas sem precisar excluí-las.',
+1353-            taskCategories:
+1354-              'Categorias Rápida, Planejada, Urgente e Longo prazo, com filtros e identificação visual minimalista.',
+1355-            taskTrash:
+1356-              'Lixeira com restauração por 30 dias e exclusão definitiva.',
+1357-            projectLifecycle:
+1358-              'Conclusão, reabertura e filtros de projetos, preservando horas, tarefas e sessões.',
+1359-            focusMePreview:
+1360-              'Apresentação do FocusMe, da FocushoMe, das futuras retrospectivas e da política de privacidade.',
+1361-          },
+1362-        },
+1363-
+1364-        v3: {
+1365-          description:
+1366-            'O Focus se tornou uma experiência verdadeiramente multiplataforma e bilíngue.',
+1367-          items: {
+1368-            languages:
+1369-              'Aplicativo completo em português e inglês.',
+1370-            androidWidgets:
+1371-              'Novos widgets para dispositivos Android.',
+1372-            autoStart:
+1373-              'Opções para iniciar pausas e sessões de foco automaticamente.',
+1374-            widgetImprovements:
+1375-              'Melhorias de layout, sincronização e responsividade dos widgets.',
+1376-          },
+1377-        },
+1378-
+1379-        v2: {
+1380-          description:
+1381-            'A experiência móvel ganhou recursos nativos e maior integração com o sistema.',
+1382-          items: {
+1383-            android:
+1384-              'Versão nativa do Focus para Android.',
+1385-            liveNotifications:
+1386-              'Timer visível em notificações ao vivo durante as sessões.',
+1387-            appleExperience:
+1388-              'Live Activity, Dynamic Island e widgets no iPhone.',
+1389-            tabletSupport:
+1390-              'Layouts e widgets adaptados para iPad.',
+1391-          },
+1392-        },
+1393-
+1394-        v1: {
+1395-          description:
+1396-            'A base do Focus nasceu com as ferramentas essenciais para organizar tempo e progresso.',
+1397-          items: {
+1398-            pomodoro:
+1399-              'Timer Pomodoro com durações personalizáveis.',
+1400-            organization:
+1401-              'Tarefas, projetos e metas anuais.',
+1402-            progress:
+1403-              'Sequências, insígnias, análises e histórico de foco.',
+1404-            accounts:
+1405-              'Conta Google com sincronização e modo visitante.',
+1406-          },
+1407-        },
+1408-      },
+1409-    },
+1410-
+1411-    roadmap: {
+1412-      title: 'Ainda chegando no Focus 4.0',
+1413-      subtitle:
+1414-        'A base já está disponível. Agora estamos construindo a experiência completa do FocusMe.',
+1415-
+1416-      status: {
+1417-        development: 'Em desenvolvimento',
+1418-        planned: 'Planejado',
+1419-      },
+1420-
+1421-      items: {
+1422-        taskExperience: {
+1423-          title: 'Nova experiência de tarefas',
+1424-          description:
+1425-            'Uma tela reorganizada, mais completa e ainda fiel ao minimalismo do Focus.',
+1426-        },
+1427-
+1428-        categories: {
+1429-          title: 'Categorias de tarefas',
+1430-          description:
+1431-            'Tarefas rápidas, planejadas, urgentes e de longo prazo com filtros e identificação visual discreta.',
+1432-        },
+1433-
+1434-        trash: {
+1435-          title: 'Lixeira de tarefas',
+1436-          description:
+1437-            'Recupere tarefas removidas durante 30 dias antes da exclusão definitiva.',
+1438-        },
+1439-
+1440-        weeklyRecaps: {
+1441-          title: 'Recaps semanais',
+1442-          description:
+1443-            'Um resumo completo dos seus dias, sessões, tarefas, metas, projetos e conquistas.',
+1444-        },
+1445-
+1446-        monthlyRecaps: {
+1447-          title: 'Retrospectivas mensais',
+1448-          description:
+1449-            'Uma visão profunda do mês com métricas, padrões, comparações e uma narrativa pessoal.',
+1450-        },
+1451-
+1452-        focusHome: {
+1453-          title: 'FocushoMe',
+1454-          description:
+1455-            'Uma classe rara e permanente baseada na forma como você planeja, executa e conclui.',
+1456-        },
+1457-
+1458-        sharing: {
+1459-          title: 'Relatórios compartilháveis',
+1460-          description:
+1461-            'Recaps personalizados em PNG para compartilhar seus resultados e sua FocushoMe.',
+1462-        },
+1463-
+1464-        history: {
+1465-          title: 'Histórico do FocusMe',
+1466-          description:
+1467-            'Consulte recaps semanais, retrospectivas mensais e análises anteriores.',
+1468-        },
+1469-
+1470-        notifications: {
+1471-          title: 'Novos relatórios disponíveis',
+1472-          description:
+1473-            'Receba um aviso opcional quando sua semana, seu mês ou sua FocushoMe estiverem prontos.',
+1474-        },
+1475-      },
+1476-
+1477-      disclaimer:
+1478-        'Os recursos restantes serão adicionados progressivamente durante a evolução do Focus 4.0.',
+1479-    },
+1480-  },
+1481-
+1482-  settings: {
+1483-    title: 'Configurações',
+1484-    subtitle:
+1485-      'Personalize sua experiência de foco',
+1486-
+1487-    language: {
+1488-      title: 'Idioma',
+1489-      description:
+1490-        'Escolha o idioma usado em todo o Focus.',
+1491-      english: 'English',
+1492-      portugueseBrazil:
+1493-        'Português (Brasil)',
+1494-    },
+1495-
+1496-    account: {
+1497-      title: 'Conta',
+1498-      connected: 'Conta conectada',
+1499-      googleConnected:
+1500-        'Conta Google conectada',
+1501-      displayName:
+1502-        'Nome de exibição',
+1503-      displayNameDescription:
+1504-        'Este nome aparecerá na saudação do Dashboard.',
+1505-      placeholder: 'Seu nome',
+1506-      saving: 'Salvando...',
+1507-      save: 'Salvar nome',
+1508-      saved: 'Nome salvo.',
+1509-      signOut: 'Sair',
+1510-      signingOut: 'Saindo...',
+1511-      guestMode:
+1512-        'Modo visitante',
+1513-      guestDescription:
+1514-        'Você está usando o Focus sem uma conta. Seus dados são armazenados apenas neste dispositivo.',
+1515-      continueGoogle:
+1516-        'Continuar com Google',
+1517-      redirecting:
+1518-        'Redirecionando...',
+1519-      exitGuest:
+1520-        'Sair do modo visitante',
+1521-      noAccount:
+1522-        'Nenhuma conta conectada',
+1523-      noAccountDescription:
+1524-        'Conecte sua conta Google para sincronizar seus dados do Focus.',
+1525-    },
+1526-
+===== EN FOCUSME AND CHANGES =====
+796-      executor: 'The Executor',
+797-      organizer: 'The Organizer',
+798-      rhythmist: 'The Rhythmist',
+799-      restorer: 'The Restorer',
+800-      planner: 'The Planner',
+801-      catalyst: 'The Catalyst',
+802-      explorer: 'The Explorer',
+803-      strategist: 'The Strategist',
+804-      guardian: 'The Guardian',
+805-    },
+806-
+807-    temporal: {
+808-      aurora: 'Aurora',
+809-      solaris: 'Solaris',
+810-      vesper: 'Vesper',
+811-      lunaris: 'Lunaris',
+812-      equinox: 'Equinox',
+813-    },
+814-  },
+815-
+816:  focusMePage: {
+817-    back: 'Back to Settings',
+818-    reportsSubtitle:
+819-      'Your reports, patterns, and discoveries gathered in one place.',
+820-    subtitle:
+821-      'A new way to understand your focus journey.',
+822-    coming: 'In development for Focus 4.0',
+823-
+824-    view: {
+825-      week: 'Week',
+826-      month: 'Month',
+827-      label: 'Report period',
+828-    },
+829-
+830-    monthlyReport: {
+831-      eyebrow: 'Your month so far',
+832-      description:
+833-        'See how your rhythm is taking shape before the monthly retrospective.',
+834-      error:
+835-        'This month’s data could not be prepared.',
+836-      focusTime: 'Focus time',
+837-      sessions: 'Sessions',
+838-      activeDays: 'Active days',
+839-      tasksCompleted: 'Tasks completed',
+840-      noComparison: 'No previous month',
+841-      weeklyEvolution: 'Weekly evolution',
+842-      week: 'W{{number}}',
+843-      noFocus:
+844-        'Weeks will appear as you complete sessions.',
+845-      timeDistribution: 'When your focus happens',
+846-      timeBlocks: {
+847-        morning: 'Morning',
+848-        afternoon: 'Afternoon',
+849-        evening: 'Evening',
+850-        late_night: 'Late night',
+851-      },
+852-      tasks: 'Tasks',
+853-      projects: 'Projects',
+854-      goals: 'Goals',
+855-      created: 'created',
+856-      completed: 'completed',
+857-      topProjects: 'Most focused projects',
+858-      eligibility: {
+859-        building: {
+860-          title:
+861-            'Your analysis is taking shape',
+862-          description:
+863-            'Keep using Focus naturally. Every session and completion helps build a more reliable understanding of your month.',
+864-        },
+865-        ready: {
+866-          title:
+867-            'Enough data for your analysis',
+868-          description:
+869-            'Your month already has enough depth. When it ends, your FocushoMe analysis can be performed.',
+870-        },
+871-        eligible: {
+872-          title:
+873-            'FocushoMe analysis available',
+874-          description:
+875-            'This closed month contains enough data to reveal or reassess your FocushoMe.',
+876-        },
+877-      },
+878-    },
+879-
+880-    weeklyReport: {
+881-      available: 'Available now',
+882-      eyebrow: 'Your week so far',
+883-      title:
+884-        'What your focus already says about you',
+885-      loading:
+886-        'Bringing your weekly data together...',
+887-      error:
+888-        'Your summary could not be prepared right now.',
+889-      focusTime: 'Focus time',
+890-      sessions: 'Sessions',
+891-      activeDays: 'Active days',
+892-      tasksCompleted: 'Tasks completed',
+893-      dailyRhythm: 'Daily rhythm',
+894-      bestDay: 'Most focused day',
+895-      noFocus:
+896-        'Complete a session to start building your report.',
+897-      tasksTitle: 'Planning and execution',
+898-      created: 'Created',
+899-      completed: 'Completed',
+900-      rhythmTitle: 'Continuity',
+901-      starts: 'Starts',
+902-      pauses: 'Pauses',
+903-      resumes: 'Resumes',
+904-      abandoned: 'Interrupted',
+905-      topProject: 'Highlighted project',
+906-      noProject:
+907-        'No project received focus sessions this week.',
+908-      currentWeek:
+909-        'This summary evolves as you use Focus.',
+910-      historyTitle: 'Report history',
+911-      historyDescription:
+912-        'Review your preserved weekly and monthly retrospectives over time.',
+913-      narrativeTitle:
+914-        'The story of your week',
+915-      narrativeDescription:
+916-        'An interpretation built only from your actions inside Focus.',
+917-    },
+918-
+919-
+920-    hero: {
+921-      title:
+922-        'Your focus tells a story.',
+923-      description:
+924-        'FocusMe will bring together your sessions, tasks, goals, projects, and achievements to show not only how much you accomplished, but how your routine truly unfolded.',
+925-    },
+926-
+927-    experience: {
+928-      title: 'A retrospective made for you',
+929-      subtitle:
+930-        'Every part of Focus will help build a more complete view of your journey.',
+931-
+932-      items: {
+933-        weekly: {
+934-          title: 'Your week',
+935-          description:
+936-            'Understand your most focused days, completed tasks, highlighted projects, and changes in your rhythm.',
+937-        },
+938-
+939-        monthly: {
+940-          title: 'Your month',
+941-          description:
+942-            'Receive a deep retrospective written in a human way from metrics calculated by Focus.',
+943-        },
+944-
+945-        focusHome: {
+946-          title: 'Your FocushoMe',
+947-          description:
+948-            'Discover a rare class based on how you plan, execute, complete, and maintain your focus.',
+949-        },
+950-
+951-        sharing: {
+952-          title: 'Your story in one image',
+953-          description:
+954-            'Turn your results into a personalized recap ready to share.',
+955-        },
+956-      },
+957-    },
+958-
+959-    focusHome: {
+960-      title: 'More than a badge',
+961-      description:
+962-        'Your FocushoMe will be an identity built from real app usage. It will not be determined only by when you work or by leaving the timer running.',
+963-
+964-      items: {
+965-        rare:
+966-          'Earned only after a month with enough meaningful data.',
+967-        complete:
+968-          'Based on sessions, tasks, goals, projects, and completion patterns.',
+969-        permanent:
+970-          'It stays with you and changes only when you request a new monthly test.',
+971-      },
+972-    },
+973-
+974-    symbols: {
+975-      title: 'The twelve FocushoMes',
+976-      subtitle:
+977-        'Tap a symbol to discover the identity, strength, and balance point of each FocushoMe.',
+978-      tap: 'Discover',
+979-      open: 'Discover the {{name}} FocushoMe',
+980-      close: 'Close',
+981-      strength: 'Core strength',
+982-      balance: 'Balance point',
+983-
+984-      items: {
+985-        aster: {
+986-          essence:
+987-            'The vision that comes before the path.',
+988-          description:
+989-            'Aster belongs to those who see possibilities before turning them into action. Goals, ideas, and plans emerge naturally, creating a broad view of what could still be built.',
+990-          strength:
+991-            'Imagining possible futures, establishing direction, and giving meaning to work before it begins.',
+992-          balance:
+993-            'Choosing which possibilities truly deserve progress so new horizons do not hide paths already opened.',
+994-        },
+995-
+996-        atlas: {
+997-          essence:
+998-            'Depth to sustain meaningful journeys.',
+999-          description:
+1000-            'Atlas concentrates energy on important projects and remains with them for long periods. Instead of spreading focus across many fronts, it carries and develops what matters.',
+1001-          strength:
+1002-            'Building depth, mastery, and many hours of attention around goals that require continuity.',
+1003-          balance:
+1004-            'Recognizing when a responsibility has become too heavy and when sharing the path may strengthen the result.',
+1005-        },
+1006-
+1007-        forge: {
+1008-          essence:
+1009-            'Intention transformed into results.',
+1010-          description:
+1011-            'Forge finds satisfaction in completion. Closed tasks, advancing projects, and achieved goals fuel someone who turns planning into something concrete.',
+1012-          strength:
+1013-            'Finishing, resolving open loops, and converting effort into outcomes that can be seen and recognized.',
+1014-          balance:
+1015-            'Not turning every experience into an obligation to produce; some ideas need space before entering the fire.',
+1016-        },
+1017-
+1018-        pulse: {
+1019-          essence:
+1020-            'Fast movement that keeps the day alive.',
+1021-          description:
+1022-            'Pulse works through short and frequent impulses. Small tasks, quick responses, and immediate decisions create a constant sense of progress.',
+1023-          strength:
+1024-            'Unblocking everyday life, reducing small pending items, and responding quickly to what needs attention now.',
+1025-          balance:
+1026-            'Reserving longer periods for work that offers no immediate reward but builds deeper results.',
+1027-        },
+1028-
+1029-        loom: {
+1030-          essence:
+1031-            'Different threads forming one story.',
+1032-          description:
+1033-            'Loom connects tasks, projects, goals, and focus sessions. Its pattern does not depend on a single tool: every part of Focus contributes to a larger structure.',
+1034-          strength:
+1035-            'Integrating planning and execution while keeping different areas connected without losing the whole.',
+1036-          balance:
+1037-            'Avoiding structures that become more complex than the decisions they were meant to support.',
+1038-        },
+1039-
+1040-        orbit: {
+1041-          essence:
+1042-            'Consistency that creates its own center.',
+1043-          description:
+1044-            'Orbit returns to focus through recognizable times and cycles. Its power lies less in dramatic peaks and more in returning to the same axis regularly.',
+1045-          strength:
+1046-            'Turning focus into a reliable routine and reducing dependence on temporary motivation.',
+1047-          balance:
+1048-            'Allowing change when a routine no longer serves, without treating adaptation as lost discipline.',
+1049-        },
+1050-
+1051-        tide: {
+1052-          essence:
+1053-            'Adaptation without losing direction.',
+1054-          description:
+1055-            'Tide changes intensity, timing, and strategy according to context. Its rhythm may vary, but intelligence exists in how it responds to current conditions.',
+1056-          strength:
+1057-            'Reorganizing priorities, finding new productivity windows, and continuing when the original plan fails.',
+1058-          balance:
+1059-            'Creating stable reference points so adaptation does not become permanent dispersion.',
+1060-        },
+1061-
+1062-        ember: {
+1063-          essence:
+1064-            'An intensity that remains lit within.',
+1065-          description:
+1066-            'Ember may not produce the largest visible volume, but it sustains deep and quiet attention. Its eye represents awareness: observing before acting and protecting essential energy.',
+1067-          strength:
+1068-            'Maintaining inner concentration, noticing detail, and preserving motivation through quieter periods.',
+1069-          balance:
+1070-            'Allowing internal work to become visible by sharing progress and recognizing personal achievements.',
+1071-        },
+1072-
+1073-        nova: {
+1074-          essence:
+1075-            'The energy that opens new paths.',
+1076-          description:
+1077-            'Nova appears where projects, tasks, and possibilities begin intensely. It finds excitement in experimenting, initiating, and creating movement.',
+1078-          strength:
+1079-            'Taking the first step, generating momentum, and turning a still idea into something that has begun to exist.',
+1080-          balance:
+1081-            'Maintaining energy after the initial brightness and choosing which beginnings deserve completion.',
+1082-        },
+1083-
+1084-        prism: {
+1085-          essence:
+1086-            'Many forms of focus moving through one person.',
+1087-          description:
+1088-            'Prism distributes attention across categories, projects, times, and ways of working. Its identity comes from variety and seeing through multiple angles.',
+1089-          strength:
+1090-            'Combining perspectives, alternating skills, and finding solutions that uniform routines might never reveal.',
+1091-          balance:
+1092-            'Creating priority among many possibilities so variety does not become fragmentation.',
+1093-        },
+1094-
+1095-        vanguard: {
+1096-          essence:
+1097-            'Firm presence before what cannot wait.',
+1098-          description:
+1099-            'Vanguard responds strongly when priority, urgency, or responsibility is clear. Pressure does not paralyze it; pressure organizes the field.',
+1100-          strength:
+1101-            'Making decisions, protecting what matters, and advancing when situations demand quick response and direction.',
+1102-          balance:
+1103-            'Not depending only on urgency to act and giving energy to important work before it becomes an emergency.',
+1104-        },
+1105-
+1106-        verdant: {
+1107-          essence:
+1108-            'Patient growth that becomes lasting.',
+1109-          description:
+1110-            'Verdant cultivates goals and projects over time. Small advances may seem quiet alone, but they form deep roots when viewed across a full month.',
+1111-          strength:
+1112-            'Building sustainable results, respecting long processes, and continuing when progress is not immediately visible.',
+1113-          balance:
+1114-            'Celebrating intermediate stages so distance from the final result does not hide everything already grown.',
+1115-        },
+1116-      },
+1117-    },
+1118-
+1119-    privacy: {
+1120-      title:
+1121-        'Your routine remains yours',
+1122-      description:
+1123-        'FocusMe will use only actions recorded inside Focus. No constant monitoring will be required.',
+1124-
+1125-      items: {
+1126-        location:
+1127-          'No access to your location.',
+1128-        apps:
+1129-          'No access to activity from other apps.',
+1130-        device:
+1131-          'No permanent device monitoring.',
+1132-      },
+1133-    },
+1134-
+1135-    development: {
+1136-      title:
+1137-        'FocusMe is in development',
+1138-      description:
+1139-        'This page will evolve as Focus 4.0 features are completed.',
+1140-    },
+1141-  },
+1142-
+1143-  focusMeHistoryPage: {
+1144-    back: 'Back to FocusMe',
+1145-    title: 'Report history',
+1146-    subtitle:
+1147-      'Revisit your weeks, months, and the evolution of your routine.',
+1148-    filterLabel: 'Filter reports',
+1149-    error:
+1150-      'Your report history could not be loaded.',
+1151-    sessions: 'sessions',
+1152-    tasks: 'tasks completed',
+1153-    types: {
+1154-      weekly: 'Weekly',
+1155-      monthly: 'Monthly',
+1156-    },
+1157-    filters: {
+1158-      all: 'All',
+1159-      weekly: 'Weekly',
+1160-      monthly: 'Monthly',
+1161-    },
+1162-    journey: {
+1163-      title: 'Your FocushoMe journey',
+1164-      description:
+1165-        'Follow the identities revealed by your months and how your way of focusing has evolved.',
+1166-      current: 'Current',
+1167-      assessmentTypes: {
+1168-        initial: 'First assessment',
+1169-        retest: 'New assessment',
+1170-      },
+1171-      changed:
+1172-        'Your journey changed from {{previous}} to {{current}}.',
+1173-      remained:
+1174-        'Your identity remained {{name}}.',
+1175-    },
+1176-    empty: {
+1177-      title:
+1178-        'Your reports will appear here',
+1179-      description:
+1180-        'When a week or month ends, FocusMe will preserve the retrospective so it no longer changes over time.',
+1181-      schedule:
+1182-        'Weeks close on Monday',
+1183-    },
+1184-  },
+1185-
+1186-  focusMeReportPage: {
+1187-    back: 'Back to history',
+1188-    error:
+1189-      'This report was not found or could not be loaded.',
+1190-    focusHome: {
+1191-      eyebrow: 'FocushoMe revealed this month',
+1192-      current: 'Current identity',
+1193-      historical: 'Previous identity',
+1194-      currentDescription:
+1195-        'This FocushoMe currently represents how you plan, execute, and complete your work.',
+1196-      historicalDescription:
+1197-        'This identity was preserved as part of your journey and represents how you experienced this period.',
+1198-    },
+1199-    share: {
+1200-          currentBadge: 'Current badge',
+1201-      previewTitle: 'Retrospective preview',
+1202-      previewDescription:
+1203-        'Review the image before sharing or saving it.',
+1204-      previewAlt:
+1205-        'FocusMe retrospective PNG preview',
+1206-      close: 'Close preview',
+1207-      save: 'Save image',
+1208-      saving: 'Saving...',
+1209-      saved: 'Image saved',
+1210-      savedLocation:
+1211-        'Image saved in Documents/FocusMe.',
+1212-      shareAction: 'Share',
+1213-      sharing: 'Opening...',
+1214-      button: 'Share retrospective',
+1215-      generating: 'Creating image...',
+1216-      ready: 'Image ready',
+1217-      error:
+1218-        'The image could not be created. Please try again.',
+1219-      dialogTitle:
+1220-        'Share FocusMe retrospective',
+1221-      shareText:
+1222-        'My FocusMe retrospective.',
+1223-      eyebrow: 'My retrospective',
+1224-      focusStory:
+1225-        'A view of the rhythm I built during this period.',
+1226-      footer:
+1227-        'My focus tells a story',
+1228-      types: {
+1229-        weekly: 'Weekly recap',
+1230-        monthly: 'Monthly recap',
+1231-      },
+1232-    },
+1233-    types: {
+1234-      weekly: 'Weekly retrospective',
+1235-      monthly: 'Monthly retrospective',
+1236-    },
+1237-    preserved:
+1238-      'Closed and preserved report',
+1239-    focusTime: 'Focus time',
+1240-    sessions: 'Sessions',
+1241-    activeDays: 'Active days',
+1242-    tasksCompleted: 'Tasks completed',
+1243-    dailyEvolution: 'Daily evolution',
+1244-    weeklyEvolution: 'Weekly evolution',
+1245-    week: 'W{{number}}',
+1246-    noFocus:
+1247-      'No focus session was completed during this period.',
+1248-    tasks: 'Tasks completed / created',
+1249-    projects: 'Projects completed / created',
+1250-    goals: 'Goals completed / created',
+1251-    topProject: 'Highlighted project',
+1252-    yourStory: 'The story of your period',
+1253-    monthlyNarrativeTitle:
+1254-      'The story of your month',
+1255-    monthlyNarrativeDescription:
+1256-      'A local editorial reading while your personalized narrative has not been generated.',
+1257-    monthlyNarrativeGeneratedDescription:
+1258-      'A personalized narrative built only from metrics calculated by Focus.',
+1259-    narrativePreparing:
+1260-      'FocusMe is writing your personalized retrospective. The report remains available in the meantime.',
+1261-    narrativeFallback:
+1262-      'Personalized writing was unavailable. Your local retrospective was preserved.',
+1263-    narrativeRetry:
+1264-      'Try again',
+1265-    legacyNarrativeTitle:
+1266-      'Preserved retrospective',
+1267-    legacyNarrativeDescription:
+1268-      'This report was created before the new FocusMe behavioral analysis. Its metrics remain available, but there is not enough information to rebuild a reliable monthly narrative.',
+1269-  },
+1270-
+1271-  changesPage: {
+1272-    back: 'Back to Settings',
+1273-    title: 'Changes and updates',
+1274-    subtitle:
+1275-      'Follow everything that has evolved in Focus and what we are preparing next.',
+1276-    currentVersion: 'Current version',
+1277-    currentDescription:
+1278-      'A new generation of Focus, with smarter tasks, completable projects, and the foundation of FocusMe.',
+1279-    new: 'New',
+1280-
+1281-    recent: {
+1282-      title: 'Recent updates',
+1283-      subtitle:
+1284-        'The newest improvements available in the app.',
+1285-
+1286-      items: {
+1287-        taskCategories: {
+1288-          title: 'New task experience',
+1289-          description:
+1290-            'Tasks now include categories, combined filters, linked projects, and Pomodoro estimates.',
+1291-        },
+1292-
+1293-        taskTrash: {
+1294-          title: 'Task trash',
+1295-          description:
+1296-            'Removed tasks can be restored for 30 days before permanent deletion.',
+1297-        },
+1298-
+1299-        projectLifecycle: {
+1300-          title: 'Project completion',
+1301-          description:
+1302-            'Projects can now be completed, viewed separately, and reopened without losing their history.',
+1303-        },
+1304-
+1305-        focusMePreview: {
+1306-          title: 'Meet FocusMe',
+1307-          description:
+1308-            'A new page introduces retrospectives, FocushoMe, and the Focus vision for personal insights.',
+1309-        },
+1310-
+1311-        taskEditing: {
+1312-          title: 'Task editing',
+1313-          description:
+1314-            'You can now correct or update a task name without deleting it and creating another one.',
+1315-        },
+1316-        responsive: {
+1317-          title: 'Responsive improvements',
+1318-          description:
+1319-            'Text, headers, and spacing have been refined for a better experience on phones and tablets.',
+1320-        },
+1321-        changesCenter: {
+1322-          title: 'Changes center',
+1323-          description:
+1324-            'This new space brings together the Focus history, recent updates, and upcoming features.',
+1325-        },
+1326-      },
+1327-    },
+1328-
+1329-    history: {
+1330-      title: 'Version history',
+1331-      subtitle:
+1332-        'See how Focus has evolved since its first version.',
+1333-      current: 'Current',
+1334-
+1335-      versions: {
+1336-        v4: {
+1337-          description:
+1338-            'Focus entered a new phase, connecting daily organization, completion, and understanding of your routine.',
+1339-          items: {
+1340-            taskEditing:
+1341-              'Complete task editing without needing to delete and recreate.',
+1342-            taskCategories:
+1343-              'Quick, Planned, Urgent, and Long-term categories with filters and minimalist visual identification.',
+1344-            taskTrash:
+1345-              'Trash with 30-day restoration and permanent deletion.',
+1346-            projectLifecycle:
+1347-              'Project completion, reopening, and filters while preserving hours, tasks, and sessions.',
+1348-            focusMePreview:
+1349-              'Introduction to FocusMe, FocushoMe, upcoming retrospectives, and privacy principles.',
+1350-          },
+1351-        },
+1352-
+1353-        v3: {
+1354-          description:
+1355-            'Focus became a truly cross-platform and bilingual experience.',
+1356-          items: {
+1357-            languages:
+1358-              'Complete app experience in Portuguese and English.',
+1359-            androidWidgets:
+1360-              'New widgets for Android devices.',
+1361-            autoStart:
+1362-              'Options to automatically start breaks and focus sessions.',
+1363-            widgetImprovements:
+1364-              'Layout, synchronization, and responsiveness improvements for widgets.',
+1365-          },
+1366-        },
+1367-
+1368-        v2: {
+1369-          description:
+1370-            'The mobile experience gained native features and deeper system integration.',
+1371-          items: {
+1372-            android:
+1373-              'Native Focus experience for Android.',
+1374-            liveNotifications:
+1375-              'Timer displayed in live notifications during sessions.',
+1376-            appleExperience:
+1377-              'Live Activity, Dynamic Island, and iPhone widgets.',
+1378-            tabletSupport:
+1379-              'Layouts and widgets adapted for iPad.',
+1380-          },
+1381-        },
+1382-
+1383-        v1: {
+1384-          description:
+1385-            'The foundation of Focus launched with the essential tools for organizing time and progress.',
+1386-          items: {
+1387-            pomodoro:
+1388-              'Pomodoro timer with customizable durations.',
+1389-            organization:
+1390-              'Tasks, projects, and yearly goals.',
+1391-            progress:
+1392-              'Streaks, badges, analytics, and focus history.',
+1393-            accounts:
+1394-              'Google account synchronization and guest mode.',
+1395-          },
+1396-        },
+1397-      },
+1398-    },
+1399-
+1400-    roadmap: {
+1401-      title: 'Still coming to Focus 4.0',
+1402-      subtitle:
+1403-        'The foundation is already available. Now we are building the complete FocusMe experience.',
+1404-
+1405-      status: {
+1406-        development: 'In development',
+1407-        planned: 'Planned',
+1408-      },
+1409-
+1410-      items: {
+1411-        taskExperience: {
+1412-          title: 'New task experience',
+1413-          description:
+1414-            'A reorganized and more complete screen that remains true to the Focus minimalism.',
+1415-        },
+1416-
+1417-        categories: {
+1418-          title: 'Task categories',
+1419-          description:
+1420-            'Quick, planned, urgent, and long-term tasks with filters and subtle visual identification.',
+1421-        },
+1422-
+1423-        trash: {
+1424-          title: 'Task trash',
+1425-          description:
+1426-            'Recover removed tasks for 30 days before permanent deletion.',
+1427-        },
+1428-
+1429-        weeklyRecaps: {
+1430-          title: 'Weekly recaps',
+1431-          description:
+1432-            'A complete summary of your days, sessions, tasks, goals, projects, and achievements.',
+1433-        },
+1434-
+1435-        monthlyRecaps: {
+1436-          title: 'Monthly retrospectives',
+1437-          description:
+1438-            'A deep view of your month with metrics, patterns, comparisons, and a personal narrative.',
+1439-        },
+1440-
+1441-        focusHome: {
+1442-          title: 'FocushoMe',
+1443-          description:
+1444-            'A rare and permanent class based on how you plan, execute, and complete.',
+1445-        },
+1446-
+1447-        sharing: {
+1448-          title: 'Shareable reports',
+1449-          description:
+1450-            'Personalized PNG recaps for sharing your results and your FocushoMe.',
+1451-        },
+1452-
+1453-        history: {
+1454-          title: 'FocusMe history',
+1455-          description:
+1456-            'Browse weekly recaps, monthly retrospectives, and previous analyses.',
+1457-        },
+1458-
+1459-        notifications: {
+1460-          title: 'New reports available',
+1461-          description:
+1462-            'Receive an optional alert when your week, month, or FocushoMe is ready.',
+1463-        },
+1464-      },
+1465-
+1466-      disclaimer:
+1467-        'The remaining features will be added progressively throughout the evolution of Focus 4.0.',
+1468-    },
+1469-  },
+1470-
+1471-  settings: {
+1472-    title: 'Settings',
+1473-    subtitle:
+1474-      'Customize your focus experience',
+1475-
+1476-    language: {
+1477-      title: 'Language',
+1478-      description:
+1479-        'Choose the language used throughout Focus.',
+1480-      english: 'English',
+1481-      portugueseBrazil:
+1482-        'Português (Brasil)',
+1483-    },
+1484-
+1485-    account: {
+1486-      title: 'Account',
+1487-      connected: 'Connected Account',
+1488-      googleConnected:
+1489-        'Google account connected',
+1490-      displayName: 'Display name',
+1491-      displayNameDescription:
+1492-        'This name will appear in your Dashboard greeting.',
+1493-      placeholder: 'Your name',
+1494-      saving: 'Saving...',
+1495-      save: 'Save name',
+1496-      saved: 'Display name saved.',
+1497-      signOut: 'Sign Out',
+1498-      signingOut: 'Signing out...',
+1499-      guestMode: 'Guest Mode',
+1500-      guestDescription:
+1501-        "You're using Focus without an account. Your data is stored only on this device.",
+1502-      continueGoogle:
+1503-        'Continue with Google',
+1504-      redirecting: 'Redirecting...',
+1505-      exitGuest: 'Exit Guest Mode',
+1506-      noAccount:
+1507-        'No Account Connected',
+1508-      noAccountDescription:
+1509-        'Connect your Google account to synchronize your Focus data.',
+1510-    },
+1511-
+1512-    timer: {
+1513-      title: 'Timer Durations',
+1514-      focus: 'Focus session',
+1515-      shortBreak: 'Short break',
+1516-      longBreak: 'Long break',
+===== ROUTES =====
+src/App.tsx:12:import { AboutFocusMePage } from './pages/AboutFocusMePage'
+src/App.tsx:14:import { ChangesPage } from './pages/ChangesPage'
+src/App.tsx:19:import { FocusMeHistoryPage } from './pages/FocusMeHistoryPage'
+src/App.tsx:20:import { FocusMePage } from './pages/FocusMePage'
+src/App.tsx:21:import { FocusMeReportPage } from './pages/FocusMeReportPage'
+src/App.tsx:58:            <Route path="/focusme" element={<FocusMePage />} />
+src/App.tsx:60:              path="/focusme/history"
+src/App.tsx:61:              element={<FocusMeHistoryPage />}
+src/App.tsx:64:              path="/focusme/diagnostics"
+src/App.tsx:68:              path="/focusme/reveal/:reportId"
+src/App.tsx:72:              path="/focusme/retest/:reportId"
+src/App.tsx:76:              path="/focusme/reports/:reportId"
+src/App.tsx:77:              element={<FocusMeReportPage />}
+src/App.tsx:80:              path="/settings/focusme"
+src/App.tsx:81:              element={<AboutFocusMePage />}
+src/App.tsx:84:              path="/settings/changes"
+src/App.tsx:85:              element={<ChangesPage />}
+src/features/focusme/focusHomeClassifierFixtures.ts:3:} from '@/components/focusme/FocusHomeSymbol'
+src/features/focusme/focusHomeClassifierFixtures.ts:7:} from '@/services/focusMeMonthlyService'
+src/features/focusme/focusHomeBehaviorFixtures.ts:4:} from '@/features/focusme/focusHomeClassifierFixtures'
+src/features/focusme/focusHomeBehaviorFixtures.ts:11:} from '@/services/focusMeMonthlyService'
+src/components/layout/SidebarDesktop.tsx:23:import { FocusMeIcon } from '@/components/icons/FocusMeIcon'
+src/components/layout/SidebarDesktop.tsx:442:          to="/focusme"
+src/components/layout/SidebarMobile.tsx:14:import { FocusMeIcon } from '@/components/icons/FocusMeIcon'
+src/components/layout/SidebarMobile.tsx:306:            to="/focusme"
+src/components/focusme/FocusHomeSymbolGallery.tsx:22:} from '@/components/focusme/FocusHomeSymbol'
+src/components/focusme/FocusHomeSymbolGallery.tsx:78:            'focusMePage.symbols.title',
+src/components/focusme/FocusHomeSymbolGallery.tsx:84:            'focusMePage.symbols.subtitle',
+src/components/focusme/FocusHomeSymbolGallery.tsx:112:                'focusMePage.symbols.open',
+src/components/focusme/FocusHomeSymbolGallery.tsx:147:                  'focusMePage.symbols.tap',
+src/components/focusme/FocusHomeSymbolGallery.tsx:208:                  'focusMePage.symbols.close',
+src/components/focusme/FocusHomeSymbolGallery.tsx:251:                    `focusMePage.symbols.items.${selected}.essence`,
+src/components/focusme/FocusHomeSymbolGallery.tsx:259:                    `focusMePage.symbols.items.${selected}.description`,
+src/components/focusme/FocusHomeSymbolGallery.tsx:277:                        'focusMePage.symbols.strength',
+src/components/focusme/FocusHomeSymbolGallery.tsx:284:                      `focusMePage.symbols.items.${selected}.strength`,
+src/components/focusme/FocusHomeSymbolGallery.tsx:292:                      'focusMePage.symbols.balance',
+src/components/focusme/FocusHomeSymbolGallery.tsx:298:                      `focusMePage.symbols.items.${selected}.balance`,
+src/components/focusme/FocusHomeIdentityHeader.tsx:10:} from '@/components/focusme/FocusHomeSymbol'
+src/components/focusme/FocusHomeIdentityHeader.tsx:13:} from '@/components/icons/FocusMeIcon'
+src/components/focusme/FocusHomeIdentityHeader.tsx:16:} from '@/hooks/focusme/useFocusHomeProfile'
+src/components/focusme/FocusHomeIdentityHeader.tsx:43:            'focusMePage.reportsSubtitle',
+src/components/focusme/FocusMeMonthlyPanel.tsx:19:} from '@/hooks/focusme/useFocusMeMonthlyReport'
+src/components/focusme/FocusMeMonthlyPanel.tsx:22:} from '@/services/focusMeEligibility'
+src/components/focusme/FocusMeMonthlyPanel.tsx:55:          'focusMePage.monthlyReport.noComparison',
+src/components/focusme/FocusMeMonthlyPanel.tsx:120:          'focusMePage.monthlyReport.error',
+src/components/focusme/FocusMeMonthlyPanel.tsx:168:        'focusMePage.monthlyReport.focusTime',
+src/components/focusme/FocusMeMonthlyPanel.tsx:181:        'focusMePage.monthlyReport.sessions',
+src/components/focusme/FocusMeMonthlyPanel.tsx:193:        'focusMePage.monthlyReport.activeDays',
+src/components/focusme/FocusMeMonthlyPanel.tsx:204:        'focusMePage.monthlyReport.tasksCompleted',
+src/components/focusme/FocusMeMonthlyPanel.tsx:240:              'focusMePage.monthlyReport.eyebrow',
+src/components/focusme/FocusMeMonthlyPanel.tsx:250:              'focusMePage.monthlyReport.description',
+src/components/focusme/FocusMeMonthlyPanel.tsx:350:                `focusMePage.monthlyReport.eligibility.${eligibility.state}.title`,
+src/components/focusme/FocusMeMonthlyPanel.tsx:356:                `focusMePage.monthlyReport.eligibility.${eligibility.state}.description`,
+src/components/focusme/FocusMeMonthlyPanel.tsx:393:                'focusMePage.monthlyReport.weeklyEvolution',
+src/components/focusme/FocusMeMonthlyPanel.tsx:447:                          'focusMePage.monthlyReport.week',
+src/components/focusme/FocusMeMonthlyPanel.tsx:462:                'focusMePage.monthlyReport.noFocus',
+src/components/focusme/FocusMeMonthlyPanel.tsx:487:                'focusMePage.monthlyReport.timeDistribution',
+src/components/focusme/FocusMeMonthlyPanel.tsx:511:                          `focusMePage.monthlyReport.timeBlocks.${block}`,
+src/components/focusme/FocusMeMonthlyPanel.tsx:547:              'focusMePage.monthlyReport.tasks',
+src/components/focusme/FocusMeMonthlyPanel.tsx:559:                'focusMePage.monthlyReport.created',
+src/components/focusme/FocusMeMonthlyPanel.tsx:573:              'focusMePage.monthlyReport.projects',
+src/components/focusme/FocusMeMonthlyPanel.tsx:581:                'focusMePage.monthlyReport.completed',
+src/components/focusme/FocusMeMonthlyPanel.tsx:595:              'focusMePage.monthlyReport.goals',
+src/components/focusme/FocusMeMonthlyPanel.tsx:603:                'focusMePage.monthlyReport.completed',
+src/components/focusme/FocusMeMonthlyPanel.tsx:614:              'focusMePage.monthlyReport.topProjects',
+src/components/focusme/FocusMeWeeklyNarrativeCard.tsx:10:} from '@/services/focusMeWeeklyNarrative'
+src/components/focusme/FocusMeWeeklyNarrativeCard.tsx:13:} from '@/services/focusMeService'
+src/components/focusme/FocusMeWeeklyNarrativeCard.tsx:51:                'focusMePage.weeklyReport.narrativeTitle',
+src/components/focusme/FocusMeWeeklyNarrativeCard.tsx:57:                'focusMePage.weeklyReport.narrativeDescription',
+src/components/focusme/FocusHomeJourney.tsx:15:} from '@/components/focusme/FocusHomeSymbol'
+src/components/focusme/FocusHomeJourney.tsx:19:} from '@/hooks/focusme/useFocusHomeProfile'
+src/components/focusme/FocusHomeJourney.tsx:99:              'focusMeHistoryPage.journey.title',
+src/components/focusme/FocusHomeJourney.tsx:105:              'focusMeHistoryPage.journey.description',
+src/components/focusme/FocusHomeJourney.tsx:135:                    `/focusme/reports/${assessment.reportId}`,
+src/components/focusme/FocusHomeJourney.tsx:160:                          'focusMeHistoryPage.journey.current',
+src/components/focusme/FocusHomeJourney.tsx:167:                        `focusMeHistoryPage.journey.assessmentTypes.${assessment.assessmentType}`,
+src/components/focusme/FocusHomeJourney.tsx:200:                          ? 'focusMeHistoryPage.journey.changed'
+src/components/focusme/FocusHomeJourney.tsx:201:                          : 'focusMeHistoryPage.journey.remained',
+src/components/focusme/FocusMeMonthlyNarrativeCard.tsx:10:} from '@/services/focusMeMonthlyNarrative'
+src/components/focusme/FocusMeMonthlyNarrativeCard.tsx:13:} from '@/services/focusMeMonthlyService'
+src/components/focusme/FocusMeMonthlyNarrativeCard.tsx:61:                'focusMeReportPage.monthlyNarrativeTitle',
+src/components/focusme/FocusMeMonthlyNarrativeCard.tsx:68:                  ? 'focusMeReportPage.monthlyNarrativeGeneratedDescription'
+src/components/focusme/FocusMeMonthlyNarrativeCard.tsx:69:                  : 'focusMeReportPage.monthlyNarrativeDescription',
+src/components/focusme/FocusMeShareCard.tsx:37:} from '@/components/focusme/FocusHomeSymbol'
+src/components/focusme/FocusMeShareCard.tsx:40:} from '@/components/icons/FocusMeIcon'
+src/components/focusme/FocusMeShareCard.tsx:44:} from '@/hooks/focusme/useFocusHomeProfile'
+src/components/focusme/FocusMeShareCard.tsx:53:} from '@/services/focusMeMonthlyService'
+src/components/focusme/FocusMeShareCard.tsx:56:} from '@/services/focusMeReportsService'
+src/components/focusme/FocusMeShareCard.tsx:59:} from '@/services/focusMeService'
+src/components/focusme/FocusMeShareCard.tsx:486:            'focusMeReportPage.share.shareText',
+src/components/focusme/FocusMeShareCard.tsx:490:            'focusMeReportPage.share.dialogTitle',
+src/components/focusme/FocusMeShareCard.tsx:512:              'focusMeReportPage.share.shareText',
+src/components/focusme/FocusMeShareCard.tsx:637:              ? 'focusMeReportPage.share.generating'
+src/components/focusme/FocusMeShareCard.tsx:638:              : 'focusMeReportPage.share.button',
+src/components/focusme/FocusMeShareCard.tsx:645:              'focusMeReportPage.share.error',
+src/components/focusme/FocusMeShareCard.tsx:656:            'focusMeReportPage.share.previewTitle',
+src/components/focusme/FocusMeShareCard.tsx:664:                  'focusMeReportPage.share.previewTitle',
+src/components/focusme/FocusMeShareCard.tsx:670:                  'focusMeReportPage.share.previewDescription',
+src/components/focusme/FocusMeShareCard.tsx:683:                'focusMeReportPage.share.close',
+src/components/focusme/FocusMeShareCard.tsx:696:                  'focusMeReportPage.share.previewAlt',
+src/components/focusme/FocusMeShareCard.tsx:727:                    ? 'focusMeReportPage.share.saving'
+src/components/focusme/FocusMeShareCard.tsx:729:                      ? 'focusMeReportPage.share.saved'
+src/components/focusme/FocusMeShareCard.tsx:730:                      : 'focusMeReportPage.share.save',
+src/components/focusme/FocusMeShareCard.tsx:754:                    ? 'focusMeReportPage.share.sharing'
+src/components/focusme/FocusMeShareCard.tsx:755:                    : 'focusMeReportPage.share.shareAction',
+src/components/focusme/FocusMeShareCard.tsx:763:                  'focusMeReportPage.share.savedLocation',
+src/components/focusme/FocusMeShareCard.tsx:771:                  'focusMeReportPage.share.error',
+src/components/focusme/FocusMeShareCard.tsx:812:                  `focusMeReportPage.share.types.${report.type}`,
+src/components/focusme/FocusMeShareCard.tsx:820:                  'focusMeReportPage.share.eyebrow',
+src/components/focusme/FocusMeShareCard.tsx:857:                      'focusMeReportPage.share.yourFocusHome',
+src/components/focusme/FocusMeShareCard.tsx:884:                        ? 'focusMeReportPage.share.periodIdentity'
+src/components/focusme/FocusMeShareCard.tsx:885:                        : 'focusMeReportPage.share.currentIdentity',
+src/components/focusme/FocusMeShareCard.tsx:898:                    'focusMeReportPage.share.focusStory',
+src/components/focusme/FocusMeShareCard.tsx:928:                    'focusMeReportPage.share.currentBadge',
+src/components/focusme/FocusMeShareCard.tsx:944:                    'focusMeReportPage.share.badgeStreak',
+src/components/focusme/FocusMeShareCard.tsx:958:                    'focusMeReportPage.focusTime',
+src/components/focusme/FocusMeShareCard.tsx:967:                    'focusMeReportPage.sessions',
+src/components/focusme/FocusMeShareCard.tsx:973:                    'focusMeReportPage.activeDays',
+src/components/focusme/FocusMeShareCard.tsx:979:                    'focusMeReportPage.tasksCompleted',
+src/components/focusme/FocusMeShareCard.tsx:1003:                  'focusMeReportPage.share.footer',
+src/components/focusme/FocusHomeRevealInvitation.tsx:14:} from '@/hooks/focusme/useFocusHomeProfile'
+src/components/focusme/FocusHomeRevealInvitation.tsx:17:} from '@/hooks/focusme/useFocusMeReports'
+src/components/focusme/FocusHomeRevealInvitation.tsx:20:} from '@/services/focusMeEligibility'
+src/components/focusme/FocusHomeRevealInvitation.tsx:23:} from '@/services/focusMeMonthlyService'
+src/components/focusme/FocusHomeRevealInvitation.tsx:73:          `/focusme/reveal/${eligibleReport.id}`,
+src/components/focusme/FocusMeMonthlyNarrativeSection.tsx:3:} from '@/components/focusme/FocusMeMonthlyNarrativeCard'
+src/components/focusme/FocusMeMonthlyNarrativeSection.tsx:6:} from '@/services/focusMeMonthlyService'
+src/components/focusme/FocusMeMonthlyNarrativeSection.tsx:9:} from '@/services/focusMeReportsService'
+src/components/focusme/FocusHomeRetestControl.tsx:15:} from '@/hooks/focusme/useFocusHomeProfile'
+src/components/focusme/FocusHomeRetestControl.tsx:18:} from '@/hooks/focusme/useFocusMeReports'
+src/components/focusme/FocusHomeRetestControl.tsx:21:} from '@/services/focusMeEligibility'
+src/components/focusme/FocusHomeRetestControl.tsx:24:} from '@/services/focusMeMonthlyService'
+src/components/focusme/FocusHomeRetestControl.tsx:139:                  `/focusme/retest/${eligibleReport.id}`,
+src/components/focusme/FocusHomeReportIdentity.tsx:13:} from '@/components/focusme/FocusHomeSymbol'
+src/components/focusme/FocusHomeReportIdentity.tsx:17:} from '@/hooks/focusme/useFocusHomeProfile'
+src/components/focusme/FocusHomeReportIdentity.tsx:127:                'focusMeReportPage.focusHome.eyebrow',
+src/components/focusme/FocusHomeReportIdentity.tsx:140:                  ? 'focusMeReportPage.focusHome.current'
+src/components/focusme/FocusHomeReportIdentity.tsx:141:                  : 'focusMeReportPage.focusHome.historical',
+src/components/focusme/FocusHomeReportIdentity.tsx:178:                  ? 'focusMeReportPage.focusHome.currentDescription'
+src/components/focusme/FocusHomeReportIdentity.tsx:179:                  : 'focusMeReportPage.focusHome.historicalDescription',
+src/components/focusme/FocusHomeReportIdentity.tsx:193:                      `focusMePage.monthlyReport.traits.${trait}`,
+src/hooks/focusme/useFocusHomeProfile.ts:16:} from '@/hooks/focusme/useFocusMeReports'
+src/hooks/focusme/useFocusHomeProfile.ts:19:} from '@/services/focusMeReportsService'
+src/hooks/focusme/useFocusMeWeeklyReport.ts:7:} from '@/services/focusMeService'
+src/hooks/focusme/useFocusMeReports.ts:15:} from '@/services/focusMeReportsService'
+src/hooks/focusme/useFocusMeNarrative.ts:11:} from '@/services/focusMeNarrativesService'
+src/hooks/focusme/useFocusMeMonthlyReport.ts:7:} from '@/services/focusMeMonthlyService'
+src/i18n/locales/pt-BR.ts:826:  focusMePage: {
+src/i18n/locales/pt-BR.ts:1154:  focusMeHistoryPage: {
+src/i18n/locales/pt-BR.ts:1197:  focusMeReportPage: {
+src/i18n/locales/pt-BR.ts:1222:        'Imagem salva em Documentos/FocusMe.',
+src/i18n/locales/pt-BR.ts:1282:  changesPage: {
+src/i18n/locales/en.ts:816:  focusMePage: {
+src/i18n/locales/en.ts:1143:  focusMeHistoryPage: {
+src/i18n/locales/en.ts:1186:  focusMeReportPage: {
+src/i18n/locales/en.ts:1211:        'Image saved in Documents/FocusMe.',
+src/i18n/locales/en.ts:1271:  changesPage: {
+src/pages/FocusHomeDiagnosticsPage.tsx:13:} from '@/components/focusme/FocusHomeSymbol'
+src/pages/FocusHomeDiagnosticsPage.tsx:19:} from '@/features/focusme/focusHomeBehaviorFixtures'
+src/pages/FocusHomeDiagnosticsPage.tsx:22:} from '@/features/focusme/focusHomeClassifierFixtures'
+src/pages/FocusHomeDiagnosticsPage.tsx:28:} from '@/services/focusMeEligibility'
+src/pages/FocusHomeDiagnosticsPage.tsx:126:            '/settings/focusme',
+src/pages/FocusMePage.tsx:24:} from '@/components/focusme/FocusMeMonthlyPanel'
+src/pages/FocusMePage.tsx:27:} from '@/components/focusme/FocusMeWeeklyNarrativeCard'
+src/pages/FocusMePage.tsx:30:} from '@/components/focusme/FocusHomeIdentityHeader'
+src/pages/FocusMePage.tsx:33:} from '@/components/focusme/FocusHomeRevealInvitation'
+src/pages/FocusMePage.tsx:36:} from '@/components/icons/FocusMeIcon'
+src/pages/FocusMePage.tsx:39:} from '@/hooks/focusme/useFocusMeWeeklyReport'
+src/pages/FocusMePage.tsx:59:export function FocusMePage() {
+src/pages/FocusMePage.tsx:116:            'focusMePage.weeklyReport.focusTime',
+src/pages/FocusMePage.tsx:126:            'focusMePage.weeklyReport.sessions',
+src/pages/FocusMePage.tsx:135:            'focusMePage.weeklyReport.activeDays',
+src/pages/FocusMePage.tsx:144:            'focusMePage.weeklyReport.tasksCompleted',
+src/pages/FocusMePage.tsx:163:          'focusMePage.view.label',
+src/pages/FocusMePage.tsx:181:                `focusMePage.view.${view}`,
+src/pages/FocusMePage.tsx:210:                  'focusMePage.weeklyReport.available',
+src/pages/FocusMePage.tsx:216:                  'focusMePage.weeklyReport.currentWeek',
+src/pages/FocusMePage.tsx:224:                  'focusMePage.weeklyReport.eyebrow',
+src/pages/FocusMePage.tsx:230:                  'focusMePage.weeklyReport.title',
+src/pages/FocusMePage.tsx:251:                  'focusMePage.weeklyReport.error',
+src/pages/FocusMePage.tsx:291:                        'focusMePage.weeklyReport.dailyRhythm',
+src/pages/FocusMePage.tsx:298:                          'focusMePage.weeklyReport.bestDay',
+src/pages/FocusMePage.tsx:362:                        'focusMePage.weeklyReport.noFocus',
+src/pages/FocusMePage.tsx:394:                    'focusMePage.weeklyReport.tasksTitle',
+src/pages/FocusMePage.tsx:407:                      'focusMePage.weeklyReport.created',
+src/pages/FocusMePage.tsx:419:                      'focusMePage.weeklyReport.completed',
+src/pages/FocusMePage.tsx:446:                    'focusMePage.weeklyReport.rhythmTitle',
+src/pages/FocusMePage.tsx:455:                      'focusMePage.weeklyReport.starts',
+src/pages/FocusMePage.tsx:463:                      'focusMePage.weeklyReport.pauses',
+src/pages/FocusMePage.tsx:471:                      'focusMePage.weeklyReport.resumes',
+src/pages/FocusMePage.tsx:479:                      'focusMePage.weeklyReport.abandoned',
+src/pages/FocusMePage.tsx:532:                      'focusMePage.weeklyReport.topProject',
+src/pages/FocusMePage.tsx:556:                        'focusMePage.weeklyReport.noProject',
+src/pages/FocusMePage.tsx:582:            navigate('/focusme/history')
+src/pages/FocusMePage.tsx:601:                'focusMePage.weeklyReport.historyTitle',
+src/pages/FocusMePage.tsx:607:                'focusMePage.weeklyReport.historyDescription',
+src/pages/SettingsPage.tsx:596:            navigate('/settings/focusme')
+src/pages/SettingsPage.tsx:648:            navigate('/settings/changes')
+src/pages/FocusMeHistoryPage.tsx:22:} from '@/components/focusme/FocusHomeJourney'
+src/pages/FocusMeHistoryPage.tsx:28:} from '@/hooks/focusme/useFocusMeReports'
+src/pages/FocusMeHistoryPage.tsx:31:} from '@/services/focusMeMonthlyService'
+src/pages/FocusMeHistoryPage.tsx:34:} from '@/services/focusMeReportsService'
+src/pages/FocusMeHistoryPage.tsx:37:} from '@/services/focusMeService'
+src/pages/FocusMeHistoryPage.tsx:97:export function FocusMeHistoryPage() {
+src/pages/FocusMeHistoryPage.tsx:174:          navigate('/focusme')
+src/pages/FocusMeHistoryPage.tsx:181:          'focusMeHistoryPage.back',
+src/pages/FocusMeHistoryPage.tsx:187:          'focusMeHistoryPage.title',
+src/pages/FocusMeHistoryPage.tsx:190:          'focusMeHistoryPage.subtitle',
+src/pages/FocusMeHistoryPage.tsx:200:          'focusMeHistoryPage.filterLabel',
+src/pages/FocusMeHistoryPage.tsx:223:              `focusMeHistoryPage.filters.${item}`,
+src/pages/FocusMeHistoryPage.tsx:242:              'focusMeHistoryPage.error',
+src/pages/FocusMeHistoryPage.tsx:267:                'focusMeHistoryPage.empty.title',
+src/pages/FocusMeHistoryPage.tsx:273:                'focusMeHistoryPage.empty.description',
+src/pages/FocusMeHistoryPage.tsx:281:                'focusMeHistoryPage.empty.schedule',
+src/pages/FocusMeHistoryPage.tsx:306:                      `/focusme/reports/${report.id}`,
+src/pages/FocusMeHistoryPage.tsx:337:                          `focusMeHistoryPage.types.${report.type}`,
+src/pages/FocusMeHistoryPage.tsx:350:                        'focusMeHistoryPage.sessions',
+src/pages/FocusMeHistoryPage.tsx:356:                        'focusMeHistoryPage.tasks',
+src/pages/FocusMeReportPage.tsx:22:} from '@/components/focusme/FocusHomeReportIdentity'
+src/pages/FocusMeReportPage.tsx:25:} from '@/components/focusme/FocusMeMonthlyNarrativeSection'
+src/pages/FocusMeReportPage.tsx:28:} from '@/components/focusme/FocusMeShareCard'
+src/pages/FocusMeReportPage.tsx:31:} from '@/components/focusme/FocusMeWeeklyNarrativeCard'
+src/pages/FocusMeReportPage.tsx:34:} from '@/components/icons/FocusMeIcon'
+src/pages/FocusMeReportPage.tsx:40:} from '@/hooks/focusme/useFocusMeReports'
+src/pages/FocusMeReportPage.tsx:43:} from '@/services/focusMeMonthlyService'
+src/pages/FocusMeReportPage.tsx:46:} from '@/services/focusMeService'
+src/pages/FocusMeReportPage.tsx:66:export function FocusMeReportPage() {
+src/pages/FocusMeReportPage.tsx:158:              '/focusme/history',
+src/pages/FocusMeReportPage.tsx:166:            'focusMeReportPage.back',
+src/pages/FocusMeReportPage.tsx:172:            'focusMeReportPage.error',
+src/pages/FocusMeReportPage.tsx:275:          'focusMeReportPage.week',
+src/pages/FocusMeReportPage.tsx:303:        'focusMeReportPage.focusTime',
+src/pages/FocusMeReportPage.tsx:312:        'focusMeReportPage.sessions',
+src/pages/FocusMeReportPage.tsx:320:        'focusMeReportPage.activeDays',
+src/pages/FocusMeReportPage.tsx:328:        'focusMeReportPage.tasksCompleted',
+src/pages/FocusMeReportPage.tsx:340:          navigate('/focusme/history')
+src/pages/FocusMeReportPage.tsx:347:          'focusMeReportPage.back',
+src/pages/FocusMeReportPage.tsx:358:          `focusMeReportPage.types.${report.type}`,
+src/pages/FocusMeReportPage.tsx:385:                    'focusMeReportPage.preserved',
+src/pages/FocusMeReportPage.tsx:444:                    'focusMeReportPage.dailyEvolution',
+src/pages/FocusMeReportPage.tsx:447:                    'focusMeReportPage.weeklyEvolution',
+src/pages/FocusMeReportPage.tsx:506:                'focusMeReportPage.noFocus',
+src/pages/FocusMeReportPage.tsx:521:                'focusMeReportPage.tasks',
+src/pages/FocusMeReportPage.tsx:543:                'focusMeReportPage.projects',
+src/pages/FocusMeReportPage.tsx:565:                'focusMeReportPage.goals',
+src/pages/FocusMeReportPage.tsx:584:                'focusMeReportPage.topProject',
+src/pages/FocusHomeRevealPage.tsx:18:} from '@/components/focusme/FocusHomeSymbol'
+src/pages/FocusHomeRevealPage.tsx:21:} from '@/components/icons/FocusMeIcon'
+src/pages/FocusHomeRevealPage.tsx:25:} from '@/hooks/focusme/useFocusHomeProfile'
+src/pages/FocusHomeRevealPage.tsx:28:} from '@/hooks/focusme/useFocusMeReports'
+src/pages/FocusHomeRevealPage.tsx:31:} from '@/services/focusMeEligibility'
+src/pages/FocusHomeRevealPage.tsx:34:} from '@/services/focusMeMonthlyService'
+src/pages/FocusHomeRevealPage.tsx:102:            navigate('/focusme')
+src/pages/FocusHomeRevealPage.tsx:150:              navigate('/focusme')
+src/pages/FocusHomeRevealPage.tsx:264:                `focusMePage.symbols.items.${classification.focusHome}.description`,
+src/pages/FocusHomeRevealPage.tsx:296:                navigate('/focusme')
+src/pages/FocusHomeRevealPage.tsx:315:          navigate('/focusme')
+src/pages/ChangesPage.tsx:128:export function ChangesPage() {
+src/pages/ChangesPage.tsx:141:        {t('changesPage.back')}
+src/pages/ChangesPage.tsx:145:        title={t('changesPage.title')}
+src/pages/ChangesPage.tsx:146:        subtitle={t('changesPage.subtitle')}
+src/pages/ChangesPage.tsx:158:                {t('changesPage.currentVersion')}
+src/pages/ChangesPage.tsx:166:                {t('changesPage.currentDescription')}
+src/pages/ChangesPage.tsx:184:                {t('changesPage.recent.title')}
+src/pages/ChangesPage.tsx:188:                {t('changesPage.recent.subtitle')}
+src/pages/ChangesPage.tsx:213:                          `changesPage.recent.items.${key}.title`,
+src/pages/ChangesPage.tsx:218:                        {t('changesPage.new')}
+src/pages/ChangesPage.tsx:224:                        `changesPage.recent.items.${key}.description`,
+src/pages/ChangesPage.tsx:242:                {t('changesPage.history.title')}
+src/pages/ChangesPage.tsx:246:                {t('changesPage.history.subtitle')}
+src/pages/ChangesPage.tsx:292:                              'changesPage.history.current',
+src/pages/ChangesPage.tsx:300:                          `changesPage.history.versions.${key}.description`,
+src/pages/ChangesPage.tsx:317:                                `changesPage.history.versions.${key}.items.${item}`,
+src/pages/ChangesPage.tsx:339:                {t('changesPage.roadmap.title')}
+src/pages/ChangesPage.tsx:343:                {t('changesPage.roadmap.subtitle')}
+src/pages/ChangesPage.tsx:375:                          `changesPage.roadmap.items.${key}.title`,
+src/pages/ChangesPage.tsx:388:                          `changesPage.roadmap.status.${status}`,
+src/pages/ChangesPage.tsx:395:                        `changesPage.roadmap.items.${key}.description`,
+src/pages/ChangesPage.tsx:412:              {t('changesPage.roadmap.disclaimer')}
+src/pages/FocusHomeRetestPage.tsx:17:} from '@/components/focusme/FocusHomeSymbol'
+src/pages/FocusHomeRetestPage.tsx:21:} from '@/hooks/focusme/useFocusHomeProfile'
+src/pages/FocusHomeRetestPage.tsx:24:} from '@/hooks/focusme/useFocusMeReports'
+src/pages/FocusHomeRetestPage.tsx:27:} from '@/services/focusMeEligibility'
+src/pages/FocusHomeRetestPage.tsx:30:} from '@/services/focusMeMonthlyService'
+src/pages/FocusHomeRetestPage.tsx:99:              '/settings/focusme',
+src/pages/FocusHomeRetestPage.tsx:198:                navigate('/focusme')
+src/pages/FocusHomeRetestPage.tsx:218:            '/settings/focusme',
+src/pages/AboutFocusMePage.tsx:22:} from '@/components/focusme/FocusHomeSymbolGallery'
+src/pages/AboutFocusMePage.tsx:25:} from '@/components/focusme/FocusHomeRetestControl'
+src/pages/AboutFocusMePage.tsx:55:export function AboutFocusMePage() {
+src/pages/AboutFocusMePage.tsx:70:        {t('focusMePage.back')}
+src/pages/AboutFocusMePage.tsx:76:          'focusMePage.subtitle',
+src/pages/AboutFocusMePage.tsx:97:                'focusMePage.coming',
+src/pages/AboutFocusMePage.tsx:107:                'focusMePage.hero.title',
+src/pages/AboutFocusMePage.tsx:113:                'focusMePage.hero.description',
+src/pages/AboutFocusMePage.tsx:123:                'focusMePage.experience.title',
+src/pages/AboutFocusMePage.tsx:129:                'focusMePage.experience.subtitle',
+src/pages/AboutFocusMePage.tsx:162:                      `focusMePage.experience.items.${key}.title`,
+src/pages/AboutFocusMePage.tsx:168:                      `focusMePage.experience.items.${key}.description`,
+src/pages/AboutFocusMePage.tsx:200:                  'focusMePage.focusHome.title',
+src/pages/AboutFocusMePage.tsx:206:                  'focusMePage.focusHome.description',
+src/pages/AboutFocusMePage.tsx:227:                        `focusMePage.focusHome.items.${item}`,
+src/pages/AboutFocusMePage.tsx:256:                  'focusMePage.privacy.title',
+src/pages/AboutFocusMePage.tsx:262:                  'focusMePage.privacy.description',
+src/pages/AboutFocusMePage.tsx:280:                          `focusMePage.privacy.items.${item}`,
+src/pages/AboutFocusMePage.tsx:297:              '/focusme/diagnostics',
+src/pages/AboutFocusMePage.tsx:348:              'focusMePage.development.title',
+src/pages/AboutFocusMePage.tsx:354:              'focusMePage.development.description',
+src/services/focusMeMonthlyNarrative.ts:4:} from '@/services/focusMeMonthlyService'
+src/services/focusMeReportsService.ts:4:} from '@/services/focusMeMonthlyService'
+src/services/focusMeReportsService.ts:7:} from '@/services/focusMeService'
+src/services/focusMeWeeklyNarrative.ts:3:} from '@/services/focusMeService'
+src/services/focusHomeService.ts:3:} from '@/components/focusme/FocusHomeSymbol'
+src/services/focusHomeService.ts:15:} from '@/services/focusMeReportsService'
+src/services/focusHomeClassifier.ts:3:} from '@/components/focusme/FocusHomeSymbol'
+src/services/focusHomeClassifier.ts:12:} from '@/services/focusMeMonthlyService'
+src/services/focusMeEligibility.ts:3:} from '@/services/focusMeMonthlyService'
+src/services/focusHomeCatalog.ts:3:} from '@/components/focusme/FocusHomeSymbol'

@@ -18,6 +18,9 @@ import {
 } from 'react-router-dom'
 
 import {
+  FocusHomeJourney,
+} from '@/components/focusme/FocusHomeJourney'
+import {
   PageHeader,
 } from '@/components/ui/PageHeader'
 import {
@@ -187,6 +190,8 @@ export function FocusMeHistoryPage() {
           'focusMeHistoryPage.subtitle',
         )}
       />
+
+      <FocusHomeJourney />
 
       <div
         className="card mb-5 grid grid-cols-3 gap-1 p-1"

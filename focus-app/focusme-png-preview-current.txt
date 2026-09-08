@@ -1,0 +1,1265 @@
+===== SHARE CARD ATUAL =====
+import {
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import {
+  Capacitor,
+} from '@capacitor/core'
+import {
+  Directory,
+  Filesystem,
+} from '@capacitor/filesystem'
+import {
+  Share,
+} from '@capacitor/share'
+import {
+  Check,
+  LoaderCircle,
+  Share2,
+} from 'lucide-react'
+import {
+  toPng,
+} from 'html-to-image'
+import {
+  useTranslation,
+} from 'react-i18next'
+import {
+  format,
+  subDays,
+} from 'date-fns'
+
+import {
+  FocusHomeSymbol,
+  type FocusHomeKey,
+} from '@/components/focusme/FocusHomeSymbol'
+import {
+  FocusMeIcon,
+} from '@/components/icons/FocusMeIcon'
+import {
+  useFocusHomeAssessments,
+  useFocusHomeProfile,
+} from '@/hooks/focusme/useFocusHomeProfile'
+import {
+  usePomodoroSessions,
+} from '@/hooks/pomodoro/usePomodoroSessions'
+import {
+  getStreakBadge,
+} from '@/lib/streakBadges'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+import type {
+  FocusMeStoredReport,
+} from '@/services/focusMeReportsService'
+import type {
+  FocusMeWeeklyReport,
+} from '@/services/focusMeService'
+
+interface FocusMeShareCardProps {
+  report: FocusMeStoredReport
+}
+
+const FOCUS_HOME_KEYS:
+  FocusHomeKey[] = [
+    'aster',
+    'atlas',
+    'forge',
+    'pulse',
+    'loom',
+    'orbit',
+    'tide',
+    'ember',
+    'nova',
+    'prism',
+    'vanguard',
+    'verdant',
+  ]
+
+function isFocusHomeKey(
+  value?: string,
+): value is FocusHomeKey {
+  return Boolean(
+    value &&
+      FOCUS_HOME_KEYS.includes(
+        value as FocusHomeKey,
+      ),
+  )
+}
+
+function calculateCurrentStreak(
+  activeDates: string[],
+): number {
+  const uniqueDates =
+    new Set(activeDates)
+
+  const today =
+    new Date()
+
+  const todayString =
+    format(
+      today,
+      'yyyy-MM-dd',
+    )
+
+  const yesterday =
+    subDays(today, 1)
+
+  const yesterdayString =
+    format(
+      yesterday,
+      'yyyy-MM-dd',
+    )
+
+  let currentDate: Date | null =
+    uniqueDates.has(todayString)
+      ? today
+      : uniqueDates.has(
+            yesterdayString,
+          )
+        ? yesterday
+        : null
+
+  let currentStreak = 0
+
+  while (currentDate) {
+    const dateString =
+      format(
+        currentDate,
+        'yyyy-MM-dd',
+      )
+
+    if (
+      !uniqueDates.has(dateString)
+    ) {
+      break
+    }
+
+    currentStreak += 1
+
+    currentDate =
+      subDays(currentDate, 1)
+  }
+
+  return currentStreak
+}
+
+function formatMinutes(
+  minutes: number,
+): string {
+  if (minutes < 60) {
+    return `${minutes} min`
+  }
+
+  const hours =
+    Math.floor(minutes / 60)
+
+  const remainder =
+    minutes % 60
+
+  return remainder > 0
+    ? `${hours}h ${remainder}min`
+    : `${hours}h`
+}
+
+function sanitizeFilename(
+  value: string,
+): string {
+  return value
+    .normalize('NFD')
+    .replace(
+      /[\u0300-\u036f]/g,
+      '',
+    )
+    .replace(
+      /[^a-zA-Z0-9-]+/g,
+      '-',
+    )
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+}
+
+export function FocusMeShareCard({
+  report,
+}: FocusMeShareCardProps) {
+  const {
+    t,
+    i18n,
+  } = useTranslation()
+
+  const cardRef =
+    useRef<HTMLDivElement>(null)
+
+  const [
+    state,
+    setState,
+  ] = useState<
+    'idle' |
+    'generating' |
+    'success' |
+    'error'
+  >('idle')
+
+  const sessionsQuery =
+    usePomodoroSessions()
+
+  const currentStreak =
+    useMemo(
+      () =>
+        calculateCurrentStreak(
+          (
+            sessionsQuery.data ??
+            []
+          )
+            .filter(
+              (session) =>
+                session.type ===
+                'work',
+            )
+            .map(
+              (session) =>
+                session.date,
+            ),
+        ),
+      [sessionsQuery.data],
+    )
+
+  const currentBadge =
+    getStreakBadge(
+      currentStreak,
+    )
+
+  const assessmentsQuery =
+    useFocusHomeAssessments()
+
+  const profileQuery =
+    useFocusHomeProfile()
+
+  const assessment =
+    assessmentsQuery.data?.find(
+      (item) =>
+        item.reportId === report.id,
+    )
+
+  const weekly =
+    report.type === 'weekly'
+      ? report.metrics as
+          FocusMeWeeklyReport
+      : null
+
+  const monthly =
+    report.type === 'monthly'
+      ? report.metrics as
+          FocusMeMonthlyReport
+      : null
+
+  const focusMinutes =
+    weekly?.focus.totalMinutes ??
+    monthly?.current.focusMinutes ??
+    0
+
+  const sessions =
+    weekly?.focus.completedSessions ??
+    monthly?.current
+      .completedSessions ??
+    0
+
+  const activeDays =
+    weekly?.focus.activeDays ??
+    monthly?.current.activeDays ??
+    0
+
+  const tasksCompleted =
+    weekly?.tasks.completed ??
+    monthly?.current.tasks.completed ??
+    0
+
+  const storedFocusHome =
+    isFocusHomeKey(
+      report.focusHomeKey,
+    )
+      ? report.focusHomeKey
+      : undefined
+
+  const focusHome =
+    assessment?.focusHome ??
+    storedFocusHome ??
+    profileQuery.data?.focusHome
+
+  const focusHomeArchetype =
+    assessment?.archetype ??
+    profileQuery.data?.archetype
+
+  const focusHomeTemporalExpression =
+    assessment?.temporalExpression ??
+    profileQuery.data
+      ?.temporalExpression
+
+  const focusHomeIsHistorical =
+    Boolean(
+      assessment &&
+      profileQuery.data &&
+      assessment.id !==
+        profileQuery.data
+          .currentAssessmentId,
+    )
+
+  const focusHomeIsLoading =
+    assessmentsQuery.isLoading ||
+    profileQuery.isLoading
+
+  const locale =
+    i18n.resolvedLanguage === 'pt-BR'
+      ? 'pt-BR'
+      : 'en-US'
+
+  function formatPeriod(): string {
+    const start =
+      new Date(
+        `${report.periodStart}T12:00:00`,
+      )
+
+    const end =
+      new Date(
+        `${report.periodEnd}T12:00:00`,
+      )
+
+    end.setDate(
+      end.getDate() - 1,
+    )
+
+    if (report.type === 'monthly') {
+      return new Intl.DateTimeFormat(
+        locale,
+        {
+          month: 'long',
+          year: 'numeric',
+        },
+      ).format(start)
+    }
+
+    const formatter =
+      new Intl.DateTimeFormat(
+        locale,
+        {
+          day: '2-digit',
+          month: 'short',
+        },
+      )
+
+    return (
+      `${formatter.format(start)} – ` +
+      formatter.format(end)
+    )
+  }
+
+  async function downloadOnWeb(
+    dataUrl: string,
+    filename: string,
+  ) {
+    const response =
+      await fetch(dataUrl)
+
+    const blob =
+      await response.blob()
+
+    const file =
+      new File(
+        [blob],
+        filename,
+        {
+          type: 'image/png',
+        },
+      )
+
+    if (
+      navigator.share &&
+      (
+        !navigator.canShare ||
+        navigator.canShare({
+          files: [file],
+        })
+      )
+    ) {
+      await navigator.share({
+        title: 'FocusMe',
+        text: t(
+          'focusMeReportPage.share.shareText',
+        ),
+        files: [file],
+      })
+
+      return
+    }
+
+    const link =
+      document.createElement('a')
+
+    link.href = dataUrl
+    link.download = filename
+    link.click()
+  }
+
+  async function handleShare() {
+    if (
+      !cardRef.current ||
+      state === 'generating'
+    ) {
+      return
+    }
+
+    setState('generating')
+
+    try {
+      if (
+        'fonts' in document
+      ) {
+        await document.fonts.ready
+      }
+
+      const dataUrl =
+        await toPng(
+          cardRef.current,
+          {
+            width: 540,
+            height: 960,
+            pixelRatio: 2,
+            cacheBust: true,
+            backgroundColor:
+              '#080a09',
+          },
+        )
+
+      const filename =
+        `focusme-${sanitizeFilename(
+          formatPeriod(),
+        )}.png`
+
+      if (
+        Capacitor.isNativePlatform()
+      ) {
+        const base64 =
+          dataUrl.split(',')[1]
+
+        if (!base64) {
+          throw new Error(
+            'Invalid generated image.',
+          )
+        }
+
+        const saved =
+          await Filesystem.writeFile({
+            path: filename,
+            data: base64,
+            directory:
+              Directory.Cache,
+          })
+
+        await Share.share({
+          title: 'FocusMe',
+          text: t(
+            'focusMeReportPage.share.shareText',
+          ),
+          files: [saved.uri],
+          dialogTitle: t(
+            'focusMeReportPage.share.dialogTitle',
+          ),
+        })
+      } else {
+        await downloadOnWeb(
+          dataUrl,
+          filename,
+        )
+      }
+
+      setState('success')
+
+      window.setTimeout(
+        () => setState('idle'),
+        2200,
+      )
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        error.name === 'AbortError'
+      ) {
+        setState('idle')
+        return
+      }
+
+      console.error(
+        'Unable to share FocusMe recap:',
+        error,
+      )
+
+      setState('error')
+    }
+  }
+
+  const period =
+    formatPeriod()
+
+  return (
+    <>
+      <div className="mb-4 flex flex-col items-end gap-2">
+        <button
+          type="button"
+          onClick={handleShare}
+          disabled={
+            state === 'generating' ||
+            focusHomeIsLoading ||
+            sessionsQuery.isLoading
+          }
+          className="btn-primary flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {state === 'generating' ? (
+            <LoaderCircle
+              size={16}
+              className="animate-spin"
+            />
+          ) : state === 'success' ? (
+            <Check size={16} />
+          ) : (
+            <Share2 size={16} />
+          )}
+
+          {t(
+            state === 'generating'
+              ? 'focusMeReportPage.share.generating'
+              : state === 'success'
+                ? 'focusMeReportPage.share.ready'
+                : 'focusMeReportPage.share.button',
+          )}
+        </button>
+
+        {state === 'error' && (
+          <p className="text-xs text-red-300">
+            {t(
+              'focusMeReportPage.share.error',
+            )}
+          </p>
+        )}
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed -left-[10000px] top-0"
+      >
+        <div
+          ref={cardRef}
+          style={{
+            width: 540,
+            height: 960,
+            background:
+              'radial-gradient(circle at 82% 9%, rgba(16,185,129,0.20), transparent 30%), radial-gradient(circle at 12% 90%, rgba(16,185,129,0.10), transparent 28%), #080a09',
+          }}
+          className="relative flex overflow-hidden p-12 text-white"
+        >
+          <div className="absolute left-8 top-8 h-40 w-40 rounded-full border border-emerald-400/[0.07]" />
+          <div className="absolute left-14 top-14 h-28 w-28 rounded-full border border-emerald-400/[0.05]" />
+          <div className="absolute -bottom-24 -right-20 h-72 w-72 rounded-full border border-emerald-400/[0.08]" />
+
+          <div className="relative flex w-full flex-col">
+            <header className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FocusMeIcon
+                  size={30}
+                  className="text-emerald-400"
+                />
+
+                <span className="text-xl font-bold tracking-tight">
+                  FocusMe
+                </span>
+              </div>
+
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                {t(
+                  `focusMeReportPage.share.types.${report.type}`,
+                )}
+              </span>
+            </header>
+
+            <div className="mt-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                {t(
+                  'focusMeReportPage.share.eyebrow',
+                )}
+              </p>
+
+              <h1 className="mt-4 max-w-[420px] text-5xl font-bold capitalize leading-[1.05] tracking-[-0.04em] text-white">
+                {period}
+              </h1>
+            </div>
+
+            {focusHome ? (
+              <div
+                className="mt-10 flex items-center gap-7 rounded-[32px] border p-7"
+                style={{
+                  borderColor:
+                    'rgba(52, 211, 153, 0.22)',
+                  background:
+                    'rgba(255, 255, 255, 0.045)',
+                }}
+              >
+                <div
+                  className="flex h-[158px] w-[158px] shrink-0 items-center justify-center rounded-[28px]"
+                  style={{
+                    background:
+                      'rgba(255, 255, 255, 0.035)',
+                    border:
+                      '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  <FocusHomeSymbol
+                    type={focusHome}
+                    size={132}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-400">
+                    {t(
+                      'focusMeReportPage.share.yourFocusHome',
+                    )}
+                  </p>
+
+                  <p className="mt-2 text-[34px] font-bold capitalize leading-none text-white">
+                    {focusHome}
+                  </p>
+
+                  {focusHomeArchetype && (
+                    <p className="mt-4 text-sm font-medium leading-relaxed text-white/65">
+                      {t(
+                        `focusHomeIdentity.archetypes.${focusHomeArchetype}`,
+                      )}
+                    </p>
+                  )}
+
+                  {focusHomeTemporalExpression && (
+                    <p className="mt-1 text-xs leading-relaxed text-white/45">
+                      {t(
+                        `focusHomeIdentity.temporal.${focusHomeTemporalExpression}`,
+                      )}
+                    </p>
+                  )}
+
+                  <span className="mt-4 inline-flex rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                    {t(
+                      focusHomeIsHistorical
+                        ? 'focusMeReportPage.share.periodIdentity'
+                        : 'focusMeReportPage.share.currentIdentity',
+                    )}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-10 rounded-[32px] border border-emerald-400/15 bg-white/[0.035] p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+                  FocusMe
+                </p>
+
+                <p className="mt-3 text-2xl font-semibold leading-snug text-white">
+                  {t(
+                    'focusMeReportPage.share.focusStory',
+                  )}
+                </p>
+              </div>
+            )}
+
+            <div
+              className="mt-4 flex items-center gap-4 rounded-[24px] px-5 py-4"
+              style={{
+                background:
+                  'rgba(255, 255, 255, 0.035)',
+                border:
+                  '1px solid rgba(255, 255, 255, 0.075)',
+              }}
+            >
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-[34px]"
+                style={{
+                  background:
+                    'rgba(52, 211, 153, 0.09)',
+                  border:
+                    '1px solid rgba(52, 211, 153, 0.16)',
+                }}
+              >
+                {currentBadge.icon}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.17em] text-emerald-400">
+                  {t(
+                    'focusMeReportPage.share.currentBadge',
+                  )}
+                </p>
+
+                <p className="mt-1 text-xl font-bold text-white">
+                  {t(
+                    `streaksPage.badges.${currentBadge.minimumDays}.name`,
+                    {
+                      defaultValue:
+                        currentBadge.name,
+                    },
+                  )}
+                </p>
+
+                <p className="mt-1 text-[11px] leading-relaxed text-white/45">
+                  {t(
+                    'focusMeReportPage.share.badgeStreak',
+                    {
+                      count:
+                        currentStreak,
+                    },
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-auto grid grid-cols-2 gap-4">
+              {[
+                {
+                  label: t(
+                    'focusMeReportPage.focusTime',
+                  ),
+                  value:
+                    formatMinutes(
+                      focusMinutes,
+                    ),
+                },
+                {
+                  label: t(
+                    'focusMeReportPage.sessions',
+                  ),
+                  value: sessions,
+                },
+                {
+                  label: t(
+                    'focusMeReportPage.activeDays',
+                  ),
+                  value: activeDays,
+                },
+                {
+                  label: t(
+                    'focusMeReportPage.tasksCompleted',
+                  ),
+                  value:
+                    tasksCompleted,
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-3xl border border-white/[0.07] bg-white/[0.035] p-6"
+                >
+                  <p className="text-3xl font-semibold text-white">
+                    {item.value}
+                  </p>
+
+                  <p className="mt-2 text-xs text-white/45">
+                    {item.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <footer className="mt-8 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-white/30">
+              <span>
+                {t(
+                  'focusMeReportPage.share.footer',
+                )}
+              </span>
+
+              <span>
+                Focus 4.0
+              </span>
+            </footer>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+===== TRADUÇÕES PT-BR =====
+1205-      currentDescription:
+1206-        'Esta é a FocushoMe que representa atualmente a maneira como você planeja, executa e conclui.',
+1207-      historicalDescription:
+1208-        'Esta identidade foi preservada como parte da sua jornada e representa como você viveu este período.',
+1209-    },
+1210:    share: {
+1211-          currentBadge: 'Insígnia atual',
+1212-      button: 'Compartilhar retrospectiva',
+1213-      generating: 'Criando imagem...',
+1214-      ready: 'Imagem pronta',
+1215-      error:
+1216-        'Não foi possível criar a imagem. Tente novamente.',
+1217-      dialogTitle:
+1218-        'Compartilhar retrospectiva FocusMe',
+1219-      shareText:
+1220-        'Minha retrospectiva no FocusMe.',
+1221-      eyebrow: 'Minha retrospectiva',
+1222-      focusStory:
+1223-        'Uma visão do ritmo que construí neste período.',
+1224-      footer:
+1225-        'Meu foco conta uma história',
+1226-      types: {
+1227-        weekly: 'Resumo semanal',
+1228-        monthly: 'Resumo mensal',
+1229-      },
+1230-    },
+1231-    types: {
+1232-      weekly: 'Retrospectiva semanal',
+1233-      monthly: 'Retrospectiva mensal',
+1234-    },
+1235-    preserved:
+1236-      'Relatório encerrado e preservado',
+1237-    focusTime: 'Tempo de foco',
+1238-    sessions: 'Sessões',
+1239-    activeDays: 'Dias ativos',
+1240-    tasksCompleted: 'Tarefas concluídas',
+1241-    dailyEvolution: 'Evolução diária',
+1242-    weeklyEvolution: 'Evolução semanal',
+1243-    week: 'S{{number}}',
+1244-    noFocus:
+1245-      'Nenhuma sessão de foco foi concluída neste período.',
+1246-    tasks: 'Tarefas concluídas / criadas',
+1247-    projects: 'Projetos concluídos / criados',
+1248-    goals: 'Metas concluídas / criadas',
+1249-    topProject: 'Projeto em destaque',
+1250-    yourStory: 'A história do seu período',
+1251-    monthlyNarrativeTitle:
+1252-      'A história do seu mês',
+1253-    monthlyNarrativeDescription:
+1254-      'Uma leitura editorial local enquanto sua narrativa personalizada não foi gerada.',
+1255-    monthlyNarrativeGeneratedDescription:
+1256-      'Uma narrativa personalizada construída apenas com métricas calculadas pelo Focus.',
+1257-    narrativePreparing:
+1258-      'O FocusMe está escrevendo sua retrospectiva personalizada. O relatório continua disponível enquanto isso.',
+1259-    narrativeFallback:
+1260-      'A escrita personalizada não ficou disponível. Sua retrospectiva local foi preservada.',
+1261-    narrativeRetry:
+1262-      'Tentar novamente',
+1263-    legacyNarrativeTitle:
+1264-      'Retrospectiva preservada',
+1265-    legacyNarrativeDescription:
+1266-      'Este relatório foi criado antes da nova análise comportamental do FocusMe. Suas métricas continuam disponíveis, mas não há dados suficientes para reconstruir uma narrativa mensal confiável.',
+1267-  },
+1268-
+1269-  changesPage: {
+1270-    back: 'Voltar para Configurações',
+1271-    title: 'Mudanças e novidades',
+1272-    subtitle:
+1273-      'Acompanhe tudo o que evoluiu no Focus e o que estamos preparando.',
+1274-    currentVersion: 'Versão atual',
+1275-    currentDescription:
+1276-      'Uma nova geração do Focus, com tarefas mais inteligentes, projetos concluíveis e a fundação do FocusMe.',
+1277-    new: 'Novo',
+1278-
+1279-    recent: {
+1280-      title: 'Novidades recentes',
+1281-      subtitle:
+1282-        'As melhorias mais novas disponíveis no aplicativo.',
+1283-
+1284-      items: {
+1285-        taskCategories: {
+1286-          title: 'Nova experiência de tarefas',
+1287-          description:
+1288-            'As tarefas agora possuem categorias, filtros combináveis, projeto associado e estimativa de Pomodoros.',
+1289-        },
+1290-
+1291-        taskTrash: {
+1292-          title: 'Lixeira de tarefas',
+1293-          description:
+1294-            'Tarefas removidas podem ser restauradas durante 30 dias antes da exclusão definitiva.',
+1295-        },
+1296-
+1297-        projectLifecycle: {
+1298-          title: 'Conclusão de projetos',
+1299-          description:
+1300-            'Projetos agora podem ser concluídos, consultados separadamente e reabertos sem perder seu histórico.',
+===== TRADUÇÕES EN =====
+1194-      currentDescription:
+1195-        'This FocushoMe currently represents how you plan, execute, and complete your work.',
+1196-      historicalDescription:
+1197-        'This identity was preserved as part of your journey and represents how you experienced this period.',
+1198-    },
+1199:    share: {
+1200-          currentBadge: 'Current badge',
+1201-      button: 'Share retrospective',
+1202-      generating: 'Creating image...',
+1203-      ready: 'Image ready',
+1204-      error:
+1205-        'The image could not be created. Please try again.',
+1206-      dialogTitle:
+1207-        'Share FocusMe retrospective',
+1208-      shareText:
+1209-        'My FocusMe retrospective.',
+1210-      eyebrow: 'My retrospective',
+1211-      focusStory:
+1212-        'A view of the rhythm I built during this period.',
+1213-      footer:
+1214-        'My focus tells a story',
+1215-      types: {
+1216-        weekly: 'Weekly recap',
+1217-        monthly: 'Monthly recap',
+1218-      },
+1219-    },
+1220-    types: {
+1221-      weekly: 'Weekly retrospective',
+1222-      monthly: 'Monthly retrospective',
+1223-    },
+1224-    preserved:
+1225-      'Closed and preserved report',
+1226-    focusTime: 'Focus time',
+1227-    sessions: 'Sessions',
+1228-    activeDays: 'Active days',
+1229-    tasksCompleted: 'Tasks completed',
+1230-    dailyEvolution: 'Daily evolution',
+1231-    weeklyEvolution: 'Weekly evolution',
+1232-    week: 'W{{number}}',
+1233-    noFocus:
+1234-      'No focus session was completed during this period.',
+1235-    tasks: 'Tasks completed / created',
+1236-    projects: 'Projects completed / created',
+1237-    goals: 'Goals completed / created',
+1238-    topProject: 'Highlighted project',
+1239-    yourStory: 'The story of your period',
+1240-    monthlyNarrativeTitle:
+1241-      'The story of your month',
+1242-    monthlyNarrativeDescription:
+1243-      'A local editorial reading while your personalized narrative has not been generated.',
+1244-    monthlyNarrativeGeneratedDescription:
+1245-      'A personalized narrative built only from metrics calculated by Focus.',
+1246-    narrativePreparing:
+1247-      'FocusMe is writing your personalized retrospective. The report remains available in the meantime.',
+1248-    narrativeFallback:
+1249-      'Personalized writing was unavailable. Your local retrospective was preserved.',
+1250-    narrativeRetry:
+1251-      'Try again',
+1252-    legacyNarrativeTitle:
+1253-      'Preserved retrospective',
+1254-    legacyNarrativeDescription:
+1255-      'This report was created before the new FocusMe behavioral analysis. Its metrics remain available, but there is not enough information to rebuild a reliable monthly narrative.',
+1256-  },
+1257-
+1258-  changesPage: {
+1259-    back: 'Back to Settings',
+1260-    title: 'Changes and updates',
+1261-    subtitle:
+1262-      'Follow everything that has evolved in Focus and what we are preparing next.',
+1263-    currentVersion: 'Current version',
+1264-    currentDescription:
+1265-      'A new generation of Focus, with smarter tasks, completable projects, and the foundation of FocusMe.',
+1266-    new: 'New',
+1267-
+1268-    recent: {
+1269-      title: 'Recent updates',
+1270-      subtitle:
+1271-        'The newest improvements available in the app.',
+1272-
+1273-      items: {
+1274-        taskCategories: {
+1275-          title: 'New task experience',
+1276-          description:
+1277-            'Tasks now include categories, combined filters, linked projects, and Pomodoro estimates.',
+1278-        },
+1279-
+1280-        taskTrash: {
+1281-          title: 'Task trash',
+1282-          description:
+1283-            'Removed tasks can be restored for 30 days before permanent deletion.',
+1284-        },
+1285-
+1286-        projectLifecycle: {
+1287-          title: 'Project completion',
+1288-          description:
+1289-            'Projects can now be completed, viewed separately, and reopened without losing their history.',
+===== CAPACITOR CONFIG =====
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.mateusgomes.focusapp',
+  appName: 'Focus',
+  webDir: 'dist'
+};
+
+export default config;
+===== ANDROID MANIFEST =====
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher_v3"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round_v3"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.mateusgomes.focusapp" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".PomodoroForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Timer" />
+        </service>
+
+
+        <receiver
+            android:name=".GoalsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_goals_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/goals_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".MonthlyAnalyticsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_monthly_analytics_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/monthly_analytics_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".AnalyticsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_weekly_analytics_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/analytics_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".MonthlyActivityWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_monthly_activity_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/monthly_activity_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".MediumTimerWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_medium_timer_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/medium_timer_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".SmallTodayFocusWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_today_focus_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/small_today_focus_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".SmallStreakWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_small_streak_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/small_streak_widget_info" />
+
+        </receiver>
+
+
+        <receiver
+            android:name=".WeeklyActivityWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_weekly_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/weekly_activity_widget_info" />
+        </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    
+        <receiver
+            android:name=".MediumWeekWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_medium_week_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/medium_week_widget_info" />
+
+        </receiver>
+
+        <receiver
+            android:name=".MediumGoalsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_medium_goals_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/medium_goals_widget_info" />
+
+        </receiver>
+
+        <receiver
+            android:name=".SmallTopProjectWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_small_top_project_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/small_top_project_widget_info" />
+
+        </receiver>
+</application>
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>
+===== PACKAGE JSON =====
+{
+  "name": "focus-app",
+  "private": true,
+  "version": "4.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/share": "^8.0.1",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@supabase/supabase-js": "^2.111.0",
+    "@tailwindcss/vite": "^4.3.1",
+    "@tanstack/react-query": "^5.101.4",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "framer-motion": "^12.42.0",
+    "html-to-image": "^1.11.13",
+    "i18next": "^26.4.2",
+    "lucide-react": "^1.21.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-i18next": "^17.0.13",
+    "react-router-dom": "^7.18.0",
+    "recharts": "^3.9.0",
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.5.2",
+    "oxlint": "^1.69.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.0"
+  }
+}

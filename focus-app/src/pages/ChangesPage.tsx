@@ -23,6 +23,26 @@ import { PageHeader } from '../components/ui/PageHeader'
 
 const recentChanges = [
   {
+    key: 'weeklyRecaps',
+    icon: CalendarDays,
+  },
+  {
+    key: 'monthlyRecaps',
+    icon: Sparkles,
+  },
+  {
+    key: 'focusHome',
+    icon: Home,
+  },
+  {
+    key: 'focusMeHistory',
+    icon: Archive,
+  },
+  {
+    key: 'sharing',
+    icon: Share2,
+  },
+  {
     key: 'taskCategories',
     icon: ListTodo,
   },
@@ -34,38 +54,9 @@ const recentChanges = [
     key: 'projectLifecycle',
     icon: CheckCircle2,
   },
-  {
-    key: 'focusMePreview',
-    icon: Home,
-  },
 ]
 
 const roadmapItems = [
-  {
-    key: 'weeklyRecaps',
-    icon: CalendarDays,
-    status: 'planned',
-  },
-  {
-    key: 'monthlyRecaps',
-    icon: Sparkles,
-    status: 'planned',
-  },
-  {
-    key: 'focusHome',
-    icon: Home,
-    status: 'planned',
-  },
-  {
-    key: 'sharing',
-    icon: Share2,
-    status: 'planned',
-  },
-  {
-    key: 'history',
-    icon: Archive,
-    status: 'planned',
-  },
   {
     key: 'notifications',
     icon: BellRing,
@@ -84,7 +75,11 @@ const versions = [
       'taskCategories',
       'taskTrash',
       'projectLifecycle',
-      'focusMePreview',
+      'weeklyRecaps',
+      'monthlyRecaps',
+      'focusHome',
+      'focusMeHistory',
+      'sharing',
     ],
   },
   {

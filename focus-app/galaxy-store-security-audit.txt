@@ -1,0 +1,102 @@
+===== SIGNING FILE EXISTS =====
+keystore.properties: exists
+
+storeFile=<hidden>
+
+storePassword=<hidden>
+
+keyAlias=<hidden>
+
+keyPassword=<hidden>
+
+===== KEYSTORE FILES =====
+===== GITIGNORE =====
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Android signing
+android/keystore.properties
+===== TRACKED SENSITIVE FILE CHECK =====
+===== AUTH AND ACCOUNT DELETION =====
+src/components/layout/SidebarDesktop.tsx:32:import { signOut } from '@/services/authService'
+src/components/layout/SidebarDesktop.tsx:182:  async function handleSignOut() {
+src/components/layout/SidebarDesktop.tsx:186:      await signOut()
+src/components/layout/SidebarDesktop.tsx:490:            onClick={handleSignOut}
+src/components/layout/SidebarDesktop.tsx:506:                : t('navigation.signOut')}
+src/i18n/locales/pt-BR.ts:16:    continueGoogle: 'Continuar com Google',
+src/i18n/locales/pt-BR.ts:652:    signOut: 'Sair',
+src/i18n/locales/pt-BR.ts:1549:      signOut: 'Sair',
+src/i18n/locales/pt-BR.ts:1556:        'Continuar com Google',
+src/i18n/locales/en.ts:642:    signOut: 'Sign out',
+src/i18n/locales/en.ts:1537:      signOut: 'Sign Out',
+src/pages/LoginPage.tsx:43:  async function handleGoogleLogin() {
+src/pages/LoginPage.tsx:130:          onClick={handleGoogleLogin}
+src/pages/SettingsPage.tsx:16:  signOut,
+src/pages/SettingsPage.tsx:78:  async function handleGoogleLogin() {
+src/pages/SettingsPage.tsx:88:          : 'Could not start Google login.'
+src/pages/SettingsPage.tsx:142:  async function handleSignOut() {
+src/pages/SettingsPage.tsx:147:      await signOut()
+src/pages/SettingsPage.tsx:312:                onClick={handleSignOut}
+src/pages/SettingsPage.tsx:318:                  : t('settings.account.signOut')}
+src/pages/SettingsPage.tsx:334:                  onClick={handleGoogleLogin}
+src/pages/SettingsPage.tsx:365:                onClick={handleGoogleLogin}
+src/services/authService.ts:133:export async function signOut() {
+src/services/authService.ts:135:    await supabase.auth.signOut()
+===== PRIVACY AND TERMS =====
+src/i18n/locales/pt-BR.ts:1130:    privacy: {
+src/i18n/locales/pt-BR.ts:1400:              'FocusMe completo com retrospectivas, FocushoMe, histórico, compartilhamento e privacidade.',
+src/i18n/locales/en.ts:1119:    privacy: {
+src/i18n/locales/en.ts:1389:              'Introduction to FocusMe, FocushoMe, upcoming retrospectives, and privacy principles.',
+src/pages/AboutFocusMePage.tsx:49:const privacyItems = [
+src/pages/AboutFocusMePage.tsx:256:                  'focusMePage.privacy.title',
+src/pages/AboutFocusMePage.tsx:262:                  'focusMePage.privacy.description',
+src/pages/AboutFocusMePage.tsx:267:                {privacyItems.map(
+src/pages/AboutFocusMePage.tsx:280:                          `focusMePage.privacy.items.${item}`,
+src/services/focusHomeClassifier.ts:463:  const longTermShare =
+src/services/focusHomeClassifier.ts:569:      [longTermShare, 0.15],
+src/services/focusHomeClassifier.ts:589:      [longTermShare, 0.15],
+src/services/focusHomeClassifier.ts:710:        inverse(longTermShare),
+src/services/focusHomeClassifier.ts:880:      [longTermShare, 0.25],
+===== SUPABASE AUTH FUNCTIONS =====
+supabase/functions/_shared/focusHomeBehaviorFixtures.ts
+supabase/functions/_shared/focusHomeClassifier.ts
+supabase/functions/_shared/focusHomeClassifierFixtures.ts
+supabase/functions/_shared/focusHomeClassifier_test.ts
+supabase/functions/_shared/focusHomeEligibility.ts
+supabase/functions/assess-focushome/deno.json
+supabase/functions/assess-focushome/index.ts
+supabase/functions/generate-focusme-narrative/.npmrc
+supabase/functions/generate-focusme-narrative/deno.json
+supabase/functions/generate-focusme-narrative/index.ts
+===== PUBLIC URL REFERENCES =====
+src/i18n/locales/pt-BR.ts:1130:    privacy: {
+src/i18n/locales/pt-BR.ts:1400:              'FocusMe completo com retrospectivas, FocushoMe, histórico, compartilhamento e privacidade.',
+src/i18n/locales/en.ts:1119:    privacy: {
+src/i18n/locales/en.ts:1389:              'Introduction to FocusMe, FocushoMe, upcoming retrospectives, and privacy principles.',
+src/pages/AboutFocusMePage.tsx:49:const privacyItems = [
+src/pages/AboutFocusMePage.tsx:256:                  'focusMePage.privacy.title',
+src/pages/AboutFocusMePage.tsx:262:                  'focusMePage.privacy.description',
+src/pages/AboutFocusMePage.tsx:267:                {privacyItems.map(
+src/pages/AboutFocusMePage.tsx:280:                          `focusMePage.privacy.items.${item}`,

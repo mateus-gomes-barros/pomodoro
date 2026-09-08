@@ -829,7 +829,7 @@ const ptBR = {
       'Seus relatórios, padrões e descobertas reunidos em um só lugar.',
     subtitle:
       'Uma nova forma de compreender sua jornada de foco.',
-    coming: 'Em desenvolvimento no Focus 4.0',
+    coming: 'Disponível no Focus 4.0',
 
     view: {
       week: 'Semana',
@@ -931,13 +931,13 @@ const ptBR = {
       title:
         'Seu foco conta uma história.',
       description:
-        'O FocusMe reunirá suas sessões, tarefas, metas, projetos e conquistas para mostrar não apenas quanto você produziu, mas como sua rotina realmente aconteceu.',
+        'O FocusMe reúne suas sessões, tarefas, metas, projetos e conquistas para mostrar não apenas quanto você produziu, mas como sua rotina realmente aconteceu.',
     },
 
     experience: {
       title: 'Uma retrospectiva só sua',
       subtitle:
-        'Cada parte do Focus ajudará a construir uma visão mais completa da sua jornada.',
+        'Cada parte do Focus constrói uma visão mais completa da sua jornada.',
 
       items: {
         weekly: {
@@ -961,7 +961,7 @@ const ptBR = {
         sharing: {
           title: 'Sua história em uma imagem',
           description:
-            'Transforme seus resultados em um recap personalizado pronto para compartilhar.',
+            'Transforme seus resultados em um PNG personalizado com FocushoMe, insígnia atual e métricas, pronto para visualizar, salvar ou compartilhar.',
         },
       },
     },
@@ -970,15 +970,15 @@ const ptBR = {
       title:
         'Mais do que uma insígnia',
       description:
-        'Sua FocushoMe será uma identidade construída a partir do uso real do aplicativo. Ela não será definida apenas pelo horário em que você trabalha nem por deixar o timer rodando.',
+        'Sua FocushoMe é uma identidade construída a partir do uso real do aplicativo. Ela não é definida apenas pelo horário em que você trabalha nem por deixar o timer rodando.',
 
       items: {
         rare:
-          'Conquistada somente depois de um mês com dados suficientes.',
+          'Revelada depois de um mês encerrado com dados comportamentais suficientes.',
         complete:
           'Baseada em sessões, tarefas, metas, projetos e padrões de conclusão.',
         permanent:
-          'Permanece com você e só muda quando um novo teste mensal for solicitado.',
+          'Fica registrada na sua jornada e só muda quando um novo teste mensal identifica outra classe.',
       },
     },
 
@@ -1170,6 +1170,20 @@ const ptBR = {
       weekly: 'Semanais',
       monthly: 'Mensais',
     },
+    journey: {
+      title: 'Sua jornada FocushoMe',
+      description:
+        'Acompanhe as identidades reveladas pelos seus meses e como sua forma de focar evoluiu.',
+      current: 'Atual',
+      assessmentTypes: {
+        initial: 'Primeira análise',
+        retest: 'Novo teste',
+      },
+      changed:
+        'Sua jornada mudou de {{previous}} para {{current}}.',
+      remained:
+        'Sua identidade permaneceu {{name}}.',
+    },
     empty: {
       title:
         'Seus relatórios aparecerão aqui',
@@ -1184,6 +1198,49 @@ const ptBR = {
     back: 'Voltar ao histórico',
     error:
       'Este relatório não foi encontrado ou não pôde ser carregado.',
+    focusHome: {
+      eyebrow: 'FocushoMe revelada neste mês',
+      current: 'Identidade atual',
+      historical: 'Identidade anterior',
+      currentDescription:
+        'Esta é a FocushoMe que representa atualmente a maneira como você planeja, executa e conclui.',
+      historicalDescription:
+        'Esta identidade foi preservada como parte da sua jornada e representa como você viveu este período.',
+    },
+    share: {
+          currentBadge: 'Insígnia atual',
+      previewTitle: 'Prévia da retrospectiva',
+      previewDescription:
+        'Confira a imagem antes de compartilhar ou salvar.',
+      previewAlt:
+        'Prévia do PNG da retrospectiva FocusMe',
+      close: 'Fechar prévia',
+      save: 'Salvar imagem',
+      saving: 'Salvando...',
+      saved: 'Imagem salva',
+      savedLocation:
+        'Imagem salva em Documentos/FocusMe.',
+      shareAction: 'Compartilhar',
+      sharing: 'Abrindo...',
+      button: 'Compartilhar retrospectiva',
+      generating: 'Criando imagem...',
+      ready: 'Imagem pronta',
+      error:
+        'Não foi possível criar a imagem. Tente novamente.',
+      dialogTitle:
+        'Compartilhar retrospectiva FocusMe',
+      shareText:
+        'Minha retrospectiva no FocusMe.',
+      eyebrow: 'Minha retrospectiva',
+      focusStory:
+        'Uma visão do ritmo que construí neste período.',
+      footer:
+        'Meu foco conta uma história',
+      types: {
+        weekly: 'Resumo semanal',
+        monthly: 'Resumo mensal',
+      },
+    },
     types: {
       weekly: 'Retrospectiva semanal',
       monthly: 'Retrospectiva mensal',
@@ -1229,7 +1286,7 @@ const ptBR = {
       'Acompanhe tudo o que evoluiu no Focus e o que estamos preparando.',
     currentVersion: 'Versão atual',
     currentDescription:
-      'Uma nova geração do Focus, com tarefas mais inteligentes, projetos concluíveis e a fundação do FocusMe.',
+      'O Focus 4.0 transforma sessões, tarefas, metas e projetos em retrospectivas pessoais, identidades FocushoMe e uma jornada de evolução preservada.',
     new: 'Novo',
 
     recent: {
@@ -1238,6 +1295,36 @@ const ptBR = {
         'As melhorias mais novas disponíveis no aplicativo.',
 
       items: {
+        weeklyRecaps: {
+          title: 'Retrospectivas semanais',
+          description:
+            'Cada semana encerrada ganha métricas, ritmo diário, continuidade e uma narrativa construída a partir das suas ações.',
+        },
+
+        monthlyRecaps: {
+          title: 'Retrospectivas mensais',
+          description:
+            'Seus meses recebem comparações, padrões comportamentais, evolução semanal e uma narrativa pessoal preservada.',
+        },
+
+        focusHome: {
+          title: 'Sua identidade FocushoMe',
+          description:
+            'Doze identidades interpretam como você planeja, executa, conclui e sustenta o foco.',
+        },
+
+        focusMeHistory: {
+          title: 'Histórico e jornada FocushoMe',
+          description:
+            'Relatórios e análises anteriores ficam preservados, mostrando permanências e mudanças de identidade.',
+        },
+
+        sharing: {
+          title: 'Retrospectivas compartilháveis',
+          description:
+            'Gere um PNG com FocushoMe, insígnia e métricas, visualize em tela cheia, salve ou compartilhe.',
+        },
+
         taskCategories: {
           title: 'Nova experiência de tarefas',
           description:
@@ -1291,6 +1378,16 @@ const ptBR = {
           description:
             'O Focus começou uma nova fase, conectando organização diária, conclusão e compreensão da rotina.',
           items: {
+            weeklyRecaps:
+              'Retrospectivas semanais com métricas, ritmo diário, continuidade e narrativa.',
+            monthlyRecaps:
+              'Retrospectivas mensais com comparações, padrões e leitura comportamental.',
+            focusHome:
+              'Doze identidades FocushoMe reveladas a partir de dados reais de uso.',
+            focusMeHistory:
+              'Histórico de relatórios, revelações e novos testes FocushoMe.',
+            sharing:
+              'PNG em alta resolução com prévia, insígnia atual, salvamento e compartilhamento.',
             taskEditing:
               'Edição completa de tarefas sem precisar excluí-las.',
             taskCategories:
@@ -1300,7 +1397,7 @@ const ptBR = {
             projectLifecycle:
               'Conclusão, reabertura e filtros de projetos, preservando horas, tarefas e sessões.',
             focusMePreview:
-              'Apresentação do FocusMe, da FocushoMe, das futuras retrospectivas e da política de privacidade.',
+              'FocusMe completo com retrospectivas, FocushoMe, histórico, compartilhamento e privacidade.',
           },
         },
 
@@ -1352,9 +1449,9 @@ const ptBR = {
     },
 
     roadmap: {
-      title: 'Ainda chegando no Focus 4.0',
+      title: 'Próximos passos',
       subtitle:
-        'A base já está disponível. Agora estamos construindo a experiência completa do FocusMe.',
+        'O FocusMe já está disponível. Estes são os próximos refinamentos planejados para a experiência.',
 
       status: {
         development: 'Em desenvolvimento',
@@ -1418,7 +1515,7 @@ const ptBR = {
       },
 
       disclaimer:
-        'Os recursos restantes serão adicionados progressivamente durante a evolução do Focus 4.0.',
+        'O roadmap pode evoluir conforme o Focus continua sendo usado e aprimorado.',
     },
   },
 
@@ -1434,6 +1531,22 @@ const ptBR = {
       english: 'English',
       portugueseBrazil:
         'Português (Brasil)',
+    },
+
+    accountDeletion: {
+      button: 'Excluir minha conta',
+      title: 'Excluir conta permanentemente?',
+      subtitle:
+        'Esta ação não poderá ser desfeita.',
+      description:
+        'Sua conta do Focus e todos os dados associados a ela serão removidos.',
+      warning:
+        'Sessões, tarefas, projetos, metas, relatórios, narrativas e sua jornada FocushoMe serão excluídos permanentemente.',
+      cancel: 'Cancelar',
+      confirm: 'Excluir definitivamente',
+      deleting: 'Excluindo...',
+      error:
+        'Não foi possível excluir sua conta. Tente novamente.',
     },
 
     account: {

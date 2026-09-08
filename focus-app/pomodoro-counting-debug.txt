@@ -1,0 +1,1662 @@
+===== TIMER HOOK =====
+import {
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react'
+import {
+  format,
+  subDays,
+} from 'date-fns'
+
+import {
+  useCreatePomodoroSession,
+  usePomodoroSessions,
+} from '@/hooks/pomodoro/usePomodoroSessions'
+import {
+  useIncrementProjectSession,
+  useProjects,
+} from '@/hooks/projects/useProjects'
+import {
+  useIncrementTaskPomodoro,
+  useTasks,
+} from '@/hooks/tasks/useTasks'
+import { getStreakBadge } from '@/lib/streakBadges'
+import {
+  endFocusLiveActivity,
+  startFocusLiveActivity,
+} from '@/services/focusLiveActivityService'
+import {
+  clearTimerNotification,
+  showTimerNotification,
+  addNotificationActionListener,
+} from '@/services/timerNotificationService'
+import { usePomodoroStore } from '@/store/pomodoroStore'
+
+import type {
+  SessionType,
+  TimerSettings,
+} from '@/types'
+
+function getSessionDuration(
+  type: SessionType,
+  settings: TimerSettings,
+): number {
+  switch (type) {
+    case 'work':
+      return settings.workDuration
+    case 'short_break':
+      return settings.shortBreakDuration
+    case 'long_break':
+      return settings.longBreakDuration
+  }
+}
+
+function getLiveActivityRemainingSeconds(
+  endsAt: number | null,
+  secondsLeft: number,
+): number {
+  if (endsAt === null) {
+    return secondsLeft
+  }
+  return Math.max(
+    0,
+    Math.ceil((endsAt - Date.now()) / 1000),
+  )
+}
+
+function calculateCurrentStreak(activeDates: string[]): number {
+  const uniqueDates = new Set(activeDates)
+  const today = new Date()
+  const todayString = format(today, 'yyyy-MM-dd')
+  const yesterday = subDays(today, 1)
+  const yesterdayString = format(yesterday, 'yyyy-MM-dd')
+
+  let currentDate: Date | null =
+    uniqueDates.has(todayString)
+      ? today
+      : uniqueDates.has(yesterdayString)
+        ? yesterday
+        : null
+
+  let currentStreak = 0
+  while (currentDate) {
+    const dateString = format(currentDate, 'yyyy-MM-dd')
+    if (!uniqueDates.has(dateString)) break
+    currentStreak += 1
+    currentDate = subDays(currentDate, 1)
+  }
+  return currentStreak
+}
+
+export function useTimer() {
+  const {
+    status,
+    sessionType,
+    settings,
+    secondsLeft,
+    endsAt,
+    tick,
+    activeTaskId,
+    activeProjectId,
+  } = usePomodoroStore()
+
+  const tasksQuery = useTasks()
+  const projectsQuery = useProjects()
+  const sessionsQuery = usePomodoroSessions()
+
+  const createPomodoroSessionMutation = useCreatePomodoroSession()
+  const incrementTaskPomodoroMutation = useIncrementTaskPomodoro()
+  const incrementProjectSessionMutation = useIncrementProjectSession()
+
+  const currentBadge = useMemo(() => {
+    const workSessionDates = (sessionsQuery.data ?? [])
+      .filter((session) => session.type === 'work')
+      .map((session) => session.date)
+
+    const currentStreak = calculateCurrentStreak(workSessionDates)
+    return getStreakBadge(currentStreak)
+  }, [sessionsQuery.data])
+
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const previousStatusRef = useRef(status)
+  const previousSessionTypeRef = useRef(sessionType)
+  const previousSettingsRef = useRef(settings)
+  const liveActivityStateRef = useRef<string | null>(null)
+  const hasSyncedLiveActivityRef = useRef(false)
+
+  // 1. Hook para salvar a sessão no banco ao concluir
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current
+    const completedSessionType = previousSessionTypeRef.current
+    const completedSessionSettings = previousSettingsRef.current
+
+    const sessionWasCompleted =
+      previousStatus === 'running' && status === 'completed'
+
+    if (sessionWasCompleted) {
+      const durationMinutes = getSessionDuration(
+        completedSessionType,
+        completedSessionSettings,
+      )
+      const completedAt = new Date().toISOString()
+
+      void createPomodoroSessionMutation
+        .mutateAsync({
+          type: completedSessionType,
+          projectId: activeProjectId ?? undefined,
+          taskId: activeTaskId ?? undefined,
+          durationMinutes,
+          completedAt,
+          date: format(
+            new Date(completedAt),
+            'yyyy-MM-dd',
+          ),
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to save pomodoro session:', error)
+        })
+
+      if (completedSessionType === 'work') {
+        if (activeTaskId) {
+          const activeTask = tasksQuery.data?.find((t) => t.id === activeTaskId)
+          if (activeTask) {
+            void incrementTaskPomodoroMutation.mutateAsync(activeTask).catch(console.error)
+          }
+        }
+        if (activeProjectId) {
+          const activeProject = projectsQuery.data?.find((p) => p.id === activeProjectId)
+          if (activeProject) {
+            void incrementProjectSessionMutation
+              .mutateAsync({ project: activeProject, minutes: durationMinutes })
+              .catch(console.error)
+          }
+        }
+      }
+
+      if (completedSessionSettings.soundEnabled) {
+        playCompletionSound()
+      }
+    }
+
+    previousStatusRef.current = status
+    previousSessionTypeRef.current = sessionType
+    previousSettingsRef.current = settings
+  }, [
+    status,
+    sessionType,
+    settings,
+    activeTaskId,
+    activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
+    createPomodoroSessionMutation,
+    incrementTaskPomodoroMutation,
+    incrementProjectSessionMutation,
+  ])
+
+  // 2. Hook para sincronizar atividades nativas (Live Activity iOS + Notification Android)
+  useEffect(() => {
+    if (status !== 'running' && status !== 'paused') {
+      const needsToEndActivity =
+        !hasSyncedLiveActivityRef.current || liveActivityStateRef.current !== null
+
+      if (needsToEndActivity) {
+        hasSyncedLiveActivityRef.current = true
+        liveActivityStateRef.current = null
+        
+        // Limpa estado nativo em ambas as plataformas
+        void endFocusLiveActivity()
+        void clearTimerNotification()
+      }
+      return
+    }
+
+    const activeTask = tasksQuery.data?.find((t) => t.id === activeTaskId)
+    const resolvedProjectId = activeProjectId ?? activeTask?.projectId ?? null
+    const activeProject = projectsQuery.data?.find((p) => p.id === resolvedProjectId)
+
+    const remainingSeconds = getLiveActivityRemainingSeconds(
+      status === 'running' ? endsAt : null,
+      secondsLeft,
+    )
+
+    const activityStateSignature = [
+      status,
+      sessionType,
+      endsAt ?? 'no-end-date',
+      status === 'paused' ? remainingSeconds : 'countdown',
+      activeProject?.name ?? '',
+      activeTask?.title ?? '',
+      currentBadge.icon,
+    ].join('|')
+
+    const stateHasNotChanged =
+      hasSyncedLiveActivityRef.current &&
+      liveActivityStateRef.current === activityStateSignature
+
+    if (stateHasNotChanged) {
+      return
+    }
+
+    hasSyncedLiveActivityRef.current = true
+    liveActivityStateRef.current = activityStateSignature
+
+    // Atualiza Live Activity (iOS)
+    void startFocusLiveActivity({
+      sessionType,
+      status,
+      endDate: status === 'running' ? endsAt : null,
+      remainingSeconds,
+      projectName: activeProject?.name,
+      taskName: activeTask?.title,
+      badgeIcon: currentBadge.icon,
+    })
+
+    // Atualiza Notificação Fixa / Now Bar (Android)
+    // O cronômetro é controlado nativamente pelo Android através do endTime.
+    // Não enviamos o tempo como texto para evitar que ele fique duplicado/estático.
+
+    const focusEmoji = activeProject?.emoji ?? '⏱️'
+
+const focusName =
+  activeTask?.title ??
+  activeProject?.name ??
+  (sessionType === 'work'
+    ? 'Foco'
+    : sessionType === 'short_break'
+      ? 'Pausa Curta'
+      : 'Pausa Longa')
+
+const notificationTitle = `${focusEmoji} ${focusName}`
+
+const notificationBody =
+  activeTask?.title && activeProject?.name
+    ? activeProject.name
+    : ''
+
+void showTimerNotification(
+  notificationTitle,
+  notificationBody,
+  status === 'running' ? (endsAt ?? 0) : 0,
+  currentBadge.icon,
+)
+  }, [
+    status,
+    sessionType,
+    secondsLeft,
+    endsAt,
+    activeTaskId,
+    activeProjectId,
+    tasksQuery.data,
+    projectsQuery.data,
+    currentBadge.icon,
+  ])
+
+  // 3. Hook para ouvir ações da notificação (Android)
+  useEffect(() => {
+    const handleAction = (action: string) => {
+      const { status, start, pause, reset } = usePomodoroStore.getState()
+      console.log('⚡ [useTimer] Ação recebida da notificação:', action)
+
+      if (action === 'com.mateusgomes.focusapp.ACTION_PAUSE') {
+        if (status === 'running') {
+          pause()
+        } else {
+          start()
+        }
+      } else if (action === 'com.mateusgomes.focusapp.ACTION_STOP') {
+        reset()
+      }
+    }
+
+    const listener = addNotificationActionListener(handleAction)
+
+    return () => {
+      if (listener && 'then' in listener) {
+        void (listener as any).then((h: any) => h.remove())
+      }
+    }
+  }, [])
+
+  // 4. Hook para o Ticking interval
+  useEffect(() => {
+    if (status === 'running') {
+      intervalRef.current = setInterval(() => {
+        tick()
+      }, 1000)
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+  }, [status, tick])
+}
+
+function playCompletionSound() {
+  try {
+    const context = new AudioContext()
+    const notes = [523.25, 659.25, 783.99]
+    notes.forEach((frequency, index) => {
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.frequency.value = frequency
+      oscillator.type = 'sine'
+      gain.gain.setValueAtTime(0, context.currentTime + index * 0.18)
+      gain.gain.linearRampToValueAtTime(0.15, context.currentTime + index * 0.18 + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + index * 0.18 + 0.4)
+      oscillator.start(context.currentTime + index * 0.18)
+      oscillator.stop(context.currentTime + index * 0.18 + 0.5)
+    })
+  } catch {
+    // AudioContext unavailable
+  }
+}
+===== SESSION HOOK =====
+import { useQuery } from '@tanstack/react-query'
+
+import { useInvalidateQuery } from '@/hooks/useInvalidateQuery'
+
+import {
+  createPomodoroSession,
+  deletePomodoroSession,
+  getPomodoroSessions,
+  type CreatePomodoroSessionInput,
+} from '@/services/pomodoroSessionsService'
+
+export const pomodoroSessionsQueryKey = [
+  'pomodoro-sessions',
+]
+
+export function usePomodoroSessions() {
+  return useQuery({
+    queryKey: pomodoroSessionsQueryKey,
+    queryFn: getPomodoroSessions,
+  })
+}
+
+export function useCreatePomodoroSession() {
+  return useInvalidateQuery(
+    pomodoroSessionsQueryKey,
+    {
+      mutationFn: (
+        input: CreatePomodoroSessionInput,
+      ) => createPomodoroSession(input),
+    },
+  )
+}
+
+export function useDeletePomodoroSession() {
+  return useInvalidateQuery(
+    pomodoroSessionsQueryKey,
+    {
+      mutationFn: (sessionId: string) =>
+        deletePomodoroSession(sessionId),
+    },
+  )
+}===== SESSION SERVICE =====
+import { supabase } from '@/lib/supabase'
+
+import type {
+  PomodoroSession,
+  SessionType,
+} from '@/types'
+
+interface PomodoroSessionRow {
+  id: string
+  type: SessionType
+  project_id: string | null
+  task_id: string | null
+  duration_minutes: number
+  completed_at: string
+  session_date: string
+}
+
+export interface CreatePomodoroSessionInput {
+  type: SessionType
+  projectId?: string
+  taskId?: string
+  durationMinutes: number
+  completedAt?: string
+  date?: string
+}
+
+const POMODORO_SESSION_SELECT = `
+  id,
+  type,
+  project_id,
+  task_id,
+  duration_minutes,
+  completed_at,
+  session_date
+`
+
+function mapPomodoroSessionRow(
+  row: PomodoroSessionRow,
+): PomodoroSession {
+  return {
+    id: row.id,
+    type: row.type,
+    projectId: row.project_id ?? undefined,
+    taskId: row.task_id ?? undefined,
+    durationMinutes: row.duration_minutes,
+    completedAt: row.completed_at,
+    date: row.session_date,
+  }
+}
+
+export async function getPomodoroSessions(): Promise<
+  PomodoroSession[]
+> {
+  const { data, error } = await supabase
+    .from('pomodoro_sessions')
+    .select(POMODORO_SESSION_SELECT)
+    .order('completed_at', {
+      ascending: false,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return (data as PomodoroSessionRow[]).map(
+    mapPomodoroSessionRow,
+  )
+}
+
+export async function createPomodoroSession(
+  input: CreatePomodoroSessionInput,
+): Promise<PomodoroSession> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError) {
+    throw userError
+  }
+
+  if (!user) {
+    throw new Error(
+      'You must be authenticated to create a pomodoro session.',
+    )
+  }
+
+  const completedAt =
+    input.completedAt ?? new Date().toISOString()
+
+  const date =
+    input.date ?? completedAt.split('T')[0]
+
+  const { data, error } = await supabase
+    .from('pomodoro_sessions')
+    .insert({
+      user_id: user.id,
+      type: input.type,
+      project_id: input.projectId || null,
+      task_id: input.taskId || null,
+      duration_minutes:
+        input.durationMinutes,
+      completed_at: completedAt,
+      session_date: date,
+    })
+    .select(POMODORO_SESSION_SELECT)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapPomodoroSessionRow(
+    data as PomodoroSessionRow,
+  )
+}
+
+export async function deletePomodoroSession(
+  sessionId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('pomodoro_sessions')
+    .delete()
+    .eq('id', sessionId)
+
+  if (error) {
+    throw error
+  }
+}===== POMODORO STORE =====
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+import type {
+  PomodoroSession,
+  SessionType,
+  TimerSettings,
+  TimerStatus,
+} from '../types'
+
+import {
+  generateId,
+  getTodayString,
+} from '../utils'
+
+import {
+  trackActivityEvent,
+} from '@/services/activityEventsService'
+
+interface PomodoroState {
+  // Timer
+  status: TimerStatus
+  sessionType: SessionType
+  secondsLeft: number
+  endsAt: number | null
+  currentSessionCount: number
+  activeProjectId: string | null
+  activeTaskId: string | null
+
+  // Settings
+  settings: TimerSettings
+
+  // History
+  sessions: PomodoroSession[]
+
+  // Actions
+  start: () => void
+  pause: () => void
+  reset: () => void
+  tick: () => void
+  switchSession: (
+    type: SessionType,
+  ) => void
+  completeSession: () => void
+  setActiveProject: (
+    id: string | null,
+  ) => void
+  setActiveTask: (
+    id: string | null,
+  ) => void
+  updateSettings: (
+    settings: Partial<TimerSettings>,
+  ) => void
+  getTodaySessions: () => PomodoroSession[]
+  getTodayFocusMinutes: () => number
+}
+
+const DEFAULT_SETTINGS: TimerSettings = {
+  workDuration: 25,
+  shortBreakDuration: 5,
+  longBreakDuration: 15,
+  sessionsUntilLongBreak: 4,
+  soundEnabled: true,
+  autoStartBreaks: false,
+  autoStartWork: false,
+}
+
+function getDuration(
+  type: SessionType,
+  settings: TimerSettings,
+): number {
+  switch (type) {
+    case 'work':
+      return settings.workDuration * 60
+
+    case 'short_break':
+      return (
+        settings.shortBreakDuration * 60
+      )
+
+    case 'long_break':
+      return (
+        settings.longBreakDuration * 60
+      )
+  }
+}
+
+function getRemainingSeconds(
+  endsAt: number,
+): number {
+  return Math.max(
+    0,
+    Math.ceil(
+      (endsAt - Date.now()) / 1000,
+    ),
+  )
+}
+
+export const usePomodoroStore =
+  create<PomodoroState>()(
+    persist(
+      (set, get) => ({
+        status: 'idle',
+        sessionType: 'work',
+        secondsLeft:
+          DEFAULT_SETTINGS.workDuration *
+          60,
+        endsAt: null,
+        currentSessionCount: 0,
+        activeProjectId: null,
+        activeTaskId: null,
+        settings: DEFAULT_SETTINGS,
+        sessions: [],
+
+        start: () => {
+          const {
+            secondsLeft,
+            status,
+            sessionType,
+            activeProjectId,
+            activeTaskId,
+          } = get()
+
+          if (
+            status === 'running' ||
+            secondsLeft <= 0
+          ) {
+            return
+          }
+
+          const isResume =
+            status === 'paused'
+
+          set({
+            status: 'running',
+            endsAt:
+              Date.now() +
+              secondsLeft * 1000,
+          })
+
+          void trackActivityEvent({
+            eventType: isResume
+              ? 'pomodoro_resumed'
+              : 'pomodoro_started',
+            entityType: 'pomodoro',
+            metadata: {
+              session_type:
+                sessionType,
+              seconds_remaining:
+                secondsLeft,
+              has_project:
+                Boolean(activeProjectId),
+              has_task:
+                Boolean(activeTaskId),
+            },
+          })
+        },
+
+        pause: () => {
+          const {
+            status,
+            endsAt,
+            sessionType,
+            activeProjectId,
+            activeTaskId,
+          } = get()
+
+          if (
+            status !== 'running' ||
+            endsAt === null
+          ) {
+            return
+          }
+
+          const remainingSeconds =
+            getRemainingSeconds(endsAt)
+
+          set({
+            status: 'paused',
+            secondsLeft:
+              remainingSeconds,
+            endsAt: null,
+          })
+
+          void trackActivityEvent({
+            eventType:
+              'pomodoro_paused',
+            entityType: 'pomodoro',
+            metadata: {
+              session_type:
+                sessionType,
+              seconds_remaining:
+                remainingSeconds,
+              has_project:
+                Boolean(activeProjectId),
+              has_task:
+                Boolean(activeTaskId),
+            },
+          })
+        },
+
+        reset: () => {
+          const {
+            sessionType,
+            settings,
+            status,
+            secondsLeft,
+            activeProjectId,
+            activeTaskId,
+          } = get()
+
+          const wasInProgress =
+            status === 'running' ||
+            status === 'paused'
+
+          if (wasInProgress) {
+            void trackActivityEvent({
+              eventType:
+                'pomodoro_abandoned',
+              entityType: 'pomodoro',
+              metadata: {
+                session_type:
+                  sessionType,
+                reason: 'reset',
+                seconds_remaining:
+                  secondsLeft,
+                has_project:
+                  Boolean(
+                    activeProjectId,
+                  ),
+                has_task:
+                  Boolean(activeTaskId),
+              },
+            })
+          }
+
+          set({
+            status: 'idle',
+            secondsLeft: getDuration(
+              sessionType,
+              settings,
+            ),
+            endsAt: null,
+          })
+        },
+
+        tick: () => {
+          const {
+            status,
+            endsAt,
+          } = get()
+
+          if (
+            status !== 'running' ||
+            endsAt === null
+          ) {
+            return
+          }
+
+          const remainingSeconds =
+            getRemainingSeconds(endsAt)
+
+          if (remainingSeconds <= 0) {
+            get().completeSession()
+            return
+          }
+
+          set({
+            secondsLeft:
+              remainingSeconds,
+          })
+        },
+
+        switchSession: (
+          type: SessionType,
+        ) => {
+          const {
+            settings,
+            status,
+            sessionType,
+            secondsLeft,
+            activeProjectId,
+            activeTaskId,
+          } = get()
+
+          if (
+            status === 'running' ||
+            status === 'paused'
+          ) {
+            void trackActivityEvent({
+              eventType:
+                'pomodoro_abandoned',
+              entityType: 'pomodoro',
+              metadata: {
+                session_type:
+                  sessionType,
+                reason:
+                  'session_changed',
+                seconds_remaining:
+                  secondsLeft,
+                has_project:
+                  Boolean(
+                    activeProjectId,
+                  ),
+                has_task:
+                  Boolean(activeTaskId),
+              },
+            })
+          }
+
+          set({
+            sessionType: type,
+            secondsLeft: getDuration(
+              type,
+              settings,
+            ),
+            status: 'idle',
+            endsAt: null,
+          })
+        },
+
+        completeSession: () => {
+          const {
+            sessionType,
+            currentSessionCount,
+            settings,
+            activeProjectId,
+            activeTaskId,
+          } = get()
+
+          const session: PomodoroSession = {
+            id: generateId(),
+            type: sessionType,
+            projectId: activeProjectId ?? undefined,
+            taskId: activeTaskId ?? undefined,
+            durationMinutes:
+              sessionType === 'work'
+                ? settings.workDuration
+                : sessionType === 'short_break'
+                  ? settings.shortBreakDuration
+                  : settings.longBreakDuration,
+            completedAt: new Date().toISOString(),
+            date: getTodayString(),
+          }
+
+          const newCount =
+            sessionType === 'work'
+              ? currentSessionCount + 1
+              : currentSessionCount
+
+          const isLongBreak =
+            newCount > 0 &&
+            newCount %
+              settings.sessionsUntilLongBreak ===
+              0
+
+          let nextType: SessionType
+
+          if (sessionType === 'work') {
+            nextType = isLongBreak
+              ? 'long_break'
+              : 'short_break'
+          } else {
+            nextType = 'work'
+          }
+
+          const shouldAutoStart =
+            sessionType === 'work'
+              ? settings.autoStartBreaks
+              : settings.autoStartWork
+
+          const nextSeconds =
+            getDuration(
+              nextType,
+              settings,
+            )
+
+          set((state) => ({
+            sessions: [
+              ...state.sessions,
+              session,
+            ],
+            status: shouldAutoStart
+              ? 'running'
+              : 'completed',
+            endsAt: shouldAutoStart
+              ? Date.now() +
+                nextSeconds * 1000
+              : null,
+            currentSessionCount:
+              newCount,
+            sessionType: nextType,
+            secondsLeft: nextSeconds,
+          }))
+
+          if (shouldAutoStart) {
+            void trackActivityEvent({
+              eventType:
+                'pomodoro_started',
+              entityType: 'pomodoro',
+              metadata: {
+                session_type:
+                  nextType,
+                seconds_remaining:
+                  nextSeconds,
+                auto_started: true,
+                has_project:
+                  Boolean(
+                    activeProjectId,
+                  ),
+                has_task:
+                  Boolean(activeTaskId),
+              },
+            })
+          }
+        },
+
+        setActiveProject: (id) => {
+          set({
+            activeProjectId: id,
+          })
+        },
+
+        setActiveTask: (id) => {
+          set({
+            activeTaskId: id,
+          })
+        },
+
+        updateSettings: (
+          newSettings,
+        ) => {
+          set((state) => {
+            const merged = {
+              ...state.settings,
+              ...newSettings,
+            }
+
+            return {
+              settings: merged,
+              secondsLeft: getDuration(
+                state.sessionType,
+                merged,
+              ),
+              status: 'idle',
+              endsAt: null,
+            }
+          })
+        },
+
+        getTodaySessions: () => {
+          const today =
+            getTodayString()
+
+          return get().sessions.filter(
+            (session) =>
+              session.date === today,
+          )
+        },
+
+        getTodayFocusMinutes: () => {
+          const today =
+            getTodayString()
+
+          return get()
+            .sessions.filter(
+              (session) =>
+                session.date ===
+                  today &&
+                session.type === 'work',
+            )
+            .reduce(
+              (total, session) =>
+                total +
+                session.durationMinutes,
+              0,
+            )
+        },
+      }),
+      {
+        name: 'focus_pomodoro',
+
+        partialize: (state) => ({
+          status: state.status,
+          sessionType:
+            state.sessionType,
+          secondsLeft:
+            state.secondsLeft,
+          endsAt: state.endsAt,
+          activeProjectId:
+            state.activeProjectId,
+          activeTaskId:
+            state.activeTaskId,
+          sessions: state.sessions,
+          settings: state.settings,
+          currentSessionCount:
+            state.currentSessionCount,
+        }),
+      },
+    ),
+  )===== TIMER PAGE =====
+import { useState } from 'react'
+import {
+  AnimatePresence,
+  motion,
+} from 'framer-motion'
+import {
+  ChevronDown,
+  LoaderCircle,
+  Pause,
+  Play,
+  RotateCcw,
+  Volume2,
+  VolumeX,
+} from 'lucide-react'
+
+import { useProjects } from '@/hooks/projects/useProjects'
+import { usePomodoroStore } from '@/store/pomodoroStore'
+import { CircularProgress } from '@/components/ui/CircularProgress'
+import {
+  cn,
+  formatTime,
+} from '@/utils'
+
+import type { SessionType } from '@/types'
+import { useTranslation } from 'react-i18next'
+
+const SESSION_LABEL_KEYS: Record<
+  SessionType,
+  string
+> = {
+  work: 'timer.session.work',
+  short_break: 'timer.session.shortBreak',
+  long_break: 'timer.session.longBreak',
+}
+
+const SESSION_TYPES: SessionType[] = [
+  'work',
+  'short_break',
+  'long_break',
+]
+
+export function TimerPage() {
+  const { t } = useTranslation()
+
+  const {
+    status,
+    sessionType,
+    secondsLeft,
+    settings,
+    currentSessionCount,
+    activeProjectId,
+    start,
+    pause,
+    reset,
+    switchSession,
+    setActiveProject,
+    updateSettings,
+  } = usePomodoroStore()
+
+  const projectsQuery = useProjects()
+
+  const projects =
+    projectsQuery.data ?? []
+
+  const [showSettings, setShowSettings] =
+    useState(false)
+
+  const totalSeconds =
+    sessionType === 'work'
+      ? settings.workDuration * 60
+      : sessionType === 'short_break'
+        ? settings.shortBreakDuration * 60
+        : settings.longBreakDuration * 60
+
+  const rawProgress =
+    status !== 'idle' &&
+    totalSeconds > 0
+      ? 1 -
+        secondsLeft / totalSeconds
+      : 0
+
+  const progress = Math.min(
+    Math.max(rawProgress, 0),
+    1,
+  )
+
+  const ringColor =
+    sessionType === 'work'
+      ? '#34d399'
+      : '#60a5fa'
+
+  const completedSessionDots =
+    settings.sessionsUntilLongBreak > 0
+      ? currentSessionCount %
+        settings.sessionsUntilLongBreak
+      : 0
+
+  const isRunning =
+    status === 'running'
+
+  return (
+    <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col items-center space-y-7">
+      {/* Session type switcher */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: -6,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className="segment grid w-full grid-cols-3 sm:w-auto"
+      >
+        {SESSION_TYPES.map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() =>
+              switchSession(type)
+            }
+            disabled={isRunning}
+            className={cn(
+              'segment-item min-w-0 whitespace-nowrap',
+              sessionType === type
+                ? 'active'
+                : 'inactive',
+              isRunning &&
+                'cursor-not-allowed opacity-60',
+            )}
+          >
+            {t(SESSION_LABEL_KEYS[type])}
+          </button>
+        ))}
+      </motion.div>
+
+      {/* Timer ring */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          scale: 0.92,
+        }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+        }}
+        transition={{
+          duration: 0.45,
+          ease: [
+            0.16,
+            1,
+            0.3,
+            1,
+          ],
+        }}
+        className="relative"
+      >
+        <CircularProgress
+          progress={progress}
+          size={260}
+          strokeWidth={5}
+          color={ringColor}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${sessionType}-${secondsLeft}`}
+              initial={{
+                opacity: 0.65,
+              }}
+              animate={{
+                opacity: 1,
+              }}
+              exit={{
+                opacity: 0.65,
+              }}
+              transition={{
+                duration: 0.12,
+              }}
+              className="flex flex-col items-center"
+            >
+              <span className="font-mono text-[52px] font-bold leading-none tracking-[-3px] text-white sm:text-[56px]">
+                {formatTime(
+                  secondsLeft,
+                )}
+              </span>
+
+              <span className="mt-2 text-[13px] text-white/40">
+                {
+                  t(
+                    SESSION_LABEL_KEYS[
+                      sessionType
+                    ],
+                  )
+                }
+              </span>
+            </motion.div>
+          </AnimatePresence>
+        </CircularProgress>
+
+        {isRunning &&
+          sessionType === 'work' && (
+            <div
+              className="pointer-events-none absolute inset-0 animate-pulse rounded-full opacity-[0.07]"
+              style={{
+                background: `radial-gradient(circle, ${ringColor} 0%, transparent 70%)`,
+              }}
+            />
+          )}
+      </motion.div>
+
+      {/* Session dots */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+        }}
+        animate={{
+          opacity: 1,
+        }}
+        transition={{
+          delay: 0.15,
+        }}
+        className="flex flex-wrap items-center justify-center gap-2"
+      >
+        {Array.from({
+          length:
+            settings.sessionsUntilLongBreak,
+        }).map((_, index) => (
+          <div
+            key={index}
+            className="h-2 w-2 rounded-full transition-all duration-300"
+            style={{
+              backgroundColor:
+                index <
+                completedSessionDots
+                  ? '#34d399'
+                  : 'rgba(255,255,255,0.12)',
+            }}
+          />
+        ))}
+
+        <span className="ml-1 text-[11px] text-white/30">
+          until long break
+        </span>
+      </motion.div>
+
+      {/* Timer controls */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: 10,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          delay: 0.2,
+        }}
+        className="flex items-center gap-4"
+      >
+        <button
+          type="button"
+          onClick={reset}
+          className="btn-ghost h-11 w-11 justify-center p-0"
+          aria-label={t('timer.status.reset')}
+        >
+          <RotateCcw size={16} />
+        </button>
+
+        <motion.button
+          type="button"
+          whileTap={{
+            scale: 0.94,
+          }}
+          onClick={
+            isRunning
+              ? pause
+              : start
+          }
+          className={cn(
+            'flex h-[72px] w-[72px] items-center justify-center rounded-2xl font-bold text-black',
+            'transition-all duration-150',
+            isRunning
+              ? 'bg-white hover:bg-white/85'
+              : 'bg-gradient-to-br from-emerald-400 to-emerald-500 hover:opacity-90',
+          )}
+          style={{
+            boxShadow:
+              '0 0 24px rgba(52,211,153,0.18)',
+          }}
+          aria-label={
+            isRunning
+              ? 'Pause timer'
+              : 'Start timer'
+          }
+        >
+          {isRunning ? (
+            <Pause size={26} />
+          ) : (
+            <Play
+              size={26}
+              className="translate-x-[1px]"
+            />
+          )}
+        </motion.button>
+
+        <button
+          type="button"
+          onClick={() =>
+            updateSettings({
+              soundEnabled:
+                !settings.soundEnabled,
+            })
+          }
+          className="btn-ghost h-11 w-11 justify-center p-0"
+          aria-label={
+            settings.soundEnabled
+              ? t('timer.sound.mute')
+              : t('timer.sound.enable')
+          }
+        >
+          {settings.soundEnabled ? (
+            <Volume2 size={16} />
+          ) : (
+            <VolumeX size={16} />
+          )}
+        </button>
+      </motion.div>
+
+      {/* Project and timer settings */}
+
+      <motion.div
+        initial={{
+          opacity: 0,
+        }}
+        animate={{
+          opacity: 1,
+        }}
+        transition={{
+          delay: 0.28,
+        }}
+        className="w-full space-y-3"
+      >
+        <div className="card p-5">
+          <p className="label-section mb-3">
+            Assign to Project
+          </p>
+
+          {projectsQuery.isLoading ? (
+            <div className="flex min-h-10 items-center justify-center">
+              <LoaderCircle
+                size={18}
+                className="animate-spin text-white/35"
+              />
+            </div>
+          ) : projectsQuery.isError ? (
+            <p className="text-xs text-red-400">
+              {projectsQuery.error
+                instanceof Error
+                ? projectsQuery.error
+                    .message
+                : t('timer.projects.loadError')}
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveProject(null)
+                }
+                className={cn(
+                  'rounded-xl px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                  activeProjectId ===
+                    null
+                    ? 'bg-white/10 text-white'
+                    : 'bg-white/[0.04] text-white/40 hover:text-white/60',
+                )}
+              >
+                None
+              </button>
+
+              {projects.map(
+                (project) => (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() =>
+                      setActiveProject(
+                        project.id,
+                      )
+                    }
+                    title={project.name}
+                    className={cn(
+                      'flex max-w-full items-center gap-1.5 rounded-xl px-3 py-1.5',
+                      'text-xs font-medium transition-all duration-150',
+                      activeProjectId ===
+                        project.id
+                        ? 'border border-white/10 bg-white/10 text-white'
+                        : 'bg-white/[0.04] text-white/40 hover:text-white/60',
+                    )}
+                  >
+                    <span className="flex-shrink-0">
+                      {
+                        project.emoji
+                      }
+                    </span>
+
+                    <span className="max-w-[190px] truncate">
+                      {
+                        project.name
+                      }
+                    </span>
+                  </button>
+                ),
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Settings trigger */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setShowSettings(
+              (current) =>
+                !current,
+            )
+          }
+          className="card flex w-full items-center justify-between p-4 text-[13px] text-white/40 transition-colors hover:text-white/70"
+          aria-expanded={
+            showSettings
+          }
+        >
+          <span>
+            Timer Settings
+          </span>
+
+          <motion.span
+            animate={{
+              rotate:
+                showSettings
+                  ? 180
+                  : 0,
+            }}
+            transition={{
+              duration: 0.2,
+            }}
+          >
+            <ChevronDown
+              size={15}
+            />
+          </motion.span>
+        </button>
+
+        <AnimatePresence
+          initial={false}
+        >
+          {showSettings && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                height: 'auto',
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+              }}
+              transition={{
+                duration: 0.25,
+                ease: [
+                  0.16,
+                  1,
+                  0.3,
+                  1,
+                ],
+              }}
+              className="card overflow-hidden"
+            >
+              <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2">
+                {([
+                  [
+                    t('timer.settings.focus'),
+                    settings.workDuration,
+                    'workDuration',
+                    5,
+                    90,
+                  ],
+                  [
+                    t('timer.settings.shortBreak'),
+                    settings.shortBreakDuration,
+                    'shortBreakDuration',
+                    1,
+                    30,
+                  ],
+                  [
+                    t('timer.settings.longBreak'),
+                    settings.longBreakDuration,
+                    'longBreakDuration',
+                    5,
+                    60,
+                  ],
+                  [
+                    t('timer.settings.sessionsUntilLongBreak'),
+                    settings.sessionsUntilLongBreak,
+                    'sessionsUntilLongBreak',
+                    2,
+                    8,
+                  ],
+                ] as const).map(
+                  ([
+                    label,
+                    value,
+                    key,
+                    min,
+                    max,
+                  ]) => (
+                    <div key={key}>
+                      <div className="label-section mb-2">
+                        {label}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={
+                            isRunning ||
+                            value <=
+                              min
+                          }
+                          onClick={() =>
+                            updateSettings(
+                              {
+                                [key]:
+                                  Math.max(
+                                    min,
+                                    value -
+                                      1,
+                                  ),
+                              },
+                            )
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-base text-white/60 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                          aria-label={`Decrease ${label}`}
+                        >
+                          −
+                        </button>
+
+                        <span className="w-12 text-center font-mono text-[13px] text-white">
+                          {value}
+                          {key !==
+                            'sessionsUntilLongBreak' &&
+                            'm'}
+                        </span>
+
+                        <button
+                          type="button"
+                          disabled={
+                            isRunning ||
+                            value >=
+                              max
+                          }
+                          onClick={() =>
+                            updateSettings(
+                              {
+                                [key]:
+                                  Math.min(
+                                    max,
+                                    value +
+                                      1,
+                                  ),
+                              },
+                            )
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-base text-white/60 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                          aria-label={`Increase ${label}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+
+              {isRunning && (
+                <p className="border-t border-white/[0.05] px-5 py-3 text-xs text-white/30">
+                  Pause or reset the
+                  timer to change its
+                  duration.
+                </p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  )
+}
+===== TIMER DRIVER =====
+src/App.tsx:31:function TimerDriver() {
+src/App.tsx:32:  useTimer()
+src/App.tsx:39:      <TimerDriver />
+src/hooks/pomodoro/usePomodoroSessions.ts:6:  createPomodoroSession,
+src/hooks/pomodoro/usePomodoroSessions.ts:9:  type CreatePomodoroSessionInput,
+src/hooks/pomodoro/usePomodoroSessions.ts:23:export function useCreatePomodoroSession() {
+src/hooks/pomodoro/usePomodoroSessions.ts:28:        input: CreatePomodoroSessionInput,
+src/hooks/pomodoro/usePomodoroSessions.ts:29:      ) => createPomodoroSession(input),
+src/hooks/useTimer.ts:12:  useCreatePomodoroSession,
+src/hooks/useTimer.ts:91:export function useTimer() {
+src/hooks/useTimer.ts:107:  const createPomodoroSessionMutation = useCreatePomodoroSession()
+src/hooks/useTimer.ts:134:      previousStatus === 'running' && status === 'completed'
+src/hooks/useTimer.ts:143:      void createPomodoroSessionMutation
+src/hooks/useTimer.ts:192:    createPomodoroSessionMutation,
+src/pages/ProjectsPage.tsx:767:    project.status === 'completed'
+src/services/projectsService.ts:248:  return project.status === 'completed'
+src/services/pomodoroSessionsService.ts:18:export interface CreatePomodoroSessionInput {
+src/services/pomodoroSessionsService.ts:70:export async function createPomodoroSession(
+src/services/pomodoroSessionsService.ts:71:  input: CreatePomodoroSessionInput,

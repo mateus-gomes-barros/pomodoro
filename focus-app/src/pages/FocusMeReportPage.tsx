@@ -18,8 +18,14 @@ import {
 } from 'react-router-dom'
 
 import {
+  FocusHomeReportIdentity,
+} from '@/components/focusme/FocusHomeReportIdentity'
+import {
   FocusMeMonthlyNarrativeSection,
 } from '@/components/focusme/FocusMeMonthlyNarrativeSection'
+import {
+  FocusMeShareCard,
+} from '@/components/focusme/FocusMeShareCard'
 import {
   FocusMeWeeklyNarrativeCard,
 } from '@/components/focusme/FocusMeWeeklyNarrativeCard'
@@ -288,7 +294,7 @@ export function FocusMeReportPage() {
     weekly
       ? weekly.projects.topProject
       : monthly?.current.projects
-          .topProjects[0] ?? null
+          ?.topProjects?.[0] ?? null
 
   const summaryItems = [
     {
@@ -353,6 +359,10 @@ export function FocusMeReportPage() {
         )}
       />
 
+      <FocusMeShareCard
+        report={report}
+      />
+
       <div className="space-y-4">
         <section className="card relative overflow-hidden p-5 sm:p-7">
           <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-accent-green/[0.08] blur-3xl" />
@@ -408,6 +418,18 @@ export function FocusMeReportPage() {
             </div>
           </div>
         </section>
+
+        {!isWeekly && (
+          <FocusHomeReportIdentity
+            reportId={report.id}
+            storedFocusHomeKey={
+              report.focusHomeKey
+            }
+            storedTraits={
+              report.focusHomeTraits
+            }
+          />
+        )}
 
         <section className="card p-5">
           <div className="flex items-center gap-3">

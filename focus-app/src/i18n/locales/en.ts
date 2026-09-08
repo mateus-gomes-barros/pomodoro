@@ -819,7 +819,7 @@ const en = {
       'Your reports, patterns, and discoveries gathered in one place.',
     subtitle:
       'A new way to understand your focus journey.',
-    coming: 'In development for Focus 4.0',
+    coming: 'Available in Focus 4.0',
 
     view: {
       week: 'Week',
@@ -921,13 +921,13 @@ const en = {
       title:
         'Your focus tells a story.',
       description:
-        'FocusMe will bring together your sessions, tasks, goals, projects, and achievements to show not only how much you accomplished, but how your routine truly unfolded.',
+        'FocusMe brings together your sessions, tasks, goals, projects, and achievements to show not only how much you accomplished, but how your routine truly unfolded.',
     },
 
     experience: {
       title: 'A retrospective made for you',
       subtitle:
-        'Every part of Focus will help build a more complete view of your journey.',
+        'Every part of Focus builds a more complete view of your journey.',
 
       items: {
         weekly: {
@@ -951,7 +951,7 @@ const en = {
         sharing: {
           title: 'Your story in one image',
           description:
-            'Turn your results into a personalized recap ready to share.',
+            'Turn your results into a personalized PNG with your FocushoMe, current badge, and metrics, ready to preview, save, or share.',
         },
       },
     },
@@ -1159,6 +1159,20 @@ const en = {
       weekly: 'Weekly',
       monthly: 'Monthly',
     },
+    journey: {
+      title: 'Your FocushoMe journey',
+      description:
+        'Follow the identities revealed by your months and how your way of focusing has evolved.',
+      current: 'Current',
+      assessmentTypes: {
+        initial: 'First assessment',
+        retest: 'New assessment',
+      },
+      changed:
+        'Your journey changed from {{previous}} to {{current}}.',
+      remained:
+        'Your identity remained {{name}}.',
+    },
     empty: {
       title:
         'Your reports will appear here',
@@ -1173,6 +1187,49 @@ const en = {
     back: 'Back to history',
     error:
       'This report was not found or could not be loaded.',
+    focusHome: {
+      eyebrow: 'FocushoMe revealed this month',
+      current: 'Current identity',
+      historical: 'Previous identity',
+      currentDescription:
+        'This FocushoMe currently represents how you plan, execute, and complete your work.',
+      historicalDescription:
+        'This identity was preserved as part of your journey and represents how you experienced this period.',
+    },
+    share: {
+          currentBadge: 'Current badge',
+      previewTitle: 'Retrospective preview',
+      previewDescription:
+        'Review the image before sharing or saving it.',
+      previewAlt:
+        'FocusMe retrospective PNG preview',
+      close: 'Close preview',
+      save: 'Save image',
+      saving: 'Saving...',
+      saved: 'Image saved',
+      savedLocation:
+        'Image saved in Documents/FocusMe.',
+      shareAction: 'Share',
+      sharing: 'Opening...',
+      button: 'Share retrospective',
+      generating: 'Creating image...',
+      ready: 'Image ready',
+      error:
+        'The image could not be created. Please try again.',
+      dialogTitle:
+        'Share FocusMe retrospective',
+      shareText:
+        'My FocusMe retrospective.',
+      eyebrow: 'My retrospective',
+      focusStory:
+        'A view of the rhythm I built during this period.',
+      footer:
+        'My focus tells a story',
+      types: {
+        weekly: 'Weekly recap',
+        monthly: 'Monthly recap',
+      },
+    },
     types: {
       weekly: 'Weekly retrospective',
       monthly: 'Monthly retrospective',
@@ -1218,7 +1275,7 @@ const en = {
       'Follow everything that has evolved in Focus and what we are preparing next.',
     currentVersion: 'Current version',
     currentDescription:
-      'A new generation of Focus, with smarter tasks, completable projects, and the foundation of FocusMe.',
+      'Focus 4.0 turns sessions, tasks, goals, and projects into personal retrospectives, FocushoMe identities, and a preserved journey of growth.',
     new: 'New',
 
     recent: {
@@ -1227,6 +1284,36 @@ const en = {
         'The newest improvements available in the app.',
 
       items: {
+        weeklyRecaps: {
+          title: 'Weekly retrospectives',
+          description:
+            'Each closed week gains metrics, daily rhythm, continuity, and a narrative built from your actions.',
+        },
+
+        monthlyRecaps: {
+          title: 'Monthly retrospectives',
+          description:
+            'Your months receive comparisons, behavioral patterns, weekly evolution, and a preserved personal narrative.',
+        },
+
+        focusHome: {
+          title: 'Your FocushoMe identity',
+          description:
+            'Twelve identities interpret how you plan, execute, complete, and sustain focus.',
+        },
+
+        focusMeHistory: {
+          title: 'History and FocushoMe journey',
+          description:
+            'Previous reports and assessments remain preserved, showing identity changes and continuity.',
+        },
+
+        sharing: {
+          title: 'Shareable retrospectives',
+          description:
+            'Generate a PNG with your FocushoMe, badge, and metrics, preview it full-screen, save, or share it.',
+        },
+
         taskCategories: {
           title: 'New task experience',
           description:
@@ -1280,6 +1367,16 @@ const en = {
           description:
             'Focus entered a new phase, connecting daily organization, completion, and understanding of your routine.',
           items: {
+            weeklyRecaps:
+              'Weekly retrospectives with metrics, daily rhythm, continuity, and narrative.',
+            monthlyRecaps:
+              'Monthly retrospectives with comparisons, patterns, and behavioral interpretation.',
+            focusHome:
+              'Twelve FocushoMe identities revealed from real usage data.',
+            focusMeHistory:
+              'History of reports, reveals, and new FocushoMe assessments.',
+            sharing:
+              'High-resolution PNG with preview, current badge, saving, and sharing.',
             taskEditing:
               'Complete task editing without needing to delete and recreate.',
             taskCategories:
@@ -1341,9 +1438,9 @@ const en = {
     },
 
     roadmap: {
-      title: 'Still coming to Focus 4.0',
+      title: 'Next steps',
       subtitle:
-        'The foundation is already available. Now we are building the complete FocusMe experience.',
+        'FocusMe is already available. These are the next refinements planned for the experience.',
 
       status: {
         development: 'In development',
@@ -1423,6 +1520,22 @@ const en = {
       english: 'English',
       portugueseBrazil:
         'Português (Brasil)',
+    },
+
+    accountDeletion: {
+      button: 'Delete my account',
+      title: 'Permanently delete account?',
+      subtitle:
+        'This action cannot be undone.',
+      description:
+        'Your Focus account and all data associated with it will be removed.',
+      warning:
+        'Sessions, tasks, projects, goals, reports, narratives, and your FocushoMe journey will be permanently deleted.',
+      cancel: 'Cancel',
+      confirm: 'Delete permanently',
+      deleting: 'Deleting...',
+      error:
+        'Your account could not be deleted. Please try again.',
     },
 
     account: {

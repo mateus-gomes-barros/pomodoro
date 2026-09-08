@@ -7,6 +7,7 @@ import {
 import {
   assessFocusHome,
   getFocusHomeAssessmentReportId,
+  getFocusHomeAssessments,
   getFocusHomeProfile,
   type FocusHomeAssessmentType,
 } from '@/services/focusHomeService'
@@ -22,6 +23,21 @@ export const focusHomeProfileQueryKey = [
   'focushome',
   'profile',
 ]
+
+export const focusHomeAssessmentsQueryKey = [
+  'focusme',
+  'focushome',
+  'assessments',
+]
+
+export function useFocusHomeAssessments() {
+  return useQuery({
+    queryKey:
+      focusHomeAssessmentsQueryKey,
+    queryFn:
+      getFocusHomeAssessments,
+  })
+}
 
 export function useFocusHomeProfile() {
   return useQuery({
@@ -59,6 +75,10 @@ export function useAssessFocusHome() {
         queryClient.invalidateQueries({
           queryKey:
             focusMeReportsQueryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            focusHomeAssessmentsQueryKey,
         }),
       ])
     },

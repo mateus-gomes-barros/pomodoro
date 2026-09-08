@@ -1,0 +1,2152 @@
+===== CLASSIFIER =====
+import type {
+  FocusHomeKey,
+} from '@/components/focusme/FocusHomeSymbol'
+import {
+  FOCUS_HOME_CATALOG,
+  getFocusHomeDefinition,
+  type FocusHomeArchetype,
+} from '@/services/focusHomeCatalog'
+import type {
+  FocusMeMonthlyMetrics,
+  TimeBlock,
+} from '@/services/focusMeMonthlyService'
+
+export const FOCUS_HOME_CLASSIFIER_VERSION =
+  1
+
+export type FocusHomeTemporalExpression =
+  | 'aurora'
+  | 'solaris'
+  | 'vesper'
+  | 'lunaris'
+  | 'equinox'
+
+export type FocusHomeTrait =
+  | 'night_planner_morning_executor'
+  | 'morning_planner_night_executor'
+  | 'goal_rich_open_horizons'
+  | 'task_driven'
+  | 'project_concentrated'
+  | 'category_explorer'
+  | 'comeback_pattern'
+  | 'urgent_closer'
+  | 'long_horizon'
+  | 'quick_solver'
+  | 'deep_sessions'
+  | 'steady_weeks'
+  | 'peak_driven'
+
+export interface FocusHomeScore {
+  key: FocusHomeKey
+  archetype:
+    FocusHomeArchetype
+  score: number
+}
+
+export interface FocusHomeEvidence {
+  key: string
+  value: number | string
+}
+
+export interface FocusHomeClassification {
+  version: number
+  focusHome: FocusHomeKey
+  archetype:
+    FocusHomeArchetype
+  secondaryArchetype:
+    FocusHomeArchetype
+  temporalExpression:
+    FocusHomeTemporalExpression
+  traits: FocusHomeTrait[]
+  confidence: number
+  scoreGap: number
+  scores: FocusHomeScore[]
+  evidence: FocusHomeEvidence[]
+}
+
+function clamp(
+  value: number,
+): number {
+  return Math.max(
+    0,
+    Math.min(100, value),
+  )
+}
+
+function scale(
+  value: number,
+  target: number,
+): number {
+  if (target <= 0) {
+    return 0
+  }
+
+  return clamp(
+    (value / target) * 100,
+  )
+}
+
+function inverse(
+  value: number,
+): number {
+  return clamp(100 - value)
+}
+
+function weighted(
+  signals: Array<
+    [number, number]
+  >,
+): number {
+  const totalWeight =
+    signals.reduce(
+      (total, [, weight]) =>
+        total + weight,
+      0,
+    )
+
+  if (totalWeight === 0) {
+    return 0
+  }
+
+  return Math.round(
+    signals.reduce(
+      (
+        total,
+        [signal, weight],
+      ) =>
+        total +
+        clamp(signal) * weight,
+      0,
+    ) / totalWeight,
+  )
+}
+
+function sumTimeBlocks(
+  blocks: Record<
+    TimeBlock,
+    number
+  >,
+): number {
+  return Object.values(
+    blocks,
+  ).reduce(
+    (total, value) =>
+      total + value,
+    0,
+  )
+}
+
+function dominantBlock(
+  blocks: Record<
+    TimeBlock,
+    number
+  >,
+): {
+  block: TimeBlock
+  share: number
+} | null {
+  const total =
+    sumTimeBlocks(blocks)
+
+  if (total === 0) {
+    return null
+  }
+
+  const entries =
+    Object.entries(blocks) as Array<
+      [TimeBlock, number]
+    >
+
+  const strongest =
+    [...entries].sort(
+      (first, second) =>
+        second[1] - first[1],
+    )[0]
+
+  return {
+    block: strongest[0],
+    share: Math.round(
+      (
+        strongest[1] /
+        total
+      ) * 100,
+    ),
+  }
+}
+
+function categoryShare(
+  metrics: FocusMeMonthlyMetrics,
+  category:
+    | 'quick'
+    | 'planned'
+    | 'urgent'
+    | 'long_term',
+): number {
+  const categories =
+    metrics.tasks.categories
+
+  const total =
+    categories.reduce(
+      (sum, item) =>
+        sum +
+        item.created +
+        item.completed,
+      0,
+    )
+
+  if (total === 0) {
+    return 0
+  }
+
+  const selected =
+    categories.find(
+      (item) =>
+        item.category === category,
+    )
+
+  if (!selected) {
+    return 0
+  }
+
+  return Math.round(
+    (
+      (
+        selected.created +
+        selected.completed
+      ) /
+      total
+    ) * 100,
+  )
+}
+
+function categoryCompletionShare(
+  metrics: FocusMeMonthlyMetrics,
+  category:
+    | 'quick'
+    | 'planned'
+    | 'urgent'
+    | 'long_term',
+): number {
+  const total =
+    metrics.tasks.categories.reduce(
+      (sum, item) =>
+        sum + item.completed,
+      0,
+    )
+
+  if (total === 0) {
+    return 0
+  }
+
+  const selected =
+    metrics.tasks.categories.find(
+      (item) =>
+        item.category === category,
+    )
+
+  return selected
+    ? Math.round(
+        (
+          selected.completed /
+          total
+        ) * 100,
+      )
+    : 0
+}
+
+function getTemporalExpression(
+  metrics: FocusMeMonthlyMetrics,
+): FocusHomeTemporalExpression {
+  const dominant =
+    dominantBlock(
+      metrics.timeBlocks,
+    )
+
+  if (
+    !dominant ||
+    dominant.share < 40
+  ) {
+    return 'equinox'
+  }
+
+  switch (dominant.block) {
+    case 'morning':
+      return 'aurora'
+
+    case 'afternoon':
+      return 'solaris'
+
+    case 'evening':
+      return 'vesper'
+
+    case 'late_night':
+      return 'lunaris'
+  }
+}
+
+function detectTraits(
+  metrics: FocusMeMonthlyMetrics,
+): FocusHomeTrait[] {
+  const traits:
+    FocusHomeTrait[] = []
+
+  const planning =
+    dominantBlock(
+      metrics.behavior
+        .planningTimeBlocks,
+    )
+
+  const execution =
+    dominantBlock(
+      metrics.behavior
+        .executionTimeBlocks,
+    )
+
+  if (
+    planning?.block ===
+      'late_night' &&
+    execution?.block === 'morning'
+  ) {
+    traits.push(
+      'night_planner_morning_executor',
+    )
+  }
+
+  if (
+    planning?.block === 'morning' &&
+    (
+      execution?.block ===
+        'evening' ||
+      execution?.block ===
+        'late_night'
+    )
+  ) {
+    traits.push(
+      'morning_planner_night_executor',
+    )
+  }
+
+  if (
+    metrics.goals.created >= 2 &&
+    metrics.goals.completed === 0
+  ) {
+    traits.push(
+      'goal_rich_open_horizons',
+    )
+  }
+
+  if (
+    metrics.tasks.created +
+      metrics.tasks.completed >=
+    16
+  ) {
+    traits.push('task_driven')
+  }
+
+  if (
+    metrics.behavior
+      .projectFocusShare >= 65
+  ) {
+    traits.push(
+      'project_concentrated',
+    )
+  }
+
+  if (
+    metrics.behavior
+      .categoryDiversity >= 4
+  ) {
+    traits.push(
+      'category_explorer',
+    )
+  }
+
+  if (
+    metrics.behavior
+      .recoveryActions >= 3
+  ) {
+    traits.push(
+      'comeback_pattern',
+    )
+  }
+
+  if (
+    categoryCompletionShare(
+      metrics,
+      'urgent',
+    ) >= 35
+  ) {
+    traits.push(
+      'urgent_closer',
+    )
+  }
+
+  if (
+    categoryShare(
+      metrics,
+      'long_term',
+    ) >= 30
+  ) {
+    traits.push(
+      'long_horizon',
+    )
+  }
+
+  if (
+    categoryShare(
+      metrics,
+      'quick',
+    ) >= 40
+  ) {
+    traits.push(
+      'quick_solver',
+    )
+  }
+
+  const averageSession =
+    metrics.completedSessions > 0
+      ? (
+          metrics.focusMinutes /
+          metrics.completedSessions
+        )
+      : 0
+
+  if (averageSession >= 35) {
+    traits.push(
+      'deep_sessions',
+    )
+  }
+
+  if (
+    metrics.activeDays >= 12 &&
+    metrics.behavior
+      .strongestWeekShare <= 40
+  ) {
+    traits.push(
+      'steady_weeks',
+    )
+  }
+
+  if (
+    metrics.behavior
+      .strongestWeekShare >= 60
+  ) {
+    traits.push(
+      'peak_driven',
+    )
+  }
+
+  return traits.slice(0, 5)
+}
+
+export function classifyFocusHome(
+  metrics: FocusMeMonthlyMetrics,
+): FocusHomeClassification {
+  const quickShare =
+    categoryShare(
+      metrics,
+      'quick',
+    )
+
+  const plannedShare =
+    categoryShare(
+      metrics,
+      'planned',
+    )
+
+  const urgentShare =
+    categoryShare(
+      metrics,
+      'urgent',
+    )
+
+  const longTermShare =
+    categoryShare(
+      metrics,
+      'long_term',
+    )
+
+  const urgentCompletion =
+    categoryCompletionShare(
+      metrics,
+      'urgent',
+    )
+
+  const longTermCompletion =
+    categoryCompletionShare(
+      metrics,
+      'long_term',
+    )
+
+  const averageSession =
+    metrics.completedSessions > 0
+      ? (
+          metrics.focusMinutes /
+          metrics.completedSessions
+        )
+      : 0
+
+  const planningEvents =
+    sumTimeBlocks(
+      metrics.behavior
+        .planningTimeBlocks,
+    )
+
+  const executionEvents =
+    sumTimeBlocks(
+      metrics.behavior
+        .executionTimeBlocks,
+    )
+
+  const creationSurplus =
+    metrics.tasks.created > 0
+      ? clamp(
+          (
+            (
+              metrics.tasks.created -
+              metrics.tasks.completed
+            ) /
+            metrics.tasks.created
+          ) * 100,
+        )
+      : 0
+
+  const balancedCompletion =
+    inverse(
+      Math.abs(
+        100 -
+        metrics.behavior
+          .completionBalance,
+      ),
+    )
+
+  const consistency =
+    clamp(
+      (
+        100 -
+        metrics.behavior
+          .strongestWeekShare
+      ) * 1.5,
+    )
+
+  const lowAbandonment =
+    inverse(
+      metrics.behavior
+        .abandonmentRate,
+    )
+
+  const volume =
+    scale(
+      metrics.tasks.created +
+        metrics.tasks.completed,
+      24,
+    )
+
+  const scores: Record<
+    FocusHomeKey,
+    number
+  > = {
+    aster: weighted([
+      [
+        scale(
+          metrics.goals.created,
+          3,
+        ),
+        0.28,
+      ],
+      [
+        scale(
+          metrics.projects.created,
+          4,
+        ),
+        0.18,
+      ],
+      [creationSurplus, 0.22],
+      [
+        scale(planningEvents, 12),
+        0.17,
+      ],
+      [longTermShare, 0.15],
+    ]),
+
+    atlas: weighted([
+      [
+        metrics.behavior
+          .projectFocusShare,
+        0.35,
+      ],
+      [
+        scale(
+          metrics.focusMinutes,
+          1200,
+        ),
+        0.2,
+      ],
+      [
+        scale(averageSession, 40),
+        0.2,
+      ],
+      [longTermShare, 0.15],
+      [
+        scale(
+          metrics.projects.completed,
+          2,
+        ),
+        0.1,
+      ],
+    ]),
+
+    forge: weighted([
+      [
+        metrics.behavior
+          .completionBalance,
+        0.26,
+      ],
+      [
+        scale(
+          metrics.tasks.completed,
+          18,
+        ),
+        0.18,
+      ],
+      [
+        scale(
+          metrics.projects.completed +
+            metrics.goals.completed,
+          3,
+        ),
+        0.16,
+      ],
+      [lowAbandonment, 0.1],
+      [
+        scale(executionEvents, 15),
+        0.1,
+      ],
+      [
+        inverse(urgentCompletion),
+        0.2,
+      ],
+    ]),
+
+    pulse: weighted([
+      [quickShare, 0.3],
+      [volume, 0.28],
+      [
+        inverse(
+          scale(averageSession, 50),
+        ),
+        0.17,
+      ],
+      [
+        scale(
+          metrics.completedSessions,
+          24,
+        ),
+        0.15,
+      ],
+      [
+        scale(
+          metrics.tasks.completed,
+          20,
+        ),
+        0.1,
+      ],
+    ]),
+
+    loom: weighted([
+      [
+        scale(
+          metrics.coverage
+            .featureAreasUsed,
+          4,
+        ),
+        0.3,
+      ],
+      [
+        scale(
+          metrics.behavior
+            .categoryDiversity,
+          4,
+        ),
+        0.22,
+      ],
+      [balancedCompletion, 0.2],
+      [
+        scale(
+          metrics.projects
+            .topProjects.length,
+          3,
+        ),
+        0.13,
+      ],
+      [
+        scale(
+          metrics.goals.created +
+            metrics.goals.completed,
+          3,
+        ),
+        0.15,
+      ],
+    ]),
+
+    orbit: weighted([
+      [
+        scale(
+          metrics.activeDays,
+          20,
+        ),
+        0.28,
+      ],
+      [consistency, 0.25],
+      [lowAbandonment, 0.18],
+      [
+        scale(
+          metrics.completedSessions,
+          24,
+        ),
+        0.12,
+      ],
+      [
+        inverse(longTermShare),
+        0.08,
+      ],
+      [
+        inverse(
+          metrics.behavior
+            .projectFocusShare,
+        ),
+        0.09,
+      ],
+    ]),
+
+    tide: weighted([
+      [
+        scale(
+          metrics.behavior
+            .recoveryActions,
+          8,
+        ),
+        0.38,
+      ],
+      [
+        scale(
+          metrics.behavior
+            .focusTimeDiversity,
+          4,
+        ),
+        0.22,
+      ],
+      [
+        scale(
+          metrics.tasks.reopened +
+            metrics.projects.reopened +
+            metrics.goals.reopened,
+          5,
+        ),
+        0.2,
+      ],
+      [
+        scale(
+          metrics.rhythm.resumes,
+          6,
+        ),
+        0.2,
+      ],
+    ]),
+
+    ember: weighted([
+      [plannedShare, 0.24],
+      [
+        scale(planningEvents, 16),
+        0.25,
+      ],
+      [
+        scale(averageSession, 45),
+        0.22,
+      ],
+      [
+        inverse(volume),
+        0.12,
+      ],
+      [
+        scale(
+          metrics.focusMinutes,
+          900,
+        ),
+        0.17,
+      ],
+    ]),
+
+    nova: weighted([
+      [creationSurplus, 0.3],
+      [
+        scale(
+          metrics.projects.created +
+            metrics.goals.created,
+          6,
+        ),
+        0.25,
+      ],
+      [
+        scale(
+          metrics.tasks.created,
+          20,
+        ),
+        0.2,
+      ],
+      [
+        metrics.behavior
+          .strongestWeekShare,
+        0.15,
+      ],
+      [
+        scale(planningEvents, 15),
+        0.1,
+      ],
+    ]),
+
+    prism: weighted([
+      [
+        scale(
+          metrics.behavior
+            .categoryDiversity,
+          4,
+        ),
+        0.3,
+      ],
+      [
+        scale(
+          metrics.behavior
+            .focusTimeDiversity,
+          4,
+        ),
+        0.25,
+      ],
+      [
+        inverse(
+          metrics.behavior
+            .projectFocusShare,
+        ),
+        0.18,
+      ],
+      [
+        scale(
+          metrics.projects
+            .topProjects.length,
+          3,
+        ),
+        0.12,
+      ],
+      [
+        scale(
+          metrics.coverage
+            .featureAreasUsed,
+          4,
+        ),
+        0.15,
+      ],
+    ]),
+
+    vanguard: weighted([
+      [
+        scale(
+          urgentShare,
+          70,
+        ),
+        0.34,
+      ],
+      [
+        scale(
+          urgentCompletion,
+          70,
+        ),
+        0.32,
+      ],
+      [
+        scale(
+          metrics.behavior
+            .strongestWeekShare,
+          65,
+        ),
+        0.17,
+      ],
+      [
+        scale(executionEvents, 15),
+        0.17,
+      ],
+    ]),
+
+    verdant: weighted([
+      [longTermShare, 0.25],
+      [longTermCompletion, 0.2],
+      [
+        scale(
+          metrics.activeDays,
+          18,
+        ),
+        0.2,
+      ],
+      [consistency, 0.2],
+      [
+        scale(
+          metrics.projects.completed +
+            metrics.goals.completed,
+          3,
+        ),
+        0.15,
+      ],
+    ]),
+  }
+
+  const ranked =
+    FOCUS_HOME_CATALOG
+      .map((definition) => ({
+        key: definition.key,
+        archetype:
+          definition.archetype,
+        score:
+          scores[definition.key],
+      }))
+      .sort(
+        (first, second) =>
+          second.score -
+          first.score,
+      )
+
+  const primary = ranked[0]
+  const secondary =
+    ranked[1]
+
+  const scoreGap =
+    primary.score -
+    secondary.score
+
+  const dataDepth =
+    clamp(
+      (
+        metrics.coverage
+          .meaningfulActions /
+        35
+      ) * 100,
+    )
+
+  const confidence =
+    Math.round(
+      Math.min(
+        96,
+        48 +
+          scoreGap * 1.2 +
+          dataDepth * 0.32,
+      ),
+    )
+
+  const evidence:
+    FocusHomeEvidence[] = [
+      {
+        key: 'primary_score',
+        value: primary.score,
+      },
+      {
+        key: 'score_gap',
+        value: scoreGap,
+      },
+      {
+        key: 'active_days',
+        value:
+          metrics.activeDays,
+      },
+      {
+        key: 'focus_minutes',
+        value:
+          metrics.focusMinutes,
+      },
+      {
+        key: 'completion_balance',
+        value:
+          metrics.behavior
+            .completionBalance,
+      },
+      {
+        key: 'project_focus_share',
+        value:
+          metrics.behavior
+            .projectFocusShare,
+      },
+    ]
+
+  return {
+    version:
+      FOCUS_HOME_CLASSIFIER_VERSION,
+    focusHome: primary.key,
+    archetype:
+      primary.archetype,
+    secondaryArchetype:
+      getFocusHomeDefinition(
+        secondary.key,
+      ).archetype,
+    temporalExpression:
+      getTemporalExpression(
+        metrics,
+      ),
+    traits:
+      detectTraits(metrics),
+    confidence,
+    scoreGap,
+    scores: ranked,
+    evidence,
+  }
+}
+===== FOCUSHOME SERVICE =====
+import type {
+  FocusHomeKey,
+} from '@/components/focusme/FocusHomeSymbol'
+import { supabase } from '@/lib/supabase'
+import {
+  classifyFocusHome,
+  FOCUS_HOME_CLASSIFIER_VERSION,
+  type FocusHomeClassification,
+  type FocusHomeTemporalExpression,
+  type FocusHomeTrait,
+} from '@/services/focusHomeClassifier'
+import type {
+  FocusHomeArchetype,
+} from '@/services/focusHomeCatalog'
+import {
+  evaluateFocusHomeEligibility,
+  FOCUSHOME_ELIGIBILITY_VERSION,
+} from '@/services/focusMeEligibility'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+import type {
+  FocusMeStoredReport,
+} from '@/services/focusMeReportsService'
+
+export type FocusHomeAssessmentType =
+  | 'initial'
+  | 'retest'
+
+interface FocusHomeProfileRow {
+  user_id: string
+  current_assessment_id: string
+  focushome_key: FocusHomeKey
+  archetype: FocusHomeArchetype
+  secondary_archetype:
+    FocusHomeArchetype
+  temporal_expression:
+    FocusHomeTemporalExpression
+  traits: FocusHomeTrait[]
+  confidence: number
+  first_awarded_at: string
+  last_assessed_at: string
+  updated_at: string
+}
+
+export interface FocusHomeProfile {
+  userId: string
+  currentAssessmentId: string
+  focusHome: FocusHomeKey
+  archetype:
+    FocusHomeArchetype
+  secondaryArchetype:
+    FocusHomeArchetype
+  temporalExpression:
+    FocusHomeTemporalExpression
+  traits: FocusHomeTrait[]
+  confidence: number
+  firstAwardedAt: string
+  lastAssessedAt: string
+  updatedAt: string
+}
+
+function mapProfile(
+  row: FocusHomeProfileRow,
+): FocusHomeProfile {
+  return {
+    userId: row.user_id,
+    currentAssessmentId:
+      row.current_assessment_id,
+    focusHome:
+      row.focushome_key,
+    archetype: row.archetype,
+    secondaryArchetype:
+      row.secondary_archetype,
+    temporalExpression:
+      row.temporal_expression,
+    traits: row.traits ?? [],
+    confidence: row.confidence,
+    firstAwardedAt:
+      row.first_awarded_at,
+    lastAssessedAt:
+      row.last_assessed_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export async function getFocusHomeProfile():
+  Promise<FocusHomeProfile | null> {
+  const { data, error } =
+    await supabase
+      .from('focushome_profiles')
+      .select(`
+        user_id,
+        current_assessment_id,
+        focushome_key,
+        archetype,
+        secondary_archetype,
+        temporal_expression,
+        traits,
+        confidence,
+        first_awarded_at,
+        last_assessed_at,
+        updated_at
+      `)
+      .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  return data
+    ? mapProfile(
+        data as FocusHomeProfileRow,
+      )
+    : null
+}
+
+export async function getFocusHomeAssessmentReportId(
+  assessmentId: string,
+): Promise<string | null> {
+  const { data, error } =
+    await supabase
+      .from('focushome_assessments')
+      .select('report_id')
+      .eq('id', assessmentId)
+      .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  return data?.report_id ?? null
+}
+
+export async function assessFocusHome(
+  report: FocusMeStoredReport,
+  assessmentType:
+    FocusHomeAssessmentType,
+): Promise<{
+  assessmentId: string
+  classification:
+    FocusHomeClassification
+}> {
+  if (report.type !== 'monthly') {
+    throw new Error(
+      'FocushoMe requires a monthly report.',
+    )
+  }
+
+  if (report.schemaVersion < 2) {
+    throw new Error(
+      'This report predates behavioral analysis.',
+    )
+  }
+
+  const monthly =
+    report.metrics as
+      FocusMeMonthlyReport
+
+  const eligibility =
+    evaluateFocusHomeEligibility(
+      monthly.current,
+      true,
+    )
+
+  if (!eligibility.eligible) {
+    throw new Error(
+      'This report is not eligible for a FocushoMe assessment.',
+    )
+  }
+
+  const classification =
+    classifyFocusHome(
+      monthly.current,
+    )
+
+  const { data, error } =
+    await supabase.rpc(
+      'award_focushome',
+      {
+        p_report_id: report.id,
+        p_assessment_type:
+          assessmentType,
+        p_result:
+          classification,
+        p_classifier_version:
+          FOCUS_HOME_CLASSIFIER_VERSION,
+        p_eligibility_version:
+          FOCUSHOME_ELIGIBILITY_VERSION,
+      },
+    )
+
+  if (error) {
+    throw error
+  }
+
+  return {
+    assessmentId:
+      data as string,
+    classification,
+  }
+}
+===== ELIGIBILITY =====
+import type {
+  FocusMeMonthlyMetrics,
+} from '@/services/focusMeMonthlyService'
+
+export const FOCUSHOME_ELIGIBILITY_VERSION =
+  1
+
+const REQUIREMENTS = {
+  activeDays: 8,
+  completedSessions: 12,
+  focusMinutes: 300,
+  completedTasks: 6,
+  meaningfulActions: 18,
+  featureAreasUsed: 2,
+  activityEvents: 12,
+} as const
+
+export type FocusHomeEligibilityState =
+  | 'building'
+  | 'ready'
+  | 'eligible'
+
+export interface FocusHomeEligibilityCheck {
+  key:
+    keyof typeof REQUIREMENTS
+  current: number
+  required: number
+  progress: number
+  passed: boolean
+}
+
+export interface FocusHomeEligibility {
+  version: number
+  state:
+    FocusHomeEligibilityState
+  eligible: boolean
+  readyForClosing: boolean
+  progress: number
+  checks:
+    FocusHomeEligibilityCheck[]
+}
+
+function calculateProgress(
+  current: number,
+  required: number,
+): number {
+  if (required <= 0) {
+    return 100
+  }
+
+  return Math.min(
+    100,
+    Math.round(
+      (current / required) * 100,
+    ),
+  )
+}
+
+export function evaluateFocusHomeEligibility(
+  metrics: FocusMeMonthlyMetrics,
+  periodClosed = false,
+): FocusHomeEligibility {
+  const values = {
+    activeDays:
+      metrics.activeDays,
+    completedSessions:
+      metrics.completedSessions,
+    focusMinutes:
+      metrics.focusMinutes,
+    completedTasks:
+      metrics.tasks.completed,
+    meaningfulActions:
+      metrics.coverage
+        .meaningfulActions,
+    featureAreasUsed:
+      metrics.coverage
+        .featureAreasUsed,
+    activityEvents:
+      metrics.coverage
+        .activityEvents,
+  }
+
+  const checks = (
+    Object.keys(
+      REQUIREMENTS,
+    ) as Array<
+      keyof typeof REQUIREMENTS
+    >
+  ).map((key) => {
+    const current =
+      values[key]
+
+    const required =
+      REQUIREMENTS[key]
+
+    const progress =
+      calculateProgress(
+        current,
+        required,
+      )
+
+    return {
+      key,
+      current,
+      required,
+      progress,
+      passed:
+        current >= required,
+    }
+  })
+
+  const readyForClosing =
+    checks.every(
+      (check) => check.passed,
+    )
+
+  /*
+   * A média usa pesos para evitar que
+   * uma única métrica domine o avanço.
+   * Todos os requisitos ainda precisam
+   * ser atendidos para liberar a análise.
+   */
+  const weights: Record<
+    keyof typeof REQUIREMENTS,
+    number
+  > = {
+    activeDays: 0.15,
+    completedSessions: 0.12,
+    focusMinutes: 0.18,
+    completedTasks: 0.18,
+    meaningfulActions: 0.13,
+    featureAreasUsed: 0.09,
+    activityEvents: 0.15,
+  }
+
+  const progress =
+    Math.round(
+      checks.reduce(
+        (total, check) =>
+          total +
+          check.progress *
+            weights[check.key],
+        0,
+      ),
+    )
+
+  const eligible =
+    periodClosed &&
+    readyForClosing
+
+  const state:
+    FocusHomeEligibilityState =
+      eligible
+        ? 'eligible'
+        : readyForClosing
+          ? 'ready'
+          : 'building'
+
+  return {
+    version:
+      FOCUSHOME_ELIGIBILITY_VERSION,
+    state,
+    eligible,
+    readyForClosing,
+    progress,
+    checks,
+  }
+}
+===== REVEAL PAGE =====
+src/pages/FocusHomeRevealPage.tsx
+import { motion } from 'framer-motion'
+import {
+  ArrowLeft,
+  CheckCircle2,
+  LoaderCircle,
+  Sparkles,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+import {
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
+
+import {
+  FocusHomeSymbol,
+} from '@/components/focusme/FocusHomeSymbol'
+import {
+  FocusMeIcon,
+} from '@/components/icons/FocusMeIcon'
+import {
+  useAssessFocusHome,
+  useFocusHomeProfile,
+} from '@/hooks/focusme/useFocusHomeProfile'
+import {
+  useFocusMeReport,
+} from '@/hooks/focusme/useFocusMeReports'
+import {
+  evaluateFocusHomeEligibility,
+} from '@/services/focusMeEligibility'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+
+export function FocusHomeRevealPage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+
+  const {
+    reportId,
+  } = useParams<{
+    reportId: string
+  }>()
+
+  const reportQuery =
+    useFocusMeReport(reportId)
+
+  const profileQuery =
+    useFocusHomeProfile()
+
+  const assessment =
+    useAssessFocusHome()
+
+  const report =
+    reportQuery.data
+
+  const existingProfile =
+    profileQuery.data
+
+  const classification =
+    assessment.data
+      ?.classification
+
+  const eligible =
+    report &&
+    report.type === 'monthly' &&
+    report.schemaVersion >= 2
+      ? evaluateFocusHomeEligibility(
+          (
+            report.metrics as
+              FocusMeMonthlyReport
+          ).current,
+          true,
+        ).eligible
+      : false
+
+  if (
+    reportQuery.isLoading ||
+    profileQuery.isLoading
+  ) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <LoaderCircle
+          size={30}
+          className="animate-spin text-accent-green"
+        />
+      </div>
+    )
+  }
+
+  if (
+    reportQuery.isError ||
+    !report ||
+    !eligible
+  ) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 pb-12 lg:px-10">
+        <button
+          type="button"
+          onClick={() =>
+            navigate('/focusme')
+          }
+          className="mb-5 flex items-center gap-2 text-sm text-accent-subtle"
+        >
+          <ArrowLeft size={17} />
+
+          {t(
+            'focusHomeReveal.back',
+          )}
+        </button>
+
+        <div className="card p-6 text-sm text-accent-subtle">
+          {t(
+            'focusHomeReveal.unavailable',
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (
+    existingProfile &&
+    !classification
+  ) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 pb-12 text-center lg:px-10">
+        <div className="card p-7">
+          <FocusHomeSymbol
+            type={
+              existingProfile.focusHome
+            }
+            size={128}
+            className="mx-auto"
+          />
+
+          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-accent-subtle">
+            {t(
+              'focusHomeReveal.alreadyRevealed',
+            )}
+          </p>
+
+          <h1 className="mt-2 text-3xl font-semibold capitalize text-accent-white">
+            {existingProfile.focusHome}
+          </h1>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate('/focusme')
+            }
+            className="btn-primary mt-7"
+          >
+            {t(
+              'focusHomeReveal.goToFocusMe',
+            )}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  async function reveal() {
+    if (
+      !report ||
+      assessment.isPending
+    ) {
+      return
+    }
+
+    await assessment.mutateAsync({
+      report,
+      assessmentType: 'initial',
+    })
+  }
+
+  if (classification) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 pb-12 text-center lg:px-10 lg:pb-16">
+        <motion.div
+          initial={{
+            opacity: 0,
+            scale: 0.94,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          transition={{
+            duration: 0.55,
+          }}
+          className="card relative overflow-hidden p-7 sm:p-10"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.08),transparent_62%)]" />
+
+          <div className="relative">
+            <motion.div
+              initial={{
+                opacity: 0,
+                rotate: -18,
+                scale: 0.65,
+              }}
+              animate={{
+                opacity: 1,
+                rotate: 0,
+                scale: 1,
+              }}
+              transition={{
+                delay: 0.18,
+                type: 'spring',
+                stiffness: 170,
+                damping: 18,
+              }}
+            >
+              <FocusHomeSymbol
+                type={
+                  classification.focusHome
+                }
+                size={176}
+                className="mx-auto"
+              />
+            </motion.div>
+
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-accent-green">
+              {t(
+                'focusHomeReveal.result.eyebrow',
+              )}
+            </p>
+
+            <h1 className="mt-3 text-4xl font-semibold capitalize text-accent-white sm:text-5xl">
+              {classification.focusHome}
+            </h1>
+
+            <p className="mt-3 text-base font-medium text-accent-white">
+              {t(
+                `focusHomeIdentity.archetypes.${classification.archetype}`,
+              )}
+            </p>
+
+            <p className="mt-2 text-sm text-accent-subtle">
+              {t(
+                'focusHomeReveal.result.influence',
+                {
+                  archetype: t(
+                    `focusHomeIdentity.archetypes.${classification.secondaryArchetype}`,
+                  ),
+                },
+              )}
+            </p>
+
+            <p className="mt-1 text-sm text-accent-subtle">
+              {t(
+                'focusHomeReveal.result.expression',
+                {
+                  expression: t(
+                    `focusHomeIdentity.temporal.${classification.temporalExpression}`,
+                  ),
+                },
+              )}
+            </p>
+
+            <p className="mx-auto mt-6 max-w-xl text-sm leading-7 text-accent-subtle">
+              {t(
+                `focusMePage.symbols.items.${classification.focusHome}.description`,
+              )}
+            </p>
+
+            {classification.traits.length > 0 && (
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                {classification.traits.map(
+                  (trait) => (
+                    <span
+                      key={trait}
+                      className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-xs text-accent-subtle"
+                    >
+                      {t(
+                        `focusHomeReveal.traits.${trait}`,
+                      )}
+                    </span>
+                  ),
+                )}
+              </div>
+            )}
+
+            <div className="mt-7 flex items-center justify-center gap-2 text-xs text-accent-green">
+              <CheckCircle2 size={16} />
+
+              {t(
+                'focusHomeReveal.result.permanent',
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate('/focusme')
+              }
+              className="btn-primary mt-7"
+            >
+              {t(
+                'focusHomeReveal.goToFocusMe',
+              )}
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl px-6 pb-12 lg:px-10 lg:pb-16">
+      <button
+        type="button"
+        onClick={() =>
+          navigate('/focusme')
+        }
+        className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition hover:text-accent-white"
+      >
+        <ArrowLeft size={17} />
+
+        {t(
+          'focusHomeReveal.back',
+        )}
+      </button>
+
+      <div className="card relative overflow-hidden p-7 text-center sm:p-10">
+        <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-accent-green/[0.08] blur-3xl" />
+
+        <div className="relative">
+          <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/[0.07] bg-white/[0.02] text-white/25">
+            <FocusMeIcon size={82} />
+          </div>
+
+          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-accent-green">
+            FocushoMe
+          </p>
+
+          <h1 className="mt-3 text-3xl font-semibold text-accent-white">
+            {t(
+              'focusHomeReveal.title',
+            )}
+          </h1>
+
+          <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-accent-subtle">
+            {t(
+              'focusHomeReveal.description',
+            )}
+          </p>
+
+          {assessment.isError && (
+            <p className="mt-5 rounded-xl border border-red-400/15 bg-red-400/[0.05] p-4 text-sm text-red-300">
+              {t(
+                'focusHomeReveal.error',
+              )}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={() =>
+              void reveal()
+            }
+            disabled={
+              assessment.isPending
+            }
+            className="btn-primary mt-7 inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {assessment.isPending ? (
+              <LoaderCircle
+                size={17}
+                className="animate-spin"
+              />
+            ) : (
+              <Sparkles size={17} />
+            )}
+
+            {assessment.isPending
+              ? t(
+                  'focusHomeReveal.analyzing',
+                )
+              : t(
+                  'focusHomeReveal.action',
+                )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+src/pages/FocusHomeRetestPage.tsx
+import { motion } from 'framer-motion'
+import {
+  ArrowLeft,
+  LoaderCircle,
+  RefreshCw,
+} from 'lucide-react'
+import {
+  useTranslation,
+} from 'react-i18next'
+import {
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
+
+import {
+  FocusHomeSymbol,
+} from '@/components/focusme/FocusHomeSymbol'
+import {
+  useAssessFocusHome,
+  useFocusHomeProfile,
+} from '@/hooks/focusme/useFocusHomeProfile'
+import {
+  useFocusMeReport,
+} from '@/hooks/focusme/useFocusMeReports'
+import {
+  evaluateFocusHomeEligibility,
+} from '@/services/focusMeEligibility'
+import type {
+  FocusMeMonthlyReport,
+} from '@/services/focusMeMonthlyService'
+
+export function FocusHomeRetestPage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+
+  const {
+    reportId,
+  } = useParams<{
+    reportId: string
+  }>()
+
+  const profileQuery =
+    useFocusHomeProfile()
+
+  const reportQuery =
+    useFocusMeReport(reportId)
+
+  const assessment =
+    useAssessFocusHome()
+
+  const profile =
+    profileQuery.data
+
+  const report =
+    reportQuery.data
+
+  const result =
+    assessment.data
+      ?.classification
+
+  const eligible =
+    report &&
+    report.type === 'monthly' &&
+    report.schemaVersion >= 2
+      ? evaluateFocusHomeEligibility(
+          (
+            report.metrics as
+              FocusMeMonthlyReport
+          ).current,
+          true,
+        ).eligible
+      : false
+
+  if (
+    profileQuery.isLoading ||
+    reportQuery.isLoading
+  ) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <LoaderCircle
+          size={30}
+          className="animate-spin text-accent-green"
+        />
+      </div>
+    )
+  }
+
+  if (
+    !profile ||
+    !report ||
+    !eligible
+  ) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 pb-12 lg:px-10">
+        <button
+          type="button"
+          onClick={() =>
+            navigate(
+              '/settings/focusme',
+            )
+          }
+          className="mb-5 flex items-center gap-2 text-sm text-accent-subtle"
+        >
+          <ArrowLeft size={17} />
+
+          {t(
+            'focusHomeRetest.back',
+          )}
+        </button>
+
+        <div className="card p-6 text-sm text-accent-subtle">
+          {t(
+            'focusHomeRetest.unavailable',
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  async function runRetest() {
+    if (
+      !report ||
+      assessment.isPending
+    ) {
+      return
+    }
+
+    await assessment.mutateAsync({
+      report,
+      assessmentType: 'retest',
+    })
+  }
+
+  if (result) {
+    const remained =
+      result.focusHome ===
+      profile.focusHome
+
+    return (
+      <div className="mx-auto max-w-3xl px-6 pb-12 text-center lg:px-10">
+        <motion.section
+          initial={{
+            opacity: 0,
+            scale: 0.95,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          className="card relative overflow-hidden p-7 sm:p-10"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.08),transparent_62%)]" />
+
+          <div className="relative">
+            <FocusHomeSymbol
+              type={result.focusHome}
+              size={168}
+              className="mx-auto"
+            />
+
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-accent-green">
+              FocushoMe
+            </p>
+
+            <h1 className="mt-3 text-4xl font-semibold capitalize text-accent-white">
+              {result.focusHome}
+            </h1>
+
+            <h2 className="mt-4 text-base font-semibold text-accent-white">
+              {t(
+                remained
+                  ? 'focusHomeRetest.result.remained'
+                  : 'focusHomeRetest.result.changed',
+              )}
+            </h2>
+
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-accent-subtle">
+              {t(
+                remained
+                  ? 'focusHomeRetest.result.remainedDescription'
+                  : 'focusHomeRetest.result.changedDescription',
+              )}
+            </p>
+
+            <p className="mt-4 text-sm text-accent-subtle">
+              {t(
+                `focusHomeIdentity.archetypes.${result.archetype}`,
+              )}
+              {' · '}
+              {t(
+                `focusHomeIdentity.temporal.${result.temporalExpression}`,
+              )}
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate('/focusme')
+              }
+              className="btn-primary mt-7"
+            >
+              {t(
+                'focusHomeRetest.result.finish',
+              )}
+            </button>
+          </div>
+        </motion.section>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl px-6 pb-12 lg:px-10">
+      <button
+        type="button"
+        onClick={() =>
+          navigate(
+            '/settings/focusme',
+          )
+        }
+        className="mb-5 flex items-center gap-2 text-sm text-accent-subtle transition hover:text-accent-white"
+      >
+        <ArrowLeft size={17} />
+
+        {t(
+          'focusHomeRetest.back',
+        )}
+      </button>
+
+      <section className="card p-7 text-center sm:p-10">
+        <div className="mx-auto flex items-center justify-center gap-5">
+          <FocusHomeSymbol
+            type={profile.focusHome}
+            size={100}
+          />
+
+          <RefreshCw
+            size={24}
+            className="text-accent-green"
+          />
+        </div>
+
+        <h1 className="mt-6 text-3xl font-semibold text-accent-white">
+          {t(
+            'focusHomeRetest.confirm.title',
+          )}
+        </h1>
+
+        <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-accent-subtle">
+          {t(
+            'focusHomeRetest.confirm.description',
+          )}
+        </p>
+
+        <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-accent-subtle">
+          {t(
+            'focusHomeRetest.confirm.warning',
+          )}
+        </p>
+
+        {assessment.isError && (
+          <p className="mt-5 rounded-xl bg-red-400/[0.05] p-4 text-sm text-red-300">
+            {t(
+              'focusHomeRetest.error',
+            )}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={() =>
+            void runRetest()
+          }
+          disabled={
+            assessment.isPending
+          }
+          className="btn-primary mt-7 inline-flex items-center gap-2 disabled:opacity-50"
+        >
+          {assessment.isPending ? (
+            <LoaderCircle
+              size={17}
+              className="animate-spin"
+            />
+          ) : (
+            <RefreshCw size={17} />
+          )}
+
+          {assessment.isPending
+            ? t(
+                'focusHomeRetest.analyzing',
+              )
+            : t(
+                'focusHomeRetest.action',
+              )}
+        </button>
+      </section>
+    </div>
+  )
+}
+===== PROFILE HOOK =====
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+
+import {
+  assessFocusHome,
+  getFocusHomeAssessmentReportId,
+  getFocusHomeProfile,
+  type FocusHomeAssessmentType,
+} from '@/services/focusHomeService'
+import {
+  focusMeReportsQueryKey,
+} from '@/hooks/focusme/useFocusMeReports'
+import type {
+  FocusMeStoredReport,
+} from '@/services/focusMeReportsService'
+
+export const focusHomeProfileQueryKey = [
+  'focusme',
+  'focushome',
+  'profile',
+]
+
+export function useFocusHomeProfile() {
+  return useQuery({
+    queryKey:
+      focusHomeProfileQueryKey,
+    queryFn:
+      getFocusHomeProfile,
+  })
+}
+
+export function useAssessFocusHome() {
+  const queryClient =
+    useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      report,
+      assessmentType,
+    }: {
+      report: FocusMeStoredReport
+      assessmentType:
+        FocusHomeAssessmentType
+    }) =>
+      assessFocusHome(
+        report,
+        assessmentType,
+      ),
+
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey:
+            focusHomeProfileQueryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            focusMeReportsQueryKey,
+        }),
+      ])
+    },
+  })
+}
+
+
+export function useFocusHomeAssessmentReportId(
+  assessmentId?: string,
+) {
+  return useQuery({
+    queryKey: [
+      ...focusHomeProfileQueryKey,
+      'assessment-report',
+      assessmentId,
+    ],
+    queryFn: () =>
+      getFocusHomeAssessmentReportId(
+        assessmentId as string,
+      ),
+    enabled: Boolean(assessmentId),
+  })
+}
+===== CLASSIFIER TESTS AND DIAGNOSTICS =====
+src/features/focusme/focusHomeClassifierFixtures.ts
+src/features/focusme/focusHomeBehaviorFixtures.ts
+src/pages/FocusHomeDiagnosticsPage.tsx
+src/services/focusHomeClassifier.ts
