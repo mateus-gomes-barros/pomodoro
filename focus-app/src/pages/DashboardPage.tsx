@@ -34,8 +34,6 @@ import {
   getTodayString,
 } from '@/utils'
 
-const DAILY_GOAL_MINUTES = 120
-
 const PRIORITY_COLORS = {
   high: '#f87171',
   medium: '#fb923c',
@@ -217,9 +215,13 @@ const completedGoalsThisYear =
       return totals
     }, [workSessions])
 
+  const dailyFocusGoalMinutes =
+    settings.dailyFocusGoalMinutes ??
+    120
+
   const progressRatio = Math.min(
     todayFocus /
-      DAILY_GOAL_MINUTES,
+      dailyFocusGoalMinutes,
     1,
   )
 
@@ -397,7 +399,7 @@ const completedGoalsThisYear =
             {
               duration:
                 formatDuration(
-                  DAILY_GOAL_MINUTES,
+                  dailyFocusGoalMinutes,
                 ),
             },
           )}
@@ -682,7 +684,7 @@ const completedGoalsThisYear =
 
               <span className="text-xs text-white/30">
                 {formatDuration(
-                  DAILY_GOAL_MINUTES,
+                  dailyFocusGoalMinutes,
                 )}
               </span>
             </div>

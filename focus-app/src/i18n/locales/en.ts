@@ -668,6 +668,10 @@ const en = {
       loadError: 'Unable to load projects.',
     },
     settings: {
+      dailyGoal:
+        'Daily focus goal',
+      dailyGoalDescription:
+        'Used to calculate your daily progress on the Dashboard.',
       focus: 'Focus',
       shortBreak: 'Short Break',
       longBreak: 'Long Break',

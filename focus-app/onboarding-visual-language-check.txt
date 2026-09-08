@@ -1,0 +1,18 @@
+===== VISUAL COPY =====
+===== TEXTOS FIXOS RESTANTES =====
+92:            Seu dia em movimento
+101:          label="Foco hoje"
+106:          label="Sequência atual"
+111:          label="Tarefas concluídas"
+148:        Tudo conectado
+201:            Seu ritmo
+268:            Retrospectiva
+273:          Seu mês em foco
+277:          Você transformou constância em evolução.
+357:            Projeto pessoal
+367:        <span>Pausar</span>
+368:        <span>Encerrar</span>
+437:        Visível enquanto você usa outros apps
+===== USO DOS TEXTOS LOCALIZADOS =====
+===== APK =====
+-rw-r--r--@ 1 mateusgomes  staff   5.9M Sep  8 05:08:57 2026 android/app/build/outputs/apk/release/app-release.apk

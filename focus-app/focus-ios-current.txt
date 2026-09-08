@@ -1,0 +1,7033 @@
+===== IOS PROJECT =====
+ios/App/App/FocusLiveActivityPlugin.swift
+ios/App/App/WeeklyActivityWidgetPlugin.swift
+ios/App/App/GoalsWidgetPlugin.swift
+ios/App/App/App.entitlements
+ios/App/App/FocusBridgeViewController.swift
+ios/App/App/MonthlyActivityWidgetPlugin.swift
+ios/App/App/AnalyticsWidgetPlugin.swift
+ios/App/App/AppDelegate.swift
+ios/App/App/Info.plist
+ios/App/App/SceneDelegate.swift
+ios/App/CapApp-SPM/Package.swift
+ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift
+ios/App/FocusWidgetExtension.entitlements
+ios/App/FocusWidget/TopProjectsWeekWidget.swift
+ios/App/FocusWidget/MonthlyActivityWidget.swift
+ios/App/FocusWidget/FocusWidgetControl.swift
+ios/App/FocusWidget/TopProjectWeekWidget.swift
+ios/App/FocusWidget/SixMonthHistoryWidget.swift
+ios/App/FocusWidget/FocusWidget.swift
+ios/App/FocusWidget/CompleteGoalIntent.swift
+ios/App/FocusWidget/FocusActivityAttributes.swift
+ios/App/FocusWidget/TopProjectMonthWidget.swift
+ios/App/FocusWidget/FocusWidgetBundle.swift
+ios/App/FocusWidget/FocusLiveActivity.swift
+ios/App/FocusWidget/FocusLiveActivityTest.swift
+ios/App/FocusWidget/WeeklyActivityWidget.swift
+ios/App/FocusWidget/GoalsWidget.swift
+ios/App/FocusWidget/Info.plist
+===== IOS TIMER AND LIVE ACTIVITY =====
+ios/App/App/FocusLiveActivityPlugin.swift
+//
+//  FocusLiveActivityPlugin.swift
+//  App
+//
+
+import ActivityKit
+import Capacitor
+import Foundation
+
+@objc(FocusLiveActivityPlugin)
+public class FocusLiveActivityPlugin:
+    CAPPlugin,
+    CAPBridgedPlugin
+{
+    public let identifier =
+        "FocusLiveActivityPlugin"
+
+    public let jsName =
+        "FocusLiveActivity"
+
+    public let pluginMethods: [
+        CAPPluginMethod
+    ] = [
+        CAPPluginMethod(
+            name: "start",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+        CAPPluginMethod(
+            name: "update",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+        CAPPluginMethod(
+            name: "end",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+    ]
+
+    @objc
+    func start(
+        _ call: CAPPluginCall
+    ) {
+        guard #available(iOS 16.2, *) else {
+            call.reject(
+                "Live Activities require iOS 16.2 or later."
+            )
+            return
+        }
+
+        guard ActivityAuthorizationInfo()
+            .areActivitiesEnabled
+        else {
+            call.reject(
+                "Live Activities are disabled."
+            )
+            return
+        }
+
+        guard let state = makeState(
+            from: call
+        ) else {
+            return
+        }
+
+        let content = makeContent(
+            state: state
+        )
+
+        if let existingActivity =
+            Activity<
+                FocusActivityAttributes
+            >.activities.first
+        {
+            Task {
+                await existingActivity.update(
+                    content
+                )
+
+                call.resolve([
+                    "activityId":
+                        existingActivity.id,
+                    "created": false,
+                ])
+            }
+
+            return
+        }
+
+        let attributes =
+            FocusActivityAttributes(
+                sessionId:
+                    call.getString(
+                        "sessionId"
+                    ) ??
+                    UUID().uuidString
+            )
+
+        do {
+            let activity = try Activity<
+                FocusActivityAttributes
+            >.request(
+                attributes: attributes,
+                content: content,
+                pushType: nil
+            )
+
+            call.resolve([
+                "activityId": activity.id,
+                "created": true,
+            ])
+        } catch {
+            call.reject(
+                "Could not start Live Activity.",
+                nil,
+                error
+            )
+        }
+    }
+
+    @objc
+    func update(
+        _ call: CAPPluginCall
+    ) {
+        guard #available(iOS 16.2, *) else {
+            call.reject(
+                "Live Activities require iOS 16.2 or later."
+            )
+            return
+        }
+
+        guard let state = makeState(
+            from: call
+        ) else {
+            return
+        }
+
+        let activities =
+            Activity<
+                FocusActivityAttributes
+            >.activities
+
+        guard !activities.isEmpty else {
+            call.resolve([
+                "updated": false,
+            ])
+            return
+        }
+
+        let content = makeContent(
+            state: state
+        )
+
+        Task {
+            for activity in activities {
+                await activity.update(
+                    content
+                )
+            }
+
+            call.resolve([
+                "updated": true,
+            ])
+        }
+    }
+
+    @objc
+    func end(
+        _ call: CAPPluginCall
+    ) {
+        guard #available(iOS 16.2, *) else {
+            call.reject(
+                "Live Activities require iOS 16.2 or later."
+            )
+            return
+        }
+
+        let activities =
+            Activity<
+                FocusActivityAttributes
+            >.activities
+
+        guard !activities.isEmpty else {
+            call.resolve([
+                "ended": false,
+            ])
+            return
+        }
+
+        let finalContent:
+            ActivityContent<
+                FocusActivityAttributes
+                    .ContentState
+            >?
+
+        if let state = makeState(
+            from: call,
+            rejectInvalidValues: false
+        ) {
+            finalContent = makeContent(
+                state: state
+            )
+        } else {
+            finalContent = nil
+        }
+
+        Task {
+            for activity in activities {
+                await activity.end(
+                    finalContent,
+                    dismissalPolicy:
+                        .immediate
+                )
+            }
+
+            call.resolve([
+                "ended": true,
+            ])
+        }
+    }
+
+    @available(iOS 16.2, *)
+    private func makeState(
+        from call: CAPPluginCall,
+        rejectInvalidValues: Bool = true
+    ) -> FocusActivityAttributes
+        .ContentState?
+    {
+        guard let sessionTypeValue =
+            call.getString(
+                "sessionType"
+            )
+        else {
+            if rejectInvalidValues {
+                call.reject(
+                    "sessionType is required."
+                )
+            }
+
+            return nil
+        }
+
+        let sessionType:
+            FocusActivityAttributes
+                .SessionType
+
+        switch sessionTypeValue {
+        case "work":
+            sessionType = .work
+
+        case "short_break":
+            sessionType = .shortBreak
+
+        case "long_break":
+            sessionType = .longBreak
+
+        default:
+            if rejectInvalidValues {
+                call.reject(
+                    "Invalid sessionType."
+                )
+            }
+
+            return nil
+        }
+
+        guard let statusValue =
+            call.getString("status")
+        else {
+            if rejectInvalidValues {
+                call.reject(
+                    "status is required."
+                )
+            }
+
+            return nil
+        }
+
+        let status:
+            FocusActivityAttributes
+                .TimerStatus
+
+        switch statusValue {
+        case "running":
+            status = .running
+
+        case "paused":
+            status = .paused
+
+        default:
+            if rejectInvalidValues {
+                call.reject(
+                    "Invalid timer status."
+                )
+            }
+
+            return nil
+        }
+
+        let endDate: Date?
+
+        if let endDateMilliseconds =
+            call.getDouble("endDate"),
+           endDateMilliseconds > 0
+        {
+            endDate = Date(
+                timeIntervalSince1970:
+                    endDateMilliseconds /
+                    1000
+            )
+        } else {
+            endDate = nil
+        }
+
+        return FocusActivityAttributes
+            .ContentState(
+                sessionType: sessionType,
+                status: status,
+                endDate: endDate,
+                remainingSeconds: max(
+                    0,
+                    call.getInt(
+                        "remainingSeconds"
+                    ) ?? 0
+                ),
+                projectName:
+                    normalizedText(
+                        call.getString(
+                            "projectName"
+                        )
+                    ),
+                taskName:
+                    normalizedText(
+                        call.getString(
+                            "taskName"
+                        )
+                    ),
+                badgeIcon:
+                    normalizedText(
+                        call.getString(
+                            "badgeIcon"
+                        )
+                    )
+            )
+    }
+
+    @available(iOS 16.2, *)
+    private func makeContent(
+        state:
+            FocusActivityAttributes
+                .ContentState
+    ) -> ActivityContent<
+        FocusActivityAttributes
+            .ContentState
+    > {
+        let staleDate =
+            state.endDate?
+                .addingTimeInterval(60)
+
+        return ActivityContent(
+            state: state,
+            staleDate: staleDate
+        )
+    }
+
+    private func normalizedText(
+        _ value: String?
+    ) -> String? {
+        guard let value else {
+            return nil
+        }
+
+        let trimmedValue =
+            value.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+
+        return trimmedValue.isEmpty
+            ? nil
+            : trimmedValue
+    }
+}ios/App/App/WeeklyActivityWidgetPlugin.swift
+//
+//  WeeklyActivityWidgetPlugin.swift
+//  App
+//
+
+import Capacitor
+import Foundation
+import WidgetKit
+
+@objc(WeeklyActivityWidgetPlugin)
+public class WeeklyActivityWidgetPlugin:
+    CAPPlugin,
+    CAPBridgedPlugin
+{
+    public let identifier =
+        "WeeklyActivityWidgetPlugin"
+
+    public let jsName =
+        "WeeklyActivityWidgetBridge"
+
+    public let pluginMethods: [
+        CAPPluginMethod
+    ] = [
+        CAPPluginMethod(
+            name: "saveSnapshot",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+    ]
+
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "weekly_activity_widget_snapshot"
+
+    private let widgetKind =
+        "WeeklyActivityWidget"
+
+    @objc
+    func saveSnapshot(
+        _ call: CAPPluginCall
+    ) {
+        guard let payload =
+            call.getString("payload")
+        else {
+            call.reject(
+                "The weekly activity payload is required."
+            )
+
+            return
+        }
+
+        guard let sharedDefaults =
+            UserDefaults(
+                suiteName:
+                    appGroupIdentifier
+            )
+        else {
+            call.reject(
+                "Unable to access the shared App Group."
+            )
+
+            return
+        }
+
+        sharedDefaults.set(
+            payload,
+            forKey: snapshotKey
+        )
+
+        WidgetCenter.shared
+            .reloadTimelines(
+                ofKind: widgetKind
+            )
+
+        call.resolve([
+            "saved": true,
+        ])
+    }
+}
+ios/App/App/GoalsWidgetPlugin.swift
+//
+//  GoalsWidgetPlugin.swift
+//  App
+//
+
+import Capacitor
+import Foundation
+import WidgetKit
+
+@objc(GoalsWidgetPlugin)
+public class GoalsWidgetPlugin:
+    CAPPlugin,
+    CAPBridgedPlugin
+{
+    public let identifier =
+        "GoalsWidgetPlugin"
+
+    public let jsName =
+        "GoalsWidget"
+
+    public let pluginMethods: [
+        CAPPluginMethod
+    ] = [
+        CAPPluginMethod(
+            name: "saveSnapshot",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+        CAPPluginMethod(
+            name: "getPendingCompletions",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+        CAPPluginMethod(
+            name: "removePendingCompletions",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+    ]
+
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "goals_widget_snapshot"
+
+    private let pendingCompletionsKey =
+        "goals_widget_pending_completions"
+
+    private let widgetKind =
+        "GoalsWidget"
+
+    @objc
+    func saveSnapshot(
+        _ call: CAPPluginCall
+    ) {
+        guard let payload =
+            call.getString("payload")
+        else {
+            call.reject(
+                "The Goals widget payload is required."
+            )
+
+            return
+        }
+
+        guard let sharedDefaults =
+            sharedDefaults()
+        else {
+            call.reject(
+                "Unable to access the shared App Group."
+            )
+
+            return
+        }
+
+        sharedDefaults.set(
+            payload,
+            forKey: snapshotKey
+        )
+
+        reloadWidget()
+
+        call.resolve([
+            "saved": true,
+        ])
+    }
+
+    @objc
+    func getPendingCompletions(
+        _ call: CAPPluginCall
+    ) {
+        guard let sharedDefaults =
+            sharedDefaults()
+        else {
+            call.reject(
+                "Unable to access the shared App Group."
+            )
+
+            return
+        }
+
+        let goalIDs =
+            sharedDefaults.stringArray(
+                forKey:
+                    pendingCompletionsKey
+            ) ?? []
+
+        call.resolve([
+            "goalIDs": goalIDs,
+        ])
+    }
+
+    @objc
+    func removePendingCompletions(
+        _ call: CAPPluginCall
+    ) {
+        guard let goalIDs =
+            call.getArray(
+                "goalIDs",
+                String.self
+            )
+        else {
+            call.reject(
+                "The completed goal IDs are required."
+            )
+
+            return
+        }
+
+        guard let sharedDefaults =
+            sharedDefaults()
+        else {
+            call.reject(
+                "Unable to access the shared App Group."
+            )
+
+            return
+        }
+
+        let currentGoalIDs =
+            sharedDefaults.stringArray(
+                forKey:
+                    pendingCompletionsKey
+            ) ?? []
+
+        let removedGoalIDs =
+            Set(goalIDs)
+
+        let remainingGoalIDs =
+            currentGoalIDs.filter {
+                !removedGoalIDs.contains($0)
+            }
+
+        sharedDefaults.set(
+            remainingGoalIDs,
+            forKey:
+                pendingCompletionsKey
+        )
+
+        reloadWidget()
+
+        call.resolve([
+            "removed": true,
+        ])
+    }
+
+    private func sharedDefaults()
+        -> UserDefaults?
+    {
+        UserDefaults(
+            suiteName:
+                appGroupIdentifier
+        )
+    }
+
+    private func reloadWidget() {
+        WidgetCenter.shared
+            .reloadTimelines(
+                ofKind: widgetKind
+            )
+    }
+}ios/App/App/App.entitlements
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.mateusgomes.focusapp.shared</string>
+	</array>
+</dict>
+</plist>
+ios/App/App/FocusBridgeViewController.swift
+//
+//  FocusBridgeViewController.swift
+//  App
+//
+
+import Capacitor
+import UIKit
+
+class FocusBridgeViewController:
+    CAPBridgeViewController
+{
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(
+            FocusLiveActivityPlugin()
+        )
+
+        bridge?.registerPluginInstance(
+            GoalsWidgetPlugin()
+        )
+
+        bridge?.registerPluginInstance(
+            MonthlyActivityWidgetPlugin()
+        )
+
+        bridge?.registerPluginInstance(
+            WeeklyActivityWidgetPlugin()
+        )
+
+        bridge?.registerPluginInstance(
+            AnalyticsWidgetPlugin()
+        )
+    }
+}
+ios/App/App/MonthlyActivityWidgetPlugin.swift
+//
+//  MonthlyActivityWidgetPlugin.swift
+//  App
+//
+
+import Capacitor
+import Foundation
+import WidgetKit
+
+@objc(MonthlyActivityWidgetPlugin)
+public class MonthlyActivityWidgetPlugin:
+    CAPPlugin,
+    CAPBridgedPlugin
+{
+    public let identifier =
+        "MonthlyActivityWidgetPlugin"
+
+    public let jsName =
+        "MonthlyActivityWidgetBridge"
+
+    public let pluginMethods: [
+        CAPPluginMethod
+    ] = [
+        CAPPluginMethod(
+            name: "saveSnapshot",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+    ]
+
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "monthly_activity_widget_snapshot"
+
+    private let widgetKind =
+        "MonthlyActivityWidget"
+
+    @objc
+    func saveSnapshot(
+        _ call: CAPPluginCall
+    ) {
+        guard let payload =
+            call.getString("payload")
+        else {
+            call.reject(
+                "The monthly activity payload is required."
+            )
+
+            return
+        }
+
+        guard let sharedDefaults =
+            UserDefaults(
+                suiteName:
+                    appGroupIdentifier
+            )
+        else {
+            call.reject(
+                "Unable to access the shared App Group."
+            )
+
+            return
+        }
+
+        sharedDefaults.set(
+            payload,
+            forKey: snapshotKey
+        )
+
+        WidgetCenter.shared
+            .reloadTimelines(
+                ofKind: widgetKind
+            )
+
+        call.resolve([
+            "saved": true,
+        ])
+    }
+}
+ios/App/App/AnalyticsWidgetPlugin.swift
+//
+//  AnalyticsWidgetPlugin.swift
+//  App
+//
+
+import Capacitor
+import Foundation
+import WidgetKit
+
+@objc(AnalyticsWidgetPlugin)
+public class AnalyticsWidgetPlugin:
+    CAPPlugin,
+    CAPBridgedPlugin
+{
+    public let identifier =
+        "AnalyticsWidgetPlugin"
+
+    public let jsName =
+        "AnalyticsWidgetBridge"
+
+    public let pluginMethods: [
+        CAPPluginMethod
+    ] = [
+        CAPPluginMethod(
+            name: "saveSnapshot",
+            returnType:
+                CAPPluginReturnPromise
+        ),
+    ]
+
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "analytics_widget_snapshot"
+
+    @objc
+    func saveSnapshot(
+        _ call: CAPPluginCall
+    ) {
+        guard let payload =
+            call.getString("payload")
+        else {
+            call.reject(
+                "The Analytics widget payload is required."
+            )
+
+            return
+        }
+
+        guard let sharedDefaults =
+            UserDefaults(
+                suiteName:
+                    appGroupIdentifier
+            )
+        else {
+            call.reject(
+                "Unable to access the shared App Group."
+            )
+
+            return
+        }
+
+        sharedDefaults.set(
+            payload,
+            forKey: snapshotKey
+        )
+
+        WidgetCenter.shared
+            .reloadAllTimelines()
+
+        call.resolve([
+            "saved": true,
+        ])
+    }
+}
+ios/App/App/AppDelegate.swift
+import UIKit
+import Capacitor
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    var window: UIWindow?
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [
+            UIApplication.LaunchOptionsKey: Any
+        ]?
+    ) -> Bool {
+        return true
+    }
+
+    func applicationWillResignActive(
+        _ application: UIApplication
+    ) {}
+
+    func applicationDidEnterBackground(
+        _ application: UIApplication
+    ) {}
+
+    func applicationWillEnterForeground(
+        _ application: UIApplication
+    ) {}
+
+    func applicationDidBecomeActive(
+        _ application: UIApplication
+    ) {}
+
+    func applicationWillTerminate(
+        _ application: UIApplication
+    ) {}
+
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession:
+            UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let config = UISceneConfiguration(
+            name: "Default Configuration",
+            sessionRole: connectingSceneSession.role
+        )
+
+        config.delegateClass = SceneDelegate.self
+
+        return config
+    }
+}ios/App/App/Info.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CAPACITOR_DEBUG</key>
+	<string>$(CAPACITOR_DEBUG)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Focus</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.mateusgomes.focusapp</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.mateusgomes.focusapp</string>
+			</array>
+		</dict>
+		<dict/>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+</dict>
+</plist>
+ios/App/App/SceneDelegate.swift
+import UIKit
+import Capacitor
+
+class SceneDelegate:
+    UIResponder,
+    UIWindowSceneDelegate
+{
+    var window: UIWindow?
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session:
+            UISceneSession,
+        options connectionOptions:
+            UIScene.ConnectionOptions
+    ) {
+        guard let windowScene =
+            scene as? UIWindowScene
+        else {
+            return
+        }
+
+        window = UIWindow(
+            windowScene: windowScene
+        )
+
+        window?.rootViewController =
+            FocusBridgeViewController()
+
+        window?.makeKeyAndVisible()
+
+        SceneDelegateProxy.shared.scene(
+            scene,
+            willConnectTo: session,
+            options: connectionOptions
+        )
+    }
+
+    func scene(
+        _ scene: UIScene,
+        openURLContexts URLContexts:
+            Set<UIOpenURLContext>
+    ) {
+        SceneDelegateProxy.shared.scene(
+            scene,
+            openURLContexts: URLContexts
+        )
+    }
+
+    func scene(
+        _ scene: UIScene,
+        continue userActivity:
+            NSUserActivity
+    ) {
+        SceneDelegateProxy.shared.scene(
+            scene,
+            continue: userActivity
+        )
+    }
+}
+ios/App/CapApp-SPM/Package.swift
+// swift-tools-version: 5.9
+import PackageDescription
+
+// DO NOT MODIFY THIS FILE - managed by Capacitor CLI commands
+let package = Package(
+    name: "CapApp-SPM",
+    platforms: [.iOS(.v17)],
+    products: [
+        .library(
+            name: "CapApp-SPM",
+            targets: ["CapApp-SPM"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.0"),
+        .package(name: "CapacitorApp", path: "../../../node_modules/@capacitor/app"),
+        .package(name: "CapacitorBrowser", path: "../../../node_modules/@capacitor/browser"),
+        .package(name: "CapacitorFilesystem", path: "../../../node_modules/@capacitor/filesystem"),
+        .package(name: "CapacitorLocalNotifications", path: "../../../node_modules/@capacitor/local-notifications"),
+        .package(name: "CapacitorShare", path: "../../../node_modules/@capacitor/share")
+    ],
+    targets: [
+        .target(
+            name: "CapApp-SPM",
+            dependencies: [
+                .product(name: "Capacitor", package: "capacitor-swift-pm"),
+                .product(name: "Cordova", package: "capacitor-swift-pm"),
+                .product(name: "CapacitorApp", package: "CapacitorApp"),
+                .product(name: "CapacitorBrowser", package: "CapacitorBrowser"),
+                .product(name: "CapacitorFilesystem", package: "CapacitorFilesystem"),
+                .product(name: "CapacitorLocalNotifications", package: "CapacitorLocalNotifications"),
+                .product(name: "CapacitorShare", package: "CapacitorShare")
+            ]
+        )
+    ]
+)
+ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift
+public let isCapacitorApp = true
+ios/App/FocusWidgetExtension.entitlements
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.mateusgomes.focusapp.shared</string>
+	</array>
+</dict>
+</plist>
+ios/App/FocusWidget/TopProjectsWeekWidget.swift
+//
+//  TopProjectsWeekWidget.swift
+//  FocusWidget
+//
+
+import Foundation
+import SwiftUI
+import UIKit
+import WidgetKit
+
+private struct TopProjectsWeekSnapshot:
+    Decodable
+{
+    let week:
+        TopProjectsWeekPeriodSnapshot
+}
+
+private struct TopProjectsWeekPeriodSnapshot:
+    Decodable
+{
+    let totalFocusMinutes: Int
+    let activeDays: Int
+    let topProjects: [
+        TopProjectsWeekProjectSnapshot
+    ]
+}
+
+private struct TopProjectsWeekProjectSnapshot:
+    Decodable,
+    Identifiable
+{
+    let id: String
+    let name: String
+    let emoji: String
+    let color: String
+    let focusMinutes: Int
+    let sharePercentage: Int
+}
+
+private struct TopProjectsWeekEntry:
+    TimelineEntry
+{
+    let date: Date
+    let totalFocusMinutes: Int
+    let activeDays: Int
+
+    let projects: [
+        TopProjectsWeekProjectSnapshot
+    ]
+}
+
+private struct TopProjectsWeekProvider:
+    TimelineProvider
+{
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "analytics_widget_snapshot"
+
+    private let sampleEntry =
+        TopProjectsWeekEntry(
+            date: .now,
+            totalFocusMinutes: 635,
+            activeDays: 5,
+            projects: [
+                TopProjectsWeekProjectSnapshot(
+                    id: "focus-app",
+                    name: "Focus App",
+                    emoji: "⌨️",
+                    color: "#7EE081",
+                    focusMinutes: 285,
+                    sharePercentage: 45
+                ),
+
+                TopProjectsWeekProjectSnapshot(
+                    id: "studies",
+                    name: "Studies",
+                    emoji: "📚",
+                    color: "#7EA8E0",
+                    focusMinutes: 210,
+                    sharePercentage: 33
+                ),
+
+                TopProjectsWeekProjectSnapshot(
+                    id: "workout",
+                    name: "Workout",
+                    emoji: "🏋️",
+                    color: "#E0A87E",
+                    focusMinutes: 140,
+                    sharePercentage: 22
+                ),
+            ]
+        )
+
+    func placeholder(
+        in context: Context
+    ) -> TopProjectsWeekEntry {
+        sampleEntry
+    }
+
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            TopProjectsWeekEntry
+        ) -> Void
+    ) {
+        if context.isPreview {
+            completion(sampleEntry)
+
+            return
+        }
+
+        completion(loadEntry())
+    }
+
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<TopProjectsWeekEntry>
+        ) -> Void
+    ) {
+        let entry = loadEntry()
+
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ?? .now.addingTimeInterval(
+                3600
+            )
+
+        completion(
+            Timeline(
+                entries: [entry],
+                policy: .after(nextUpdate)
+            )
+        )
+    }
+
+    private func loadEntry()
+        -> TopProjectsWeekEntry
+    {
+        guard let sharedDefaults =
+            UserDefaults(
+                suiteName:
+                    appGroupIdentifier
+            ),
+            let payload =
+                sharedDefaults.string(
+                    forKey: snapshotKey
+                ),
+            let payloadData =
+                payload.data(
+                    using: .utf8
+                ),
+            let snapshot =
+                try? JSONDecoder()
+                    .decode(
+                        TopProjectsWeekSnapshot.self,
+                        from: payloadData
+                    )
+        else {
+            return TopProjectsWeekEntry(
+                date: .now,
+                totalFocusMinutes: 0,
+                activeDays: 0,
+                projects: []
+            )
+        }
+
+        return TopProjectsWeekEntry(
+            date: .now,
+            totalFocusMinutes:
+                snapshot.week
+                    .totalFocusMinutes,
+            activeDays:
+                snapshot.week.activeDays,
+            projects:
+                Array(
+                    snapshot.week
+                        .topProjects
+                        .prefix(3)
+                )
+        )
+    }
+}
+
+private struct TopProjectsWeekView:
+    View
+{
+    let entry: TopProjectsWeekEntry
+
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
+    private var accentColor: Color {
+        guard let topProject =
+            entry.projects.first
+        else {
+            return Color(
+                red: 0.45,
+                green: 0.95,
+                blue: 0.64
+            )
+        }
+
+        return Color(
+            topProjectsHex:
+                topProject.color
+        )
+    }
+
+    private var formattedTotal: String {
+        formatDuration(
+            entry.totalFocusMinutes
+        )
+    }
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [
+                    accentColor.opacity(
+                        entry.projects.isEmpty
+                            ? 0.07
+                            : 0.18
+                    ),
+
+                    accentColor.opacity(0),
+                ],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 245
+            )
+
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(
+                        0.025
+                    ),
+
+                    Color.clear,
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack(
+                alignment: .leading,
+                spacing: 0
+            ) {
+                header
+
+                if entry.projects.isEmpty {
+                    emptyState
+                } else {
+                    projectList
+                }
+            }
+            .padding(
+                .horizontal,
+                isPad ? 13 : 16
+            )
+            .padding(
+                .top,
+                isPad ? 10 : 16
+            )
+            .padding(
+                .bottom,
+                isPad ? 7 : 16
+            )
+        }
+    }
+
+    private var header: some View {
+        HStack(
+            alignment: .top,
+            spacing: isPad ? 6 : 12
+        ) {
+            VStack(
+                alignment: .leading,
+                spacing: 3
+            ) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(accentColor)
+                        .frame(
+                            width: 5,
+                            height: 5
+                        )
+
+                    Text("THIS WEEK")
+                        .font(
+                            .system(
+                                size: 9,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
+                        .tracking(1.1)
+                        .foregroundStyle(
+                            Color.white.opacity(
+                                0.36
+                            )
+                        )
+                }
+
+                Text("Top Projects")
+                    .font(
+                        .system(
+                            size: isPad ? 12 : 15,
+                            weight: .semibold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.92
+                        )
+                    )
+            }
+
+            Spacer(minLength: 8)
+
+            VStack(
+                alignment: .trailing,
+                spacing: 2
+            ) {
+                Text(formattedTotal)
+                    .font(
+                        .system(
+                            size: 13,
+                            weight: .semibold,
+                            design: .monospaced
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.72
+                        )
+                    )
+
+                Text(
+                    "\(entry.activeDays) active \(entry.activeDays == 1 ? "day" : "days")"
+                )
+                .font(
+                    .system(
+                        size: 9,
+                        weight: .medium,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(
+                        0.28
+                    )
+                )
+            }
+        }
+    }
+
+    private var projectList: some View {
+        VStack(
+            spacing: isPad ? 2 : 9
+        ) {
+            Spacer(
+                minLength: isPad ? 0 : 8
+            )
+
+            ForEach(
+                Array(
+                    entry.projects.enumerated()
+                ),
+                id: \.element.id
+            ) { index, project in
+                projectRow(
+                    project: project,
+                    rank: index + 1
+                )
+            }
+        }
+    }
+
+    private func projectRow(
+        project:
+            TopProjectsWeekProjectSnapshot,
+        rank: Int
+    ) -> some View {
+        let projectColor = Color(
+            topProjectsHex:
+                project.color
+        )
+
+        return HStack(
+            spacing: isPad ? 5 : 9
+        ) {
+            ZStack {
+                Circle()
+                    .fill(
+                        projectColor.opacity(
+                            rank == 1
+                                ? 0.16
+                                : 0.08
+                        )
+                    )
+
+                Text("\(rank)")
+                    .font(
+                        .system(
+                            size: 9,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        rank == 1
+                            ? projectColor
+                            : Color.white
+                                .opacity(0.38)
+                    )
+            }
+            .frame(
+                width: isPad ? 17 : 22,
+                height: isPad ? 17 : 22
+            )
+
+            Text(project.emoji)
+                .font(
+                    .system(
+                        size: isPad ? 14 : 19
+                    )
+                )
+                .frame(
+                    width: isPad ? 18 : 24,
+                    alignment: .center
+                )
+
+            VStack(
+                alignment: .leading,
+                spacing: isPad ? 2 : 4
+            ) {
+                HStack(spacing: 8) {
+                    Text(project.name)
+                        .font(
+                            .system(
+                                size: isPad ? 10 : 11,
+                                weight: .semibold,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundStyle(
+                            Color.white.opacity(
+                                0.78
+                            )
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+
+                    Spacer(minLength: 5)
+
+                    Text(
+                        formatDuration(
+                            project.focusMinutes
+                        )
+                    )
+                    .font(
+                        .system(
+                            size: isPad ? 8 : 9,
+                            weight: .semibold,
+                            design: .monospaced
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.38
+                        )
+                    )
+
+                    Text(
+                        "\(project.sharePercentage)%"
+                    )
+                    .font(
+                        .system(
+                            size: isPad ? 8 : 9,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        projectColor.opacity(
+                            0.9
+                        )
+                    )
+                    .frame(
+                        width: 29,
+                        alignment: .trailing
+                    )
+                }
+
+                GeometryReader { proxy in
+                    ZStack(
+                        alignment: .leading
+                    ) {
+                        Capsule()
+                            .fill(
+                                Color.white.opacity(
+                                    0.055
+                                )
+                            )
+
+                        Capsule()
+                            .fill(projectColor)
+                            .frame(
+                                width:
+                                    proxy.size.width *
+                                    min(
+                                        max(
+                                            Double(
+                                                project
+                                                    .sharePercentage
+                                            ) / 100,
+                                            0
+                                        ),
+                                        1
+                                    )
+                            )
+                    }
+                }
+                .frame(
+                    height: isPad ? 2 : 3
+                )
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        HStack(spacing: 12) {
+            Spacer(minLength: 0)
+
+            ZStack {
+                Circle()
+                    .fill(
+                        accentColor.opacity(
+                            0.08
+                        )
+                    )
+
+                Text("✦")
+                    .font(
+                        .system(size: 24)
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.22
+                        )
+                    )
+            }
+            .frame(
+                width: 48,
+                height: 48
+            )
+
+            VStack(
+                alignment: .leading,
+                spacing: 4
+            ) {
+                Text("No project focus yet")
+                    .font(
+                        .system(
+                            size: 12,
+                            weight: .semibold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.45
+                        )
+                    )
+
+                Text(
+                    "Connect a Pomodoro to a project."
+                )
+                .font(
+                    .system(
+                        size: 9,
+                        weight: .medium,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(
+                        0.24
+                    )
+                )
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    private func formatDuration(
+        _ minutes: Int
+    ) -> String {
+        if minutes < 60 {
+            return "\(minutes)m"
+        }
+
+        let hours = minutes / 60
+        let remainingMinutes =
+            minutes % 60
+
+        if remainingMinutes == 0 {
+            return "\(hours)h"
+        }
+
+        return "\(hours)h \(remainingMinutes)m"
+    }
+}
+
+struct TopProjectsWeekWidget:
+    Widget
+{
+    let kind =
+        "TopProjectsWeekWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(
+            kind: kind,
+            provider:
+                TopProjectsWeekProvider()
+        ) { entry in
+            if #available(
+                iOS 17.0,
+                *
+            ) {
+                TopProjectsWeekView(
+                    entry: entry
+                )
+                .containerBackground(
+                    for: .widget
+                ) {
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                }
+            } else {
+                TopProjectsWeekView(
+                    entry: entry
+                )
+                .background(
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                )
+            }
+        }
+        .configurationDisplayName(
+            "Top Projects — Week"
+        )
+        .description(
+            "Shows your three most focused projects this week."
+        )
+        .supportedFamilies([
+            .systemMedium,
+        ])
+    }
+}
+
+private extension Color {
+    init(topProjectsHex: String) {
+        let cleanedHex =
+            topProjectsHex
+                .trimmingCharacters(
+                    in: CharacterSet
+                        .alphanumerics
+                        .inverted
+                )
+
+        var hexValue: UInt64 = 0
+
+        Scanner(
+            string: cleanedHex
+        ).scanHexInt64(&hexValue)
+
+        let red: Double
+        let green: Double
+        let blue: Double
+
+        if cleanedHex.count == 3 {
+            red = Double(
+                (hexValue >> 8) * 17
+            ) / 255
+
+            green = Double(
+                (
+                    hexValue >> 4
+                ) & 0xF
+            ) * 17 / 255
+
+            blue = Double(
+                hexValue & 0xF
+            ) * 17 / 255
+        } else {
+            red = Double(
+                (hexValue >> 16) &
+                    0xFF
+            ) / 255
+
+            green = Double(
+                (hexValue >> 8) &
+                    0xFF
+            ) / 255
+
+            blue = Double(
+                hexValue & 0xFF
+            ) / 255
+        }
+
+        self.init(
+            red: red,
+            green: green,
+            blue: blue
+        )
+    }
+}
+
+#Preview(
+    as: .systemMedium
+) {
+    TopProjectsWeekWidget()
+} timeline: {
+    TopProjectsWeekEntry(
+        date: .now,
+        totalFocusMinutes: 635,
+        activeDays: 5,
+        projects: [
+            TopProjectsWeekProjectSnapshot(
+                id: "focus-app",
+                name: "Focus App",
+                emoji: "⌨️",
+                color: "#7EE081",
+                focusMinutes: 285,
+                sharePercentage: 45
+            ),
+
+            TopProjectsWeekProjectSnapshot(
+                id: "studies",
+                name: "Studies",
+                emoji: "📚",
+                color: "#7EA8E0",
+                focusMinutes: 210,
+                sharePercentage: 33
+            ),
+
+            TopProjectsWeekProjectSnapshot(
+                id: "workout",
+                name: "Workout",
+                emoji: "🏋️",
+                color: "#E0A87E",
+                focusMinutes: 140,
+                sharePercentage: 22
+            ),
+        ]
+    )
+
+    TopProjectsWeekEntry(
+        date: .now,
+        totalFocusMinutes: 0,
+        activeDays: 0,
+        projects: []
+    )
+}
+ios/App/FocusWidget/MonthlyActivityWidget.swift
+//
+//  MonthlyActivityWidget.swift
+//  FocusWidget
+//
+
+import Foundation
+import SwiftUI
+import UIKit
+import WidgetKit
+
+struct MonthlyActivityDay:
+    Identifiable
+{
+    let id: Int
+    let dayNumber: Int?
+    let focusMinutes: Int
+    let isToday: Bool
+
+    var isActive: Bool {
+        dayNumber != nil &&
+        focusMinutes > 0
+    }
+}
+
+private struct MonthlyActivityDaySnapshot:
+    Codable
+{
+    let date: String
+    let focusMinutes: Int
+}
+
+private struct MonthlyActivityWidgetSnapshot:
+    Codable
+{
+    let year: Int
+    let month: Int
+    let monthTitle: String
+    let longestStreak: Int
+    let days: [
+        MonthlyActivityDaySnapshot
+    ]
+}
+
+struct MonthlyActivityEntry:
+    TimelineEntry
+{
+    let date: Date
+    let monthTitle: String
+    let longestStreak: Int
+    let days: [
+        MonthlyActivityDay
+    ]
+}
+
+private func makeCalendarDays(
+    year: Int,
+    month: Int,
+    focusMinutesByDate: [
+        String: Int
+    ]
+) -> [MonthlyActivityDay] {
+    var calendar =
+        Calendar(
+            identifier: .gregorian
+        )
+
+    calendar.firstWeekday = 2
+
+    guard
+        let firstDay =
+            calendar.date(
+                from: DateComponents(
+                    year: year,
+                    month: month,
+                    day: 1
+                )
+            ),
+        let dayRange =
+            calendar.range(
+                of: .day,
+                in: .month,
+                for: firstDay
+            )
+    else {
+        return []
+    }
+
+    let firstWeekday =
+        calendar.component(
+            .weekday,
+            from: firstDay
+        )
+
+    let leadingEmptyDays =
+        (firstWeekday + 5) % 7
+
+    let todayComponents =
+        calendar.dateComponents(
+            [
+                .year,
+                .month,
+                .day
+            ],
+            from: .now
+        )
+
+    return (0..<42).map {
+        index in
+
+        let dayNumber =
+            index -
+            leadingEmptyDays +
+            1
+
+        guard
+            dayRange.contains(
+                dayNumber
+            )
+        else {
+            return MonthlyActivityDay(
+                id: index,
+                dayNumber: nil,
+                focusMinutes: 0,
+                isToday: false
+            )
+        }
+
+        let dateKey =
+            String(
+                format:
+                    "%04d-%02d-%02d",
+                year,
+                month,
+                dayNumber
+            )
+
+        let isToday =
+            todayComponents.year ==
+                year &&
+            todayComponents.month ==
+                month &&
+            todayComponents.day ==
+                dayNumber
+
+        return MonthlyActivityDay(
+            id: index,
+            dayNumber: dayNumber,
+            focusMinutes:
+                focusMinutesByDate[
+                    dateKey
+                ] ?? 0,
+            isToday: isToday
+        )
+    }
+}
+
+private func makeMonthTitle(
+    year: Int,
+    month: Int
+) -> String {
+    let formatter =
+        DateFormatter()
+
+    formatter.locale =
+        Locale(
+            identifier: "en_US"
+        )
+
+    formatter.dateFormat =
+        "MMMM yyyy"
+
+    let calendar =
+        Calendar(
+            identifier: .gregorian
+        )
+
+    guard
+        let date =
+            calendar.date(
+                from: DateComponents(
+                    year: year,
+                    month: month,
+                    day: 1
+                )
+            )
+    else {
+        return "\(month)/\(year)"
+    }
+
+    return formatter.string(
+        from: date
+    )
+}
+
+private let monthlySampleEntry =
+    MonthlyActivityEntry(
+        date: .now,
+        monthTitle:
+            "August 2026",
+        longestStreak: 7,
+        days: makeCalendarDays(
+            year: 2026,
+            month: 8,
+            focusMinutesByDate: [
+                "2026-08-01": 25,
+                "2026-08-02": 50,
+                "2026-08-03": 35,
+                "2026-08-05": 70,
+                "2026-08-06": 25,
+                "2026-08-08": 40,
+                "2026-08-10": 80,
+                "2026-08-11": 45,
+                "2026-08-14": 30,
+                "2026-08-15": 55,
+                "2026-08-18": 40,
+                "2026-08-19": 65,
+                "2026-08-21": 90,
+                "2026-08-22": 30,
+                "2026-08-24": 50,
+                "2026-08-25": 25,
+                "2026-08-26": 75,
+                "2026-08-28": 40,
+                "2026-08-29": 60,
+                "2026-08-30": 25
+            ]
+        )
+    )
+
+struct MonthlyActivityProvider:
+    TimelineProvider
+{
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "monthly_activity_widget_snapshot"
+
+    func placeholder(
+        in context: Context
+    ) -> MonthlyActivityEntry {
+        monthlySampleEntry
+    }
+
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            MonthlyActivityEntry
+        ) -> Void
+    ) {
+        if context.isPreview {
+            completion(
+                monthlySampleEntry
+            )
+
+            return
+        }
+
+        completion(
+            loadEntry()
+        )
+    }
+
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<
+                MonthlyActivityEntry
+            >
+        ) -> Void
+    ) {
+        let entry =
+            loadEntry()
+
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ??
+            .now.addingTimeInterval(
+                3600
+            )
+
+        completion(
+            Timeline(
+                entries: [entry],
+                policy: .after(
+                    nextUpdate
+                )
+            )
+        )
+    }
+
+    private func loadEntry()
+        -> MonthlyActivityEntry
+    {
+        guard
+            let sharedDefaults =
+                UserDefaults(
+                    suiteName:
+                        appGroupIdentifier
+                ),
+            let payload =
+                sharedDefaults.string(
+                    forKey:
+                        snapshotKey
+                ),
+            let data =
+                payload.data(
+                    using: .utf8
+                ),
+            let snapshot =
+                try? JSONDecoder()
+                    .decode(
+                        MonthlyActivityWidgetSnapshot
+                            .self,
+                        from: data
+                    )
+        else {
+            return makeEmptyEntry()
+        }
+
+        let focusMinutesByDate =
+            Dictionary(
+                uniqueKeysWithValues:
+                    snapshot.days.map {
+                        (
+                            $0.date,
+                            $0.focusMinutes
+                        )
+                    }
+            )
+
+        return MonthlyActivityEntry(
+            date: .now,
+            monthTitle:
+                snapshot.monthTitle,
+            longestStreak:
+                snapshot.longestStreak,
+            days: makeCalendarDays(
+                year: snapshot.year,
+                month: snapshot.month,
+                focusMinutesByDate:
+                    focusMinutesByDate
+            )
+        )
+    }
+
+    private func makeEmptyEntry()
+        -> MonthlyActivityEntry
+    {
+        let calendar =
+            Calendar.current
+
+        let year =
+            calendar.component(
+                .year,
+                from: .now
+            )
+
+        let month =
+            calendar.component(
+                .month,
+                from: .now
+            )
+
+        return MonthlyActivityEntry(
+            date: .now,
+            monthTitle:
+                makeMonthTitle(
+                    year: year,
+                    month: month
+                ),
+            longestStreak: 0,
+            days: makeCalendarDays(
+                year: year,
+                month: month,
+                focusMinutesByDate: [:]
+            )
+        )
+    }
+}
+
+struct MonthlyActivityView:
+    View
+{
+    let entry:
+        MonthlyActivityEntry
+
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
+    private let accentColor =
+        Color(
+            red: 0.45,
+            green: 0.95,
+            blue: 0.64
+        )
+
+    private let weekdayLabels = [
+        "M",
+        "T",
+        "W",
+        "T",
+        "F",
+        "S",
+        "S"
+    ]
+
+    private var columns: [GridItem] {
+        Array(
+            repeating:
+                GridItem(
+                    .flexible(),
+                    spacing: isPad ? 4 : 6
+                ),
+            count: 7
+        )
+    }
+
+    private var activeDays: Int {
+        entry.days.filter(
+            \.isActive
+        ).count
+    }
+
+    private var totalFocusMinutes:
+        Int
+    {
+        entry.days.reduce(0) {
+            $0 +
+            $1.focusMinutes
+        }
+    }
+
+    private var formattedFocusTime:
+        String
+    {
+        let hours =
+            totalFocusMinutes / 60
+
+        let minutes =
+            totalFocusMinutes % 60
+
+        if hours == 0 {
+            return "\(minutes)m"
+        }
+
+        return "\(hours)h \(minutes)m"
+    }
+
+    private func activityColor(
+        for minutes: Int
+    ) -> Color {
+        switch minutes {
+        case 1...25:
+            return accentColor
+                .opacity(0.22)
+
+        case 26...50:
+            return accentColor
+                .opacity(0.42)
+
+        case 51...75:
+            return accentColor
+                .opacity(0.68)
+
+        case 76...:
+            return accentColor
+
+        default:
+            return Color.white
+                .opacity(0.045)
+        }
+    }
+
+    var body: some View {
+        VStack(
+            alignment: .leading,
+            spacing: 0
+        ) {
+            HStack {
+                Text(
+                    entry.monthTitle
+                )
+                .font(
+                    .system(
+                        size: isPad ? 18 : 21,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    .white
+                )
+
+                Spacer()
+
+                HStack(spacing: 5) {
+                    Image(
+                        systemName:
+                            "flame.fill"
+                    )
+
+                    Text(
+                        "\(entry.longestStreak)"
+                    )
+                    .monospacedDigit()
+                }
+                .font(
+                    .system(
+                        size: 13,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    accentColor
+                )
+                .padding(
+                    .horizontal,
+                    isPad ? 9 : 11
+                )
+                .padding(
+                    .vertical,
+                    isPad ? 5 : 7
+                )
+                .background(
+                    accentColor
+                        .opacity(0.1),
+                    in: Capsule()
+                )
+            }
+
+            HStack(spacing: 0) {
+                ForEach(
+                    Array(
+                        weekdayLabels
+                            .enumerated()
+                    ),
+                    id: \.offset
+                ) {
+                    _,
+                    weekday in
+
+                    Text(weekday)
+                        .font(
+                            .system(
+                                size: 10,
+                                weight:
+                                    .semibold,
+                                design:
+                                    .rounded
+                            )
+                        )
+                        .foregroundStyle(
+                            Color.white
+                                .opacity(
+                                    0.3
+                                )
+                        )
+                        .frame(
+                            maxWidth:
+                                .infinity
+                        )
+                }
+            }
+            .padding(
+                .top,
+                isPad ? 8 : 14
+            )
+            .padding(
+                .bottom,
+                isPad ? 5 : 7
+            )
+
+            LazyVGrid(
+                columns: columns,
+                spacing: isPad ? 4 : 6
+            ) {
+                ForEach(
+                    entry.days
+                ) { day in
+                    ZStack {
+                        if
+                            day.dayNumber !=
+                                nil
+                        {
+                            RoundedRectangle(
+                                cornerRadius: 7,
+                                style:
+                                    .continuous
+                            )
+                            .fill(
+                                activityColor(
+                                    for:
+                                        day.focusMinutes
+                                )
+                            )
+
+                            RoundedRectangle(
+                                cornerRadius: 7,
+                                style:
+                                    .continuous
+                            )
+                            .stroke(
+                                day.isToday
+                                    ? accentColor
+                                    : Color
+                                        .white
+                                        .opacity(
+                                            0.06
+                                        ),
+                                lineWidth:
+                                    day.isToday
+                                        ? 2
+                                        : 1
+                            )
+                        }
+
+                        if
+                            let dayNumber =
+                                day.dayNumber
+                        {
+                            Text(
+                                "\(dayNumber)"
+                            )
+                            .font(
+                                .system(
+                                    size: 11,
+                                    weight:
+                                        day.isToday
+                                            ? .bold
+                                            : .medium,
+                                    design:
+                                        .rounded
+                                )
+                            )
+                            .foregroundStyle(
+                                day.focusMinutes >=
+                                    76
+                                    ? Color
+                                        .black
+                                        .opacity(
+                                            0.75
+                                        )
+                                    : day.isActive
+                                        ? Color
+                                            .white
+                                            .opacity(
+                                                0.9
+                                            )
+                                        : Color
+                                            .white
+                                            .opacity(
+                                                0.3
+                                            )
+                            )
+                        }
+                    }
+                    .frame(
+                        height: isPad ? 28 : 34
+                    )
+                }
+            }
+
+            Spacer(
+                minLength: isPad ? 6 : 12
+            )
+
+            HStack(
+                spacing: isPad ? 14 : 24
+            ) {
+                HStack(spacing: 7) {
+                    Image(
+                        systemName:
+                            "calendar"
+                    )
+                    .foregroundStyle(
+                        accentColor
+                            .opacity(
+                                0.75
+                            )
+                    )
+
+                    Text(
+                        "\(activeDays) active days"
+                    )
+                    .foregroundStyle(
+                        .white
+                    )
+                }
+
+                HStack(spacing: 7) {
+                    Image(
+                        systemName:
+                            "timer"
+                    )
+                    .foregroundStyle(
+                        accentColor
+                            .opacity(
+                                0.75
+                            )
+                    )
+
+                    Text(
+                        formattedFocusTime
+                    )
+                    .foregroundStyle(
+                        .white
+                    )
+                }
+
+                Spacer()
+            }
+            .font(
+                .system(
+                    size: isPad ? 10 : 12,
+                    weight: .semibold,
+                    design: .rounded
+                )
+            )
+        }
+        .padding(
+            isPad ? 12 : 16
+        )
+    }
+}
+
+struct MonthlyActivityWidget:
+    Widget
+{
+    let kind =
+        "MonthlyActivityWidget"
+
+    var body:
+        some WidgetConfiguration
+    {
+        StaticConfiguration(
+            kind: kind,
+            provider:
+                MonthlyActivityProvider()
+        ) { entry in
+            MonthlyActivityView(
+                entry: entry
+            )
+            .containerBackground(
+                for: .widget
+            ) {
+                Color(
+                    red: 0.035,
+                    green: 0.035,
+                    blue: 0.04
+                )
+            }
+        }
+        .configurationDisplayName(
+            "Monthly Activity"
+        )
+        .description(
+            "Mostra sua atividade de foco durante o mês."
+        )
+        .supportedFamilies([
+            .systemLarge
+        ])
+    }
+}
+
+#Preview(
+    as: .systemLarge
+) {
+    MonthlyActivityWidget()
+} timeline: {
+    monthlySampleEntry
+}ios/App/FocusWidget/FocusWidgetControl.swift
+//
+//  FocusWidgetControl.swift
+//  FocusWidget
+//
+//  Created by Mateus Gomes on 04/08/26.
+//
+
+import AppIntents
+import SwiftUI
+import WidgetKit
+
+@available(iOS 18.0, *)
+struct FocusWidgetControl:
+    ControlWidget
+{
+    var body:
+        some ControlWidgetConfiguration
+    {
+        StaticControlConfiguration(
+            kind:
+                "com.mateusgomes.focusapp.FocusWidget",
+            provider: Provider()
+        ) { value in
+            ControlWidgetToggle(
+                "Start Timer",
+                isOn: value,
+                action: StartTimerIntent()
+            ) { isRunning in
+                Label(
+                    isRunning
+                        ? "On"
+                        : "Off",
+                    systemImage: "timer"
+                )
+            }
+        }
+        .displayName("Timer")
+        .description(
+            "A control that runs a timer."
+        )
+    }
+}
+
+@available(iOS 18.0, *)
+extension FocusWidgetControl {
+    struct Provider:
+        ControlValueProvider
+    {
+        var previewValue: Bool {
+            false
+        }
+
+        func currentValue()
+            async throws -> Bool
+        {
+            let isRunning = true
+
+            return isRunning
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+struct StartTimerIntent:
+    SetValueIntent
+{
+    static let title:
+        LocalizedStringResource =
+            "Start a timer"
+
+    @Parameter(
+        title: "Timer is running"
+    )
+    var value: Bool
+
+    func perform()
+        async throws ->
+        some IntentResult
+    {
+        return .result()
+    }
+}
+ios/App/FocusWidget/TopProjectWeekWidget.swift
+//
+//  TopProjectWeekWidget.swift
+//  FocusWidget
+//
+
+import Foundation
+import SwiftUI
+import WidgetKit
+
+private struct TopProjectWeekSnapshot:
+    Decodable
+{
+    let week: TopProjectPeriodSnapshot
+}
+
+private struct TopProjectPeriodSnapshot:
+    Decodable
+{
+    let topProject:
+        TopProjectSnapshot?
+}
+
+private struct TopProjectSnapshot:
+    Decodable
+{
+    let id: String
+    let name: String
+    let emoji: String
+    let color: String
+    let focusMinutes: Int
+    let sharePercentage: Int
+}
+
+private struct TopProjectWeekEntry:
+    TimelineEntry
+{
+    let date: Date
+    let project: TopProjectSnapshot?
+}
+
+private struct TopProjectWeekProvider:
+    TimelineProvider
+{
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "analytics_widget_snapshot"
+
+    private let sampleEntry =
+        TopProjectWeekEntry(
+            date: .now,
+            project: TopProjectSnapshot(
+                id: "sample-project",
+                name: "Focus App",
+                emoji: "⌨️",
+                color: "#7EE081",
+                focusMinutes: 245,
+                sharePercentage: 58
+            )
+        )
+
+    func placeholder(
+        in context: Context
+    ) -> TopProjectWeekEntry {
+        sampleEntry
+    }
+
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            TopProjectWeekEntry
+        ) -> Void
+    ) {
+        if context.isPreview {
+            completion(sampleEntry)
+
+            return
+        }
+
+        completion(loadEntry())
+    }
+
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<TopProjectWeekEntry>
+        ) -> Void
+    ) {
+        let entry = loadEntry()
+
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ?? .now.addingTimeInterval(
+                3600
+            )
+
+        completion(
+            Timeline(
+                entries: [entry],
+                policy: .after(nextUpdate)
+            )
+        )
+    }
+
+    private func loadEntry()
+        -> TopProjectWeekEntry
+    {
+        guard let sharedDefaults =
+            UserDefaults(
+                suiteName:
+                    appGroupIdentifier
+            ),
+            let payload =
+                sharedDefaults.string(
+                    forKey: snapshotKey
+                ),
+            let payloadData =
+                payload.data(
+                    using: .utf8
+                ),
+            let snapshot =
+                try? JSONDecoder()
+                    .decode(
+                        TopProjectWeekSnapshot.self,
+                        from: payloadData
+                    )
+        else {
+            return TopProjectWeekEntry(
+                date: .now,
+                project: nil
+            )
+        }
+
+        return TopProjectWeekEntry(
+            date: .now,
+            project:
+                snapshot.week.topProject
+        )
+    }
+}
+
+private struct TopProjectWeekView:
+    View
+{
+    let entry: TopProjectWeekEntry
+
+    private var accentColor: Color {
+        guard let project =
+            entry.project
+        else {
+            return Color(
+                red: 0.45,
+                green: 0.95,
+                blue: 0.64
+            )
+        }
+
+        return Color(
+            hex: project.color
+        )
+    }
+
+    private var projectEmoji: String {
+        entry.project?.emoji ?? "✦"
+    }
+
+    private var projectName: String {
+        entry.project?.name ??
+            "No project yet"
+    }
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [
+                    accentColor.opacity(
+                        entry.project == nil
+                            ? 0.08
+                            : 0.24
+                    ),
+                    accentColor.opacity(0),
+                ],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 175
+            )
+
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(
+                        0.025
+                    ),
+                    Color.clear,
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack(
+                alignment: .leading,
+                spacing: 0
+            ) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(accentColor)
+                        .frame(
+                            width: 5,
+                            height: 5
+                        )
+
+                    Text("THIS WEEK")
+                        .font(
+                            .system(
+                                size: 9,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
+                        .tracking(1.15)
+                        .foregroundStyle(
+                            Color.white.opacity(
+                                0.38
+                            )
+                        )
+                }
+
+                Spacer(minLength: 8)
+
+                HStack {
+                    Spacer(minLength: 0)
+
+                    Text(projectEmoji)
+                        .font(
+                            .system(size: 58)
+                        )
+                        .minimumScaleFactor(
+                            0.75
+                        )
+                        .opacity(
+                            entry.project == nil
+                                ? 0.32
+                                : 1
+                        )
+
+                    Spacer(minLength: 0)
+                }
+
+                Spacer(minLength: 8)
+
+                Text(projectName)
+                    .font(
+                        .system(
+                            size: 14,
+                            weight: .semibold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        entry.project == nil
+                            ? Color.white
+                                .opacity(0.35)
+                            : Color.white
+                                .opacity(0.92)
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+            .padding(16)
+        }
+    }
+}
+
+struct TopProjectWeekWidget:
+    Widget
+{
+    let kind =
+        "TopProjectWeekWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(
+            kind: kind,
+            provider:
+                TopProjectWeekProvider()
+        ) { entry in
+            if #available(
+                iOS 17.0,
+                *
+            ) {
+                TopProjectWeekView(
+                    entry: entry
+                )
+                .containerBackground(
+                    for: .widget
+                ) {
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                }
+            } else {
+                TopProjectWeekView(
+                    entry: entry
+                )
+                .background(
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                )
+            }
+        }
+        .configurationDisplayName(
+            "Top Project — Week"
+        )
+        .description(
+            "Shows your most focused project this week."
+        )
+        .supportedFamilies([
+            .systemSmall,
+        ])
+    }
+}
+
+private extension Color {
+    init(hex: String) {
+        let cleanedHex =
+            hex.trimmingCharacters(
+                in: CharacterSet
+                    .alphanumerics
+                    .inverted
+            )
+
+        var hexValue: UInt64 = 0
+
+        Scanner(
+            string: cleanedHex
+        ).scanHexInt64(&hexValue)
+
+        let red: Double
+        let green: Double
+        let blue: Double
+
+        if cleanedHex.count == 3 {
+            red = Double(
+                (hexValue >> 8) * 17
+            ) / 255
+
+            green = Double(
+                (
+                    hexValue >> 4
+                ) & 0xF
+            ) * 17 / 255
+
+            blue = Double(
+                hexValue & 0xF
+            ) * 17 / 255
+        } else {
+            red = Double(
+                (hexValue >> 16) &
+                    0xFF
+            ) / 255
+
+            green = Double(
+                (hexValue >> 8) &
+                    0xFF
+            ) / 255
+
+            blue = Double(
+                hexValue & 0xFF
+            ) / 255
+        }
+
+        self.init(
+            red: red,
+            green: green,
+            blue: blue
+        )
+    }
+}
+
+#Preview(
+    as: .systemSmall
+) {
+    TopProjectWeekWidget()
+} timeline: {
+    TopProjectWeekEntry(
+        date: .now,
+        project: TopProjectSnapshot(
+            id: "focus-app",
+            name: "Focus App",
+            emoji: "⌨️",
+            color: "#7EE081",
+            focusMinutes: 245,
+            sharePercentage: 58
+        )
+    )
+
+    TopProjectWeekEntry(
+        date: .now,
+        project: nil
+    )
+}
+ios/App/FocusWidget/SixMonthHistoryWidget.swift
+//
+//  SixMonthHistoryWidget.swift
+//  FocusWidget
+//
+
+import Foundation
+import SwiftUI
+import UIKit
+import WidgetKit
+
+private struct SixMonthWidgetSnapshot:
+    Decodable
+{
+    let sixMonthHistory:
+        SixMonthHistorySnapshot
+}
+
+private struct SixMonthHistorySnapshot:
+    Decodable
+{
+    let totalFocusMinutes: Int
+    let averageMonthlyFocusMinutes: Int
+
+    let latestMonthChangePercentage:
+        Int?
+
+    let bestMonth:
+        SixMonthSnapshot?
+
+    let topProject:
+        SixMonthProjectSnapshot?
+
+    let months: [
+        SixMonthSnapshot
+    ]
+}
+
+private struct SixMonthSnapshot:
+    Decodable,
+    Identifiable
+{
+    var id: String {
+        key
+    }
+
+    let key: String
+    let label: String
+    let fullLabel: String
+    let focusMinutes: Int
+    let sessionsCompleted: Int
+    let activeDays: Int
+
+    let topProject:
+        SixMonthProjectSnapshot?
+}
+
+private struct SixMonthProjectSnapshot:
+    Decodable
+{
+    let id: String
+    let name: String
+    let emoji: String
+    let color: String
+    let focusMinutes: Int
+}
+
+private struct SixMonthHistoryEntry:
+    TimelineEntry
+{
+    let date: Date
+    let history: SixMonthHistorySnapshot
+}
+
+private struct SixMonthHistoryProvider:
+    TimelineProvider
+{
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "analytics_widget_snapshot"
+
+    private let sampleHistory =
+        SixMonthHistorySnapshot(
+            totalFocusMinutes: 3480,
+            averageMonthlyFocusMinutes: 580,
+            latestMonthChangePercentage: 18,
+            bestMonth:
+                SixMonthSnapshot(
+                    key: "2026-07",
+                    label: "Jul",
+                    fullLabel: "July 2026",
+                    focusMinutes: 820,
+                    sessionsCompleted: 32,
+                    activeDays: 18,
+                    topProject:
+                        SixMonthProjectSnapshot(
+                            id: "focus-app",
+                            name: "Focus App",
+                            emoji: "⌨️",
+                            color: "#7EE081",
+                            focusMinutes: 410
+                        )
+                ),
+            topProject:
+                SixMonthProjectSnapshot(
+                    id: "focus-app",
+                    name: "Focus App",
+                    emoji: "⌨️",
+                    color: "#7EE081",
+                    focusMinutes: 1280
+                ),
+            months: [
+                SixMonthSnapshot(
+                    key: "2026-03",
+                    label: "Mar",
+                    fullLabel: "March 2026",
+                    focusMinutes: 380,
+                    sessionsCompleted: 15,
+                    activeDays: 9,
+                    topProject:
+                        SixMonthProjectSnapshot(
+                            id: "studies",
+                            name: "Studies",
+                            emoji: "📚",
+                            color: "#7EA8E0",
+                            focusMinutes: 190
+                        )
+                ),
+
+                SixMonthSnapshot(
+                    key: "2026-04",
+                    label: "Apr",
+                    fullLabel: "April 2026",
+                    focusMinutes: 520,
+                    sessionsCompleted: 21,
+                    activeDays: 12,
+                    topProject:
+                        SixMonthProjectSnapshot(
+                            id: "focus-app",
+                            name: "Focus App",
+                            emoji: "⌨️",
+                            color: "#7EE081",
+                            focusMinutes: 260
+                        )
+                ),
+
+                SixMonthSnapshot(
+                    key: "2026-05",
+                    label: "May",
+                    fullLabel: "May 2026",
+                    focusMinutes: 610,
+                    sessionsCompleted: 24,
+                    activeDays: 14,
+                    topProject:
+                        SixMonthProjectSnapshot(
+                            id: "work",
+                            name: "Work",
+                            emoji: "🚀",
+                            color: "#B67EE0",
+                            focusMinutes: 280
+                        )
+                ),
+
+                SixMonthSnapshot(
+                    key: "2026-06",
+                    label: "Jun",
+                    fullLabel: "June 2026",
+                    focusMinutes: 470,
+                    sessionsCompleted: 18,
+                    activeDays: 11,
+                    topProject:
+                        SixMonthProjectSnapshot(
+                            id: "studies",
+                            name: "Studies",
+                            emoji: "📚",
+                            color: "#7EA8E0",
+                            focusMinutes: 220
+                        )
+                ),
+
+                SixMonthSnapshot(
+                    key: "2026-07",
+                    label: "Jul",
+                    fullLabel: "July 2026",
+                    focusMinutes: 820,
+                    sessionsCompleted: 32,
+                    activeDays: 18,
+                    topProject:
+                        SixMonthProjectSnapshot(
+                            id: "focus-app",
+                            name: "Focus App",
+                            emoji: "⌨️",
+                            color: "#7EE081",
+                            focusMinutes: 410
+                        )
+                ),
+
+                SixMonthSnapshot(
+                    key: "2026-08",
+                    label: "Aug",
+                    fullLabel: "August 2026",
+                    focusMinutes: 680,
+                    sessionsCompleted: 27,
+                    activeDays: 15,
+                    topProject:
+                        SixMonthProjectSnapshot(
+                            id: "focus-app",
+                            name: "Focus App",
+                            emoji: "⌨️",
+                            color: "#7EE081",
+                            focusMinutes: 350
+                        )
+                ),
+            ]
+        )
+
+    func placeholder(
+        in context: Context
+    ) -> SixMonthHistoryEntry {
+        SixMonthHistoryEntry(
+            date: .now,
+            history: sampleHistory
+        )
+    }
+
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            SixMonthHistoryEntry
+        ) -> Void
+    ) {
+        if context.isPreview {
+            completion(
+                SixMonthHistoryEntry(
+                    date: .now,
+                    history: sampleHistory
+                )
+            )
+
+            return
+        }
+
+        completion(loadEntry())
+    }
+
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<SixMonthHistoryEntry>
+        ) -> Void
+    ) {
+        let entry = loadEntry()
+
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ?? .now.addingTimeInterval(
+                3600
+            )
+
+        completion(
+            Timeline(
+                entries: [entry],
+                policy: .after(nextUpdate)
+            )
+        )
+    }
+
+    private func loadEntry()
+        -> SixMonthHistoryEntry
+    {
+        guard let sharedDefaults =
+            UserDefaults(
+                suiteName:
+                    appGroupIdentifier
+            ),
+            let payload =
+                sharedDefaults.string(
+                    forKey: snapshotKey
+                ),
+            let payloadData =
+                payload.data(
+                    using: .utf8
+                ),
+            let snapshot =
+                try? JSONDecoder()
+                    .decode(
+                        SixMonthWidgetSnapshot.self,
+                        from: payloadData
+                    )
+        else {
+            return SixMonthHistoryEntry(
+                date: .now,
+                history:
+                    SixMonthHistorySnapshot(
+                        totalFocusMinutes: 0,
+                        averageMonthlyFocusMinutes: 0,
+                        latestMonthChangePercentage: nil,
+                        bestMonth: nil,
+                        topProject: nil,
+                        months: []
+                    )
+            )
+        }
+
+        return SixMonthHistoryEntry(
+            date: .now,
+            history:
+                snapshot.sixMonthHistory
+        )
+    }
+}
+
+private struct SixMonthHistoryView:
+    View
+{
+    let entry: SixMonthHistoryEntry
+
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
+    private var history:
+        SixMonthHistorySnapshot
+    {
+        entry.history
+    }
+
+    private var accentColor: Color {
+        guard let topProject =
+            history.topProject
+        else {
+            return Color(
+                red: 0.45,
+                green: 0.95,
+                blue: 0.64
+            )
+        }
+
+        return Color(
+            historyWidgetHex:
+                topProject.color
+        )
+    }
+
+    private var maximumFocusMinutes: Int {
+        max(
+            history.months
+                .map(\.focusMinutes)
+                .max() ?? 0,
+            1
+        )
+    }
+
+    private var hasFocusData: Bool {
+        history.totalFocusMinutes > 0
+    }
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [
+                    accentColor.opacity(
+                        hasFocusData
+                            ? 0.18
+                            : 0.07
+                    ),
+
+                    accentColor.opacity(0),
+                ],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 330
+            )
+
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(
+                        0.025
+                    ),
+
+                    Color.clear,
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            if hasFocusData {
+                content
+            } else {
+                emptyState
+            }
+        }
+    }
+
+    private var content: some View {
+        VStack(
+            alignment: .leading,
+            spacing: 0
+        ) {
+            header
+
+            monthChart
+                .padding(
+                    .top,
+                    isPad ? 10 : 18
+                )
+
+            summaryCards
+                .padding(
+                    .top,
+                    isPad ? 10 : 16
+                )
+        }
+        .padding(
+            isPad ? 12 : 17
+        )
+    }
+
+    private var header: some View {
+        HStack(
+            alignment: .top,
+            spacing: 14
+        ) {
+            VStack(
+                alignment: .leading,
+                spacing: 4
+            ) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(accentColor)
+                        .frame(
+                            width: 5,
+                            height: 5
+                        )
+
+                    Text("LAST 6 MONTHS")
+                        .font(
+                            .system(
+                                size: 9,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
+                        .tracking(1.15)
+                        .foregroundStyle(
+                            Color.white.opacity(
+                                0.36
+                            )
+                        )
+                }
+
+                Text("Focus History")
+                    .font(
+                        .system(
+                            size: 18,
+                            weight: .semibold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.93
+                        )
+                    )
+            }
+
+            Spacer(minLength: 8)
+
+            VStack(
+                alignment: .trailing,
+                spacing: 3
+            ) {
+                Text(
+                    formatDuration(
+                        history.totalFocusMinutes
+                    )
+                )
+                .font(
+                    .system(
+                        size: 15,
+                        weight: .semibold,
+                        design: .monospaced
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(
+                        0.82
+                    )
+                )
+
+                Text(
+                    "\(formatDuration(history.averageMonthlyFocusMinutes)) average"
+                )
+                .font(
+                    .system(
+                        size: 9,
+                        weight: .medium,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(
+                        0.29
+                    )
+                )
+
+                changeBadge
+                    .padding(.top, 3)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var changeBadge: some View {
+        if let change =
+            history.latestMonthChangePercentage
+        {
+            HStack(spacing: 3) {
+                Image(
+                    systemName:
+                        change > 0
+                            ? "arrow.up.right"
+                            : change < 0
+                                ? "arrow.down.right"
+                                : "minus"
+                )
+
+                Text(
+                    change > 0
+                        ? "+\(change)%"
+                        : "\(change)%"
+                )
+            }
+            .font(
+                .system(
+                    size: 9,
+                    weight: .bold,
+                    design: .rounded
+                )
+            )
+            .foregroundStyle(
+                change > 0
+                    ? accentColor
+                    : change < 0
+                        ? Color(
+                            red: 0.98,
+                            green: 0.45,
+                            blue: 0.45
+                        )
+                        : Color.white.opacity(
+                            0.35
+                        )
+            )
+            .padding(
+                .horizontal,
+                7
+            )
+            .padding(
+                .vertical,
+                4
+            )
+            .background(
+                Capsule()
+                    .fill(
+                        change > 0
+                            ? accentColor.opacity(
+                                0.1
+                            )
+                            : change < 0
+                                ? Color.red.opacity(
+                                    0.09
+                                )
+                                : Color.white.opacity(
+                                    0.05
+                                )
+                    )
+            )
+        }
+    }
+
+    private var monthChart: some View {
+        HStack(
+            alignment: .bottom,
+            spacing: isPad ? 5 : 8
+        ) {
+            ForEach(
+                Array(
+                    history.months
+                        .enumerated()
+                ),
+                id: \.element.id
+            ) { index, month in
+                monthColumn(
+                    month: month,
+                    isCurrentMonth:
+                        index ==
+                        history.months.count - 1
+                )
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func monthColumn(
+        month: SixMonthSnapshot,
+        isCurrentMonth: Bool
+    ) -> some View {
+        let projectColor = Color(
+            historyWidgetHex:
+                month.topProject?.color ??
+                "#7EE081"
+        )
+
+        return VStack(
+            spacing: isPad ? 4 : 6
+        ) {
+            Text(
+                formatCompactDuration(
+                    month.focusMinutes
+                )
+            )
+            .font(
+                .system(
+                    size: 8,
+                    weight: .semibold,
+                    design: .monospaced
+                )
+            )
+            .foregroundStyle(
+                Color.white.opacity(
+                    month.focusMinutes > 0
+                        ? 0.5
+                        : 0.18
+                )
+            )
+            .lineLimit(1)
+            .minimumScaleFactor(0.65)
+
+            GeometryReader { proxy in
+                let availableHeight =
+                    max(
+                        proxy.size.height - 23,
+                        1
+                    )
+
+                let percentage =
+                    Double(
+                        month.focusMinutes
+                    ) /
+                    Double(
+                        maximumFocusMinutes
+                    )
+
+                let barHeight =
+                    month.focusMinutes > 0
+                        ? max(
+                            availableHeight *
+                            percentage,
+                            8
+                        )
+                        : 2
+
+                VStack(spacing: 4) {
+                    Spacer(minLength: 0)
+
+                    Text(
+                        month.topProject?.emoji ?? ""
+                    )
+                    .font(
+                        .system(size: 15)
+                    )
+                    .frame(height: 18)
+                    .opacity(
+                        month.topProject == nil
+                            ? 0
+                            : 1
+                    )
+
+                    RoundedRectangle(
+                        cornerRadius: 6,
+                        style: .continuous
+                    )
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                projectColor.opacity(
+                                    month.focusMinutes > 0
+                                        ? 0.95
+                                        : 0.1
+                                ),
+
+                                projectColor.opacity(
+                                    month.focusMinutes > 0
+                                        ? 0.34
+                                        : 0.04
+                                ),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(height: barHeight)
+                    .overlay {
+                        if isCurrentMonth &&
+                            month.focusMinutes > 0
+                        {
+                            RoundedRectangle(
+                                cornerRadius: 6,
+                                style: .continuous
+                            )
+                            .stroke(
+                                Color.white.opacity(
+                                    0.14
+                                ),
+                                lineWidth: 1
+                            )
+                        }
+                    }
+                }
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: .infinity
+                )
+            }
+            .frame(
+                height: isPad ? 104 : 125
+            )
+
+            Text(
+                month.label.uppercased()
+            )
+            .font(
+                .system(
+                    size: 9,
+                    weight:
+                        isCurrentMonth
+                            ? .bold
+                            : .semibold,
+                    design: .rounded
+                )
+            )
+            .foregroundStyle(
+                isCurrentMonth
+                    ? projectColor
+                    : Color.white.opacity(
+                        0.36
+                    )
+            )
+
+            Text(
+                "\(month.activeDays)d"
+            )
+            .font(
+                .system(
+                    size: 8,
+                    weight: .medium,
+                    design: .rounded
+                )
+            )
+            .foregroundStyle(
+                Color.white.opacity(
+                    0.2
+                )
+            )
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var summaryCards: some View {
+        HStack(
+            spacing: isPad ? 6 : 10
+        ) {
+            bestMonthCard
+
+            topProjectCard
+        }
+    }
+
+    private var bestMonthCard: some View {
+        HStack(
+            spacing: isPad ? 6 : 10
+        ) {
+            ZStack {
+                RoundedRectangle(
+                    cornerRadius: 11,
+                    style: .continuous
+                )
+                .fill(
+                    Color(
+                        red: 1,
+                        green: 0.75,
+                        blue: 0.25
+                    )
+                    .opacity(0.09)
+                )
+
+                Image(
+                    systemName: "trophy.fill"
+                )
+                .font(
+                    .system(size: 14)
+                )
+                .foregroundStyle(
+                    Color(
+                        red: 1,
+                        green: 0.75,
+                        blue: 0.25
+                    )
+                    .opacity(0.85)
+                )
+            }
+            .frame(
+                width: isPad ? 28 : 34,
+                height: isPad ? 28 : 34
+            )
+
+            VStack(
+                alignment: .leading,
+                spacing: 2
+            ) {
+                Text("BEST MONTH")
+                    .font(
+                        .system(
+                            size: 8,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .tracking(0.75)
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.24
+                        )
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(
+                        isPad ? 0.7 : 1
+                    )
+                    .allowsTightening(true)
+
+                Text(
+                    history.bestMonth?.fullLabel ??
+                    "No data"
+                )
+                .font(
+                    .system(
+                        size: 10,
+                        weight: .semibold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(
+                        0.7
+                    )
+                )
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+                Text(
+                    formatDuration(
+                        history.bestMonth?.focusMinutes ?? 0
+                    )
+                )
+                .font(
+                    .system(
+                        size: 9,
+                        weight: .medium,
+                        design: .monospaced
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(
+                        0.32
+                    )
+                )
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(
+            isPad ? 8 : 11
+        )
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(
+                cornerRadius: 15,
+                style: .continuous
+            )
+            .fill(
+                Color.white.opacity(
+                    0.028
+                )
+            )
+            .overlay {
+ios/App/FocusWidget/FocusWidget.swift
+//
+//  FocusWidget.swift
+//  FocusWidget
+//
+//  Created by Mateus Gomes on 04/08/26.
+//
+
+import SwiftUI
+import WidgetKit
+
+struct StreakBadgeEntry: TimelineEntry {
+    let date: Date
+    let currentStreak: Int
+    let longestStreak: Int
+    let badgeName: String
+    let badgeIcon: String
+}
+
+struct StreakBadgeProvider: TimelineProvider {
+    private let sampleEntry = StreakBadgeEntry(
+        date: .now,
+        currentStreak: 4,
+        longestStreak: 12,
+        badgeName: "First Drop",
+        badgeIcon: "💧"
+    )
+
+    func placeholder(
+        in context: Context
+    ) -> StreakBadgeEntry {
+        sampleEntry
+    }
+
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            StreakBadgeEntry
+        ) -> Void
+    ) {
+        completion(sampleEntry)
+    }
+
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<StreakBadgeEntry>
+        ) -> Void
+    ) {
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ?? .now.addingTimeInterval(3600)
+
+        let timeline = Timeline(
+            entries: [sampleEntry],
+            policy: .after(nextUpdate)
+        )
+
+        completion(timeline)
+    }
+}
+
+struct StreakBadgeView: View {
+    let entry: StreakBadgeEntry
+
+    private let accentColor = Color(
+        red: 0.45,
+        green: 0.95,
+        blue: 0.64
+    )
+
+    private var streakUnit: String {
+        entry.currentStreak == 1
+            ? "day"
+            : "days"
+    }
+
+    var body: some View {
+        VStack(
+            alignment: .leading,
+            spacing: 0
+        ) {
+            HStack {
+                Text("STREAK")
+                    .font(
+                        .system(
+                            size: 10,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .tracking(1.2)
+                    .foregroundStyle(
+                        Color.white.opacity(0.35)
+                    )
+
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Image(
+                        systemName: "trophy.fill"
+                    )
+
+                    Text(
+                        "\(entry.longestStreak)"
+                    )
+                }
+                .font(
+                    .system(
+                        size: 10,
+                        weight: .semibold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(0.4)
+                )
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(
+                alignment: .center,
+                spacing: 12
+            ) {
+                ZStack {
+                    RoundedRectangle(
+                        cornerRadius: 16,
+                        style: .continuous
+                    )
+                    .fill(
+                        accentColor.opacity(0.1)
+                    )
+
+                    RoundedRectangle(
+                        cornerRadius: 16,
+                        style: .continuous
+                    )
+                    .stroke(
+                        accentColor.opacity(0.18),
+                        lineWidth: 1
+                    )
+
+                    Text(entry.badgeIcon)
+                        .font(
+                            .system(size: 29)
+                        )
+                }
+                .frame(
+                    width: 54,
+                    height: 54
+                )
+
+                VStack(
+                    alignment: .leading,
+                    spacing: -2
+                ) {
+                    Text(
+                        "\(entry.currentStreak)"
+                    )
+                    .font(
+                        .system(
+                            size: 40,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        accentColor
+                    )
+                    .minimumScaleFactor(0.7)
+
+                    Text(streakUnit)
+                        .font(
+                            .system(
+                                size: 11,
+                                weight: .semibold,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundStyle(
+                            Color.white.opacity(0.45)
+                        )
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            Text(entry.badgeName)
+                .font(
+                    .system(
+                        size: 14,
+                        weight: .semibold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(.white)
+                .lineLimit(1)
+
+            Text("Current badge")
+                .font(
+                    .system(
+                        size: 10,
+                        weight: .medium
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(0.3)
+                )
+                .padding(.top, 2)
+        }
+        .padding(15)
+    }
+}
+
+struct FocusWidget: Widget {
+    let kind = "StreakBadgeWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(
+            kind: kind,
+            provider: StreakBadgeProvider()
+        ) { entry in
+            if #available(iOS 17.0, *) {
+                StreakBadgeView(
+                    entry: entry
+                )
+                .containerBackground(
+                    for: .widget
+                ) {
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                }
+            } else {
+                StreakBadgeView(
+                    entry: entry
+                )
+                .background(
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                )
+            }
+        }
+        .configurationDisplayName(
+            "Streak Badge"
+        )
+        .description(
+            "Mostra sua ofensiva e sua insígnia atual."
+        )
+        .supportedFamilies([
+            .systemSmall
+        ])
+    }
+}
+
+#Preview(
+    as: .systemSmall
+) {
+    FocusWidget()
+} timeline: {
+    StreakBadgeEntry(
+        date: .now,
+        currentStreak: 4,
+        longestStreak: 12,
+        badgeName: "First Drop",
+        badgeIcon: "💧"
+    )
+}ios/App/FocusWidget/CompleteGoalIntent.swift
+//
+//  CompleteGoalIntent.swift
+//  FocusWidget
+//
+
+import AppIntents
+import Foundation
+import WidgetKit
+
+private struct InteractiveGoal:
+    Codable
+{
+    let id: String
+    let title: String
+    var completed: Bool
+}
+
+private struct InteractiveGoalsSnapshot:
+    Codable
+{
+    let year: Int
+    var completedCount: Int
+    let totalCount: Int
+    var goals: [InteractiveGoal]
+}
+
+@available(iOS 17.0, *)
+struct CompleteGoalIntent:
+    AppIntent
+{
+    static var title:
+        LocalizedStringResource
+    {
+        "Complete Goal"
+    }
+
+    static var description:
+        IntentDescription
+    {
+        IntentDescription(
+            "Marks a yearly goal as completed."
+        )
+    }
+
+    static var openAppWhenRun: Bool {
+        false
+    }
+
+    @Parameter(
+        title: "Goal ID"
+    )
+    var goalID: String
+
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "goals_widget_snapshot"
+
+    private let pendingCompletionsKey =
+        "goals_widget_pending_completions"
+
+    private let widgetKind =
+        "GoalsWidget"
+
+    init() {}
+
+    init(
+        goalID: String
+    ) {
+        self.goalID = goalID
+    }
+
+    func perform() async throws
+        -> some IntentResult
+    {
+        guard let sharedDefaults =
+            UserDefaults(
+                suiteName:
+                    appGroupIdentifier
+            )
+        else {
+            return .result()
+        }
+
+        var shouldQueueCompletion =
+            true
+
+        if
+            let payload =
+                sharedDefaults.string(
+                    forKey: snapshotKey
+                ),
+            let payloadData =
+                payload.data(
+                    using: .utf8
+                ),
+            var snapshot =
+                try? JSONDecoder()
+                    .decode(
+                        InteractiveGoalsSnapshot
+                            .self,
+                        from: payloadData
+                    ),
+            let goalIndex =
+                snapshot.goals
+                    .firstIndex(
+                        where: {
+                            $0.id == goalID
+                        }
+                    )
+        {
+            if snapshot.goals[
+                goalIndex
+            ].completed {
+                shouldQueueCompletion =
+                    false
+            } else {
+                snapshot.goals[
+                    goalIndex
+                ].completed = true
+
+                snapshot.completedCount =
+                    min(
+                        snapshot
+                            .completedCount +
+                            1,
+                        snapshot.totalCount
+                    )
+
+                if
+                    let updatedData =
+                        try? JSONEncoder()
+                            .encode(
+                                snapshot
+                            ),
+                    let updatedPayload =
+                        String(
+                            data:
+                                updatedData,
+                            encoding: .utf8
+                        )
+                {
+                    sharedDefaults.set(
+                        updatedPayload,
+                        forKey:
+                            snapshotKey
+                    )
+                }
+            }
+        }
+
+        if shouldQueueCompletion {
+            var pendingGoalIDs =
+                sharedDefaults
+                    .stringArray(
+                        forKey:
+                            pendingCompletionsKey
+                    ) ?? []
+
+            if !pendingGoalIDs
+                .contains(goalID)
+            {
+                pendingGoalIDs.append(
+                    goalID
+                )
+
+                sharedDefaults.set(
+                    pendingGoalIDs,
+                    forKey:
+                        pendingCompletionsKey
+                )
+            }
+        }
+
+        WidgetCenter.shared
+            .reloadTimelines(
+                ofKind: widgetKind
+            )
+
+        return .result()
+    }
+}
+ios/App/FocusWidget/FocusActivityAttributes.swift
+//
+//  FocusActivityAttributes.swift
+//  Focus
+//
+
+import ActivityKit
+import Foundation
+
+@available(iOS 16.1, *)
+struct FocusActivityAttributes:
+    ActivityAttributes
+{
+    enum SessionType:
+        String,
+        Codable,
+        Hashable
+    {
+        case work
+        case shortBreak
+        case longBreak
+    }
+
+    enum TimerStatus:
+        String,
+        Codable,
+        Hashable
+    {
+        case running
+        case paused
+    }
+
+    struct ContentState:
+        Codable,
+        Hashable
+    {
+        let sessionType: SessionType
+        let status: TimerStatus
+        let endDate: Date?
+        let remainingSeconds: Int
+        let projectName: String?
+        let taskName: String?
+        let badgeIcon: String?
+    }
+
+    let sessionId: String
+}ios/App/FocusWidget/TopProjectMonthWidget.swift
+//
+//  TopProjectMonthWidget.swift
+//  FocusWidget
+//
+
+import Foundation
+import SwiftUI
+import WidgetKit
+
+private struct TopProjectMonthSnapshot:
+    Decodable
+{
+    let month:
+        TopProjectMonthPeriodSnapshot
+}
+
+private struct TopProjectMonthPeriodSnapshot:
+    Decodable
+{
+    let topProject:
+        TopProjectMonthProjectSnapshot?
+}
+
+private struct TopProjectMonthProjectSnapshot:
+    Decodable
+{
+    let id: String
+    let name: String
+    let emoji: String
+    let color: String
+    let focusMinutes: Int
+    let sharePercentage: Int
+}
+
+private struct TopProjectMonthEntry:
+    TimelineEntry
+{
+    let date: Date
+
+    let project:
+        TopProjectMonthProjectSnapshot?
+}
+
+private struct TopProjectMonthProvider:
+    TimelineProvider
+{
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "analytics_widget_snapshot"
+
+    private let sampleEntry =
+        TopProjectMonthEntry(
+            date: .now,
+            project:
+                TopProjectMonthProjectSnapshot(
+                    id: "sample-project",
+                    name: "Focus App",
+                    emoji: "⌨️",
+                    color: "#7EE081",
+                    focusMinutes: 820,
+                    sharePercentage: 62
+                )
+        )
+
+    func placeholder(
+        in context: Context
+    ) -> TopProjectMonthEntry {
+        sampleEntry
+    }
+
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            TopProjectMonthEntry
+        ) -> Void
+    ) {
+        if context.isPreview {
+            completion(sampleEntry)
+
+            return
+        }
+
+        completion(loadEntry())
+    }
+
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<TopProjectMonthEntry>
+        ) -> Void
+    ) {
+        let entry = loadEntry()
+
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ?? .now.addingTimeInterval(
+                3600
+            )
+
+        completion(
+            Timeline(
+                entries: [entry],
+                policy: .after(nextUpdate)
+            )
+        )
+    }
+
+    private func loadEntry()
+        -> TopProjectMonthEntry
+    {
+        guard let sharedDefaults =
+            UserDefaults(
+                suiteName:
+                    appGroupIdentifier
+            ),
+            let payload =
+                sharedDefaults.string(
+                    forKey: snapshotKey
+                ),
+            let payloadData =
+                payload.data(
+                    using: .utf8
+                ),
+            let snapshot =
+                try? JSONDecoder()
+                    .decode(
+                        TopProjectMonthSnapshot.self,
+                        from: payloadData
+                    )
+        else {
+            return TopProjectMonthEntry(
+                date: .now,
+                project: nil
+            )
+        }
+
+        return TopProjectMonthEntry(
+            date: .now,
+            project:
+                snapshot.month.topProject
+        )
+    }
+}
+
+private struct TopProjectMonthView:
+    View
+{
+    let entry: TopProjectMonthEntry
+
+    private var accentColor: Color {
+        guard let project =
+            entry.project
+        else {
+            return Color(
+                red: 0.45,
+                green: 0.95,
+                blue: 0.64
+            )
+        }
+
+        return Color(
+            monthWidgetHex:
+                project.color
+        )
+    }
+
+    private var projectEmoji: String {
+        entry.project?.emoji ?? "✦"
+    }
+
+    private var projectName: String {
+        entry.project?.name ??
+            "No project yet"
+    }
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [
+                    accentColor.opacity(
+                        entry.project == nil
+                            ? 0.08
+                            : 0.24
+                    ),
+
+                    accentColor.opacity(0),
+                ],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 175
+            )
+
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(
+                        0.025
+                    ),
+
+                    Color.clear,
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack(
+                alignment: .leading,
+                spacing: 0
+            ) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(accentColor)
+                        .frame(
+                            width: 5,
+                            height: 5
+                        )
+
+                    Text("THIS MONTH")
+                        .font(
+                            .system(
+                                size: 9,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
+                        .tracking(1.15)
+                        .foregroundStyle(
+                            Color.white.opacity(
+                                0.38
+                            )
+                        )
+                }
+
+                Spacer(minLength: 8)
+
+                HStack {
+                    Spacer(minLength: 0)
+
+                    Text(projectEmoji)
+                        .font(
+                            .system(size: 58)
+                        )
+                        .minimumScaleFactor(
+                            0.75
+                        )
+                        .opacity(
+                            entry.project == nil
+                                ? 0.32
+                                : 1
+                        )
+
+                    Spacer(minLength: 0)
+                }
+
+                Spacer(minLength: 8)
+
+                Text(projectName)
+                    .font(
+                        .system(
+                            size: 14,
+                            weight: .semibold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        entry.project == nil
+                            ? Color.white
+                                .opacity(0.35)
+                            : Color.white
+                                .opacity(0.92)
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+            .padding(16)
+        }
+    }
+}
+
+struct TopProjectMonthWidget:
+    Widget
+{
+    let kind =
+        "TopProjectMonthWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(
+            kind: kind,
+            provider:
+                TopProjectMonthProvider()
+        ) { entry in
+            if #available(
+                iOS 17.0,
+                *
+            ) {
+                TopProjectMonthView(
+                    entry: entry
+                )
+                .containerBackground(
+                    for: .widget
+                ) {
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                }
+            } else {
+                TopProjectMonthView(
+                    entry: entry
+                )
+                .background(
+                    Color(
+                        red: 0.035,
+                        green: 0.035,
+                        blue: 0.04
+                    )
+                )
+            }
+        }
+        .configurationDisplayName(
+            "Top Project — Month"
+        )
+        .description(
+            "Shows your most focused project this month."
+        )
+        .supportedFamilies([
+            .systemSmall,
+        ])
+    }
+}
+
+private extension Color {
+    init(monthWidgetHex: String) {
+        let cleanedHex =
+            monthWidgetHex
+                .trimmingCharacters(
+                    in: CharacterSet
+                        .alphanumerics
+                        .inverted
+                )
+
+        var hexValue: UInt64 = 0
+
+        Scanner(
+            string: cleanedHex
+        ).scanHexInt64(&hexValue)
+
+        let red: Double
+        let green: Double
+        let blue: Double
+
+        if cleanedHex.count == 3 {
+            red = Double(
+                (hexValue >> 8) * 17
+            ) / 255
+
+            green = Double(
+                (
+                    hexValue >> 4
+                ) & 0xF
+            ) * 17 / 255
+
+            blue = Double(
+                hexValue & 0xF
+            ) * 17 / 255
+        } else {
+            red = Double(
+                (hexValue >> 16) &
+                    0xFF
+            ) / 255
+
+            green = Double(
+                (hexValue >> 8) &
+                    0xFF
+            ) / 255
+
+            blue = Double(
+                hexValue & 0xFF
+            ) / 255
+        }
+
+        self.init(
+            red: red,
+            green: green,
+            blue: blue
+        )
+    }
+}
+
+#Preview(
+    as: .systemSmall
+) {
+    TopProjectMonthWidget()
+} timeline: {
+    TopProjectMonthEntry(
+        date: .now,
+        project:
+            TopProjectMonthProjectSnapshot(
+                id: "focus-app",
+                name: "Focus App",
+                emoji: "⌨️",
+                color: "#7EE081",
+                focusMinutes: 820,
+                sharePercentage: 62
+            )
+    )
+
+    TopProjectMonthEntry(
+        date: .now,
+        project: nil
+    )
+}
+ios/App/FocusWidget/FocusWidgetBundle.swift
+//
+//  FocusWidgetBundle.swift
+//  FocusWidget
+//
+//  Created by Mateus Gomes on 04/08/26.
+//
+
+import SwiftUI
+import WidgetKit
+
+@main
+struct FocusWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        FocusWidget()
+        TopProjectWeekWidget()
+        TopProjectMonthWidget()
+        TopProjectsWeekWidget()
+        SixMonthHistoryWidget()
+        WeeklyActivityWidget()
+        MonthlyActivityWidget()
+        GoalsWidget()
+        FocusLiveActivity()
+
+        if #available(iOS 18.0, *) {
+            FocusWidgetControl()
+        }
+    }
+}
+ios/App/FocusWidget/FocusLiveActivity.swift
+//
+//  FocusLiveActivity.swift
+//  FocusWidget
+//
+
+import ActivityKit
+import Foundation
+import SwiftUI
+import WidgetKit
+
+private let focusAccentColor = Color(
+    red: 0.45,
+    green: 0.95,
+    blue: 0.64
+)
+
+private extension FocusActivityAttributes.SessionType {
+    var title: String {
+        switch self {
+        case .work:
+            return "FOCUS"
+
+        case .shortBreak:
+            return "SHORT BREAK"
+
+        case .longBreak:
+            return "LONG BREAK"
+        }
+    }
+
+    var compactIcon: String {
+        switch self {
+        case .work:
+            return "timer"
+
+        case .shortBreak:
+            return "cup.and.saucer.fill"
+
+        case .longBreak:
+            return "moon.stars.fill"
+        }
+    }
+}
+
+private extension FocusActivityAttributes.TimerStatus {
+    var title: String {
+        switch self {
+        case .running:
+            return "Running"
+
+        case .paused:
+            return "Paused"
+        }
+    }
+}
+
+private struct FocusActivityTimerText: View {
+    let state: FocusActivityAttributes.ContentState
+    let fontSize: CGFloat
+
+    private var formattedRemainingTime: String {
+        let safeSeconds = max(
+            0,
+            state.remainingSeconds
+        )
+
+        let hours = safeSeconds / 3600
+        let minutes =
+            (safeSeconds % 3600) / 60
+        let seconds = safeSeconds % 60
+
+        if hours > 0 {
+            return String(
+                format: "%d:%02d:%02d",
+                hours,
+                minutes,
+                seconds
+            )
+        }
+
+        return String(
+            format: "%02d:%02d",
+            minutes,
+            seconds
+        )
+    }
+
+    var body: some View {
+        Group {
+            if
+                state.status == .running,
+                let endDate = state.endDate
+            {
+                Text(
+                    timerInterval:
+                        Date()...max(
+                            endDate,
+                            Date().addingTimeInterval(1)
+                        ),
+                    countsDown: true
+                )
+            } else {
+                Text(formattedRemainingTime)
+            }
+        }
+        .font(
+            .system(
+                size: fontSize,
+                weight: .bold,
+                design: .rounded
+            )
+        )
+        .monospacedDigit()
+        .lineLimit(1)
+        .minimumScaleFactor(0.65)
+    }
+}
+
+private struct FocusProjectTitleView: View {
+    let state: FocusActivityAttributes.ContentState
+    let fontSize: CGFloat
+
+    var body: some View {
+        if
+            let projectName = state.projectName,
+            !projectName.isEmpty
+        {
+            HStack(spacing: 6) {
+                if
+                    let badgeIcon = state.badgeIcon,
+                    !badgeIcon.isEmpty
+                {
+                    Text(badgeIcon)
+                        .font(
+                            .system(
+                                size: fontSize + 1
+                            )
+                        )
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+
+                Text(projectName)
+                    .font(
+                        .system(
+                            size: fontSize,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .truncationMode(.tail)
+            }
+            .frame(
+                maxWidth: .infinity,
+                alignment: .center
+            )
+            .multilineTextAlignment(.center)
+        }
+    }
+}
+
+private struct FocusLockScreenDetailsView: View {
+    let state: FocusActivityAttributes.ContentState
+
+    private var hasProject: Bool {
+        guard let projectName =
+            state.projectName
+        else {
+            return false
+        }
+
+        return !projectName.isEmpty
+    }
+
+    private var hasTask: Bool {
+        guard let taskName =
+            state.taskName
+        else {
+            return false
+        }
+
+        return !taskName.isEmpty
+    }
+
+    var body: some View {
+        if hasProject || hasTask {
+            VStack(spacing: 4) {
+                FocusProjectTitleView(
+                    state: state,
+                    fontSize: 15
+                )
+
+                if
+                    let taskName =
+                        state.taskName,
+                    !taskName.isEmpty
+                {
+                    Text(taskName)
+                        .font(
+                            .system(
+                                size: 11,
+                                weight: .medium,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundStyle(
+                            Color.white.opacity(
+                                0.55
+                            )
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                        .truncationMode(.tail)
+                }
+            }
+            .frame(
+                maxWidth: .infinity,
+                alignment: .center
+            )
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 16)
+        }
+    }
+}
+
+private struct FocusExpandedDetailsView: View {
+    let state: FocusActivityAttributes.ContentState
+
+    var body: some View {
+        VStack(spacing: 2) {
+            FocusProjectTitleView(
+                state: state,
+                fontSize: 12
+            )
+
+            if
+                let taskName =
+                    state.taskName,
+                !taskName.isEmpty
+            {
+                Text(taskName)
+                    .font(
+                        .system(
+                            size: 10,
+                            weight: .medium,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.55
+                        )
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .truncationMode(.tail)
+            }
+        }
+        .frame(
+            maxWidth: .infinity,
+            alignment: .center
+        )
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 38)
+        .padding(.top, 1)
+        .padding(.bottom, 2)
+    }
+}
+
+private struct FocusLockScreenActivityView: View {
+    let context:
+        ActivityViewContext<
+            FocusActivityAttributes
+        >
+
+    private var state:
+        FocusActivityAttributes.ContentState
+    {
+        context.state
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 6) {
+                Image(
+                    systemName:
+                        state.sessionType
+                            .compactIcon
+                )
+                .font(
+                    .system(
+                        size: 13,
+                        weight: .semibold
+                    )
+                )
+
+                Text(
+                    state.sessionType.title
+                )
+                .font(
+                    .system(
+                        size: 12,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .tracking(1.3)
+            }
+            .foregroundStyle(
+                focusAccentColor
+            )
+            .lineLimit(1)
+
+            FocusActivityTimerText(
+                state: state,
+                fontSize: 38
+            )
+            .foregroundStyle(.white)
+            .frame(
+                maxWidth: .infinity,
+                alignment: .center
+            )
+
+            Text(state.status.title)
+                .font(
+                    .system(
+                        size: 11,
+                        weight: .medium,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(0.45)
+                )
+
+            Rectangle()
+                .fill(
+                    Color.white.opacity(0.08)
+                )
+                .frame(height: 1)
+                .padding(.horizontal, 2)
+
+            FocusLockScreenDetailsView(
+                state: state
+            )
+        }
+        .frame(
+            maxWidth: .infinity,
+            alignment: .center
+        )
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .activityBackgroundTint(
+            Color(
+                red: 0.035,
+                green: 0.035,
+                blue: 0.04
+            )
+        )
+        .activitySystemActionForegroundColor(
+            .white
+        )
+    }
+}
+
+struct FocusLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(
+            for: FocusActivityAttributes.self
+        ) { context in
+            FocusLockScreenActivityView(
+                context: context
+            )
+            .widgetURL(
+                URL(
+                    string:
+                        "com.mateusgomes.focusapp://timer"
+                )
+            )
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(
+                    .leading
+                ) {
+                    HStack {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    focusAccentColor
+                                        .opacity(0.14)
+                                )
+
+                            Image(
+                                systemName:
+                                    context
+                                        .state
+                                        .sessionType
+                                        .compactIcon
+                            )
+                            .font(
+                                .system(
+                                    size: 14,
+                                    weight: .semibold
+                                )
+                            )
+                            .foregroundStyle(
+                                focusAccentColor
+                            )
+                        }
+                        .frame(
+                            width: 36,
+                            height: 36
+                        )
+                    }
+                    .frame(
+                        width: 72,
+                        alignment: .center
+                    )
+                }
+
+                DynamicIslandExpandedRegion(
+                    .trailing
+                ) {
+                    HStack {
+                        FocusActivityTimerText(
+                            state: context.state,
+                            fontSize: 18
+                        )
+                        .foregroundStyle(.white)
+                    }
+                    .frame(
+                        width: 72,
+                        alignment: .center
+                    )
+                }
+
+                DynamicIslandExpandedRegion(
+                    .center
+                ) {
+                    Text(
+                        context
+                            .state
+                            .sessionType
+                            .title
+                    )
+                    .font(
+                        .system(
+                            size: 10,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .tracking(1.2)
+                    .foregroundStyle(
+                        focusAccentColor
+                    )
+                    .lineLimit(1)
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .center
+                    )
+                }
+
+                DynamicIslandExpandedRegion(
+                    .bottom
+                ) {
+                    FocusExpandedDetailsView(
+                        state: context.state
+                    )
+                }
+            } compactLeading: {
+                Image(
+                    systemName:
+                        context
+                            .state
+                            .sessionType
+                            .compactIcon
+                )
+                .font(
+                    .system(
+                        size: 13,
+                        weight: .semibold
+                    )
+                )
+                .foregroundStyle(
+                    focusAccentColor
+                )
+            } compactTrailing: {
+                FocusActivityTimerText(
+                    state: context.state,
+                    fontSize: 13
+                )
+                .foregroundStyle(
+                    focusAccentColor
+                )
+                .frame(
+                    width: 54,
+                    alignment: .center
+                )
+            } minimal: {
+                Image(
+                    systemName:
+                        context
+                            .state
+                            .sessionType
+                            .compactIcon
+                )
+                .font(
+                    .system(
+                        size: 12,
+                        weight: .bold
+                    )
+                )
+                .foregroundStyle(
+                    focusAccentColor
+                )
+            }
+            .widgetURL(
+                URL(
+                    string:
+                        "com.mateusgomes.focusapp://timer"
+                )
+            )
+            .keylineTint(
+                focusAccentColor
+            )
+        }
+    }
+}ios/App/FocusWidget/FocusLiveActivityTest.swift
+//
+//  FocusLiveActivityTest.swift
+//  Focus
+//
+
+import ActivityKit
+import Foundation
+
+enum FocusLiveActivityTest {
+    @available(iOS 16.2, *)
+    static func start() {
+        guard ActivityAuthorizationInfo()
+            .areActivitiesEnabled
+        else {
+            print(
+                "Live Activities are disabled."
+            )
+            return
+        }
+
+        guard Activity<
+            FocusActivityAttributes
+        >.activities.isEmpty
+        else {
+            print(
+                "A Focus Live Activity is already running."
+            )
+            return
+        }
+
+        let duration: TimeInterval = 120
+
+        let endDate = Date()
+            .addingTimeInterval(duration)
+
+        let attributes =
+            FocusActivityAttributes(
+                sessionId: UUID().uuidString
+            )
+
+        let state =
+            FocusActivityAttributes
+                .ContentState(
+                    sessionType: .work,
+                    status: .running,
+                    endDate: endDate,
+                    remainingSeconds: Int(
+                        duration
+                    ),
+                    projectName: "Focus App",
+                    taskName:
+                        "Testing Dynamic Island",
+                    badgeIcon: "🔥"
+                )
+
+        let content = ActivityContent(
+            state: state,
+            staleDate:
+                endDate.addingTimeInterval(
+                    30
+                )
+        )
+
+        do {
+            let activity = try Activity<
+                FocusActivityAttributes
+            >.request(
+                attributes: attributes,
+                content: content,
+                pushType: nil
+            )
+
+            print(
+                "Live Activity started: \(activity.id)"
+            )
+        } catch {
+            print(
+                "Could not start Live Activity: \(error)"
+            )
+        }
+    }
+}ios/App/FocusWidget/WeeklyActivityWidget.swift
+//
+//  WeeklyActivityWidget.swift
+//  FocusWidget
+//
+
+import Foundation
+import SwiftUI
+import UIKit
+import WidgetKit
+
+struct WeeklyActivityDay:
+    Codable,
+    Identifiable
+{
+    let date: String
+    let label: String
+    let focusMinutes: Int
+    let isToday: Bool
+
+    var id: String {
+        date
+    }
+
+    var isActive: Bool {
+        focusMinutes > 0
+    }
+}
+
+private struct WeeklyActivityWidgetSnapshot:
+    Codable
+{
+    let currentStreak: Int
+    let totalFocusMinutes: Int
+    let days: [WeeklyActivityDay]
+}
+
+struct WeeklyActivityEntry:
+    TimelineEntry
+{
+    let date: Date
+    let currentStreak: Int
+    let totalFocusMinutes: Int
+    let days: [WeeklyActivityDay]
+}
+
+private let weeklySampleEntry =
+    WeeklyActivityEntry(
+        date: .now,
+        currentStreak: 4,
+        totalFocusMinutes: 135,
+        days: [
+            WeeklyActivityDay(
+                date: "2026-08-03",
+                label: "M",
+                focusMinutes: 25,
+                isToday: false
+            ),
+            WeeklyActivityDay(
+                date: "2026-08-04",
+                label: "T",
+                focusMinutes: 50,
+                isToday: false
+            ),
+            WeeklyActivityDay(
+                date: "2026-08-05",
+                label: "W",
+                focusMinutes: 35,
+                isToday: true
+            ),
+            WeeklyActivityDay(
+                date: "2026-08-06",
+                label: "T",
+                focusMinutes: 25,
+                isToday: false
+            ),
+            WeeklyActivityDay(
+                date: "2026-08-07",
+                label: "F",
+                focusMinutes: 0,
+                isToday: false
+            ),
+            WeeklyActivityDay(
+                date: "2026-08-08",
+                label: "S",
+                focusMinutes: 0,
+                isToday: false
+            ),
+            WeeklyActivityDay(
+                date: "2026-08-09",
+                label: "S",
+                focusMinutes: 0,
+                isToday: false
+            )
+        ]
+    )
+
+struct WeeklyActivityProvider:
+    TimelineProvider
+{
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "weekly_activity_widget_snapshot"
+
+    func placeholder(
+        in context: Context
+    ) -> WeeklyActivityEntry {
+        weeklySampleEntry
+    }
+
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            WeeklyActivityEntry
+        ) -> Void
+    ) {
+        if context.isPreview {
+            completion(
+                weeklySampleEntry
+            )
+
+            return
+        }
+
+        completion(
+            loadEntry()
+        )
+    }
+
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<
+                WeeklyActivityEntry
+            >
+        ) -> Void
+    ) {
+        let entry =
+            loadEntry()
+
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ??
+            .now.addingTimeInterval(
+                3600
+            )
+
+        completion(
+            Timeline(
+                entries: [entry],
+                policy: .after(
+                    nextUpdate
+                )
+            )
+        )
+    }
+
+    private func loadEntry()
+        -> WeeklyActivityEntry
+    {
+        guard
+            let sharedDefaults =
+                UserDefaults(
+                    suiteName:
+                        appGroupIdentifier
+                ),
+            let payload =
+                sharedDefaults.string(
+                    forKey:
+                        snapshotKey
+                ),
+            let data =
+                payload.data(
+                    using: .utf8
+                ),
+            let snapshot =
+                try? JSONDecoder()
+                    .decode(
+                        WeeklyActivityWidgetSnapshot
+                            .self,
+                        from: data
+                    )
+        else {
+            return makeEmptyEntry()
+        }
+
+        return WeeklyActivityEntry(
+            date: .now,
+            currentStreak:
+                snapshot.currentStreak,
+            totalFocusMinutes:
+                snapshot.totalFocusMinutes,
+            days: snapshot.days
+        )
+    }
+
+    private func makeEmptyEntry()
+        -> WeeklyActivityEntry
+    {
+        var calendar =
+            Calendar(
+                identifier: .gregorian
+            )
+
+        calendar.firstWeekday = 2
+
+        let today = Date()
+
+        let weekStart =
+            calendar.dateInterval(
+                of: .weekOfYear,
+                for: today
+            )?.start ?? today
+
+        let formatter =
+            DateFormatter()
+
+        formatter.calendar = calendar
+        formatter.locale =
+            Locale(
+                identifier: "en_US_POSIX"
+            )
+        formatter.dateFormat =
+            "yyyy-MM-dd"
+
+        let labels = [
+            "M",
+            "T",
+            "W",
+            "T",
+            "F",
+            "S",
+            "S"
+        ]
+
+        let days =
+            (0..<7).compactMap {
+                index
+                    -> WeeklyActivityDay? in
+
+                guard
+                    let date =
+                        calendar.date(
+                            byAdding: .day,
+                            value: index,
+                            to: weekStart
+                        )
+                else {
+                    return nil
+                }
+
+                return WeeklyActivityDay(
+                    date:
+                        formatter.string(
+                            from: date
+                        ),
+                    label:
+                        labels[index],
+                    focusMinutes: 0,
+                    isToday:
+                        calendar.isDateInToday(
+                            date
+                        )
+                )
+            }
+
+        return WeeklyActivityEntry(
+            date: .now,
+            currentStreak: 0,
+            totalFocusMinutes: 0,
+            days: days
+        )
+    }
+}
+
+struct WeeklyActivityView:
+    View
+{
+    let entry:
+        WeeklyActivityEntry
+
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
+    private let accentColor =
+        Color(
+            red: 0.45,
+            green: 0.95,
+            blue: 0.64
+        )
+
+    private var activeDays: Int {
+        entry.days.filter(
+            \.isActive
+        ).count
+    }
+
+    private var formattedFocusTime:
+        String
+    {
+        let hours =
+            entry.totalFocusMinutes / 60
+
+        let minutes =
+            entry.totalFocusMinutes % 60
+
+        if hours == 0 {
+            return "\(minutes)m"
+        }
+
+        return "\(hours)h \(minutes)m"
+    }
+
+    var body: some View {
+        VStack(
+            alignment: .leading,
+            spacing: 0
+        ) {
+            HStack {
+                VStack(
+                    alignment: .leading,
+                    spacing: isPad ? 2 : 3
+                ) {
+                    Text("YOUR WEEK")
+                        .font(
+                            .system(
+                                size: isPad ? 8 : 10,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
+                        .tracking(1.2)
+                        .foregroundStyle(
+                            Color.white.opacity(
+                                0.35
+                            )
+                        )
+
+                    Text(
+                        "\(activeDays) active days"
+                    )
+                    .font(
+                        .system(
+                            size: isPad ? 14 : 17,
+                            weight: .semibold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        .white
+                    )
+                }
+
+                Spacer()
+
+                HStack(
+                    spacing: isPad ? 4 : 5
+                ) {
+                    Image(
+                        systemName:
+                            "flame.fill"
+                    )
+
+                    Text(
+                        "\(entry.currentStreak)"
+                    )
+                    .monospacedDigit()
+                }
+                .font(
+                    .system(
+                        size: isPad ? 11 : 13,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    accentColor
+                )
+                .padding(
+                    .horizontal,
+                    isPad ? 8 : 10
+                )
+                .padding(
+                    .vertical,
+                    isPad ? 4 : 7
+                )
+                .background(
+                    accentColor.opacity(
+                        0.1
+                    ),
+                    in: Capsule()
+                )
+            }
+
+            Spacer(
+                minLength: isPad ? 5 : 12
+            )
+
+            HStack(spacing: 0) {
+                ForEach(
+                    entry.days
+                ) { day in
+                    VStack(
+                        spacing: isPad ? 3 : 7
+                    ) {
+                        Text(day.label)
+                            .font(
+                                .system(
+                                    size:
+                                        isPad ? 8 : 10,
+                                    weight:
+                                        .semibold,
+                                    design:
+                                        .rounded
+                                )
+                            )
+                            .foregroundStyle(
+                                day.isToday
+                                    ? .white
+                                    : Color
+                                        .white
+                                        .opacity(
+                                            0.35
+                                        )
+                            )
+
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    day.isActive
+                                        ? accentColor
+                                            .opacity(
+                                                0.16
+                                            )
+                                        : Color
+                                            .white
+                                            .opacity(
+                                                0.045
+                                            )
+                                )
+
+                            Circle()
+                                .stroke(
+                                    day.isToday
+                                        ? accentColor
+                                        : Color
+                                            .white
+                                            .opacity(
+                                                0.08
+                                            ),
+                                    lineWidth:
+                                        day.isToday
+                                            ? 2
+                                            : 1
+                                )
+
+                            if day.isActive {
+                                Circle()
+                                    .fill(
+                                        accentColor
+                                    )
+                                    .frame(
+                                        width:
+                                            isPad ? 8 : 10,
+                                        height:
+                                            isPad ? 8 : 10
+                                    )
+                            }
+                        }
+                        .frame(
+                            width: isPad ? 24 : 30,
+                            height: isPad ? 24 : 30
+                        )
+
+                        Text(
+                            day.isActive
+                                ? "\(day.focusMinutes)m"
+                                : "—"
+                        )
+                        .font(
+                            .system(
+                                size: isPad ? 8 : 9,
+                                weight: .medium,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundStyle(
+                            day.isActive
+                                ? Color
+                                    .white
+                                    .opacity(
+                                        0.55
+                                    )
+                                : Color
+                                    .white
+                                    .opacity(
+                                        0.18
+                                    )
+                        )
+                    }
+                    .frame(
+                        maxWidth:
+                            .infinity
+                    )
+                }
+            }
+
+            Spacer(
+                minLength: isPad ? 5 : 12
+            )
+
+            HStack {
+                Text(
+                    formattedFocusTime
+                )
+                .font(
+                    .system(
+                        size: isPad ? 11 : 13,
+                        weight: .semibold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    .white
+                )
+
+                Text(
+                    "focused this week"
+                )
+                .font(
+                    .system(
+                        size: isPad ? 9 : 11,
+                        weight: .medium
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(
+                        0.35
+                    )
+                )
+
+                Spacer()
+
+                Image(
+                    systemName:
+                        "chart.bar.fill"
+                )
+                .font(
+                    .system(
+                        size: isPad ? 9 : 11
+                    )
+                )
+                .foregroundStyle(
+                    accentColor.opacity(
+                        0.75
+                    )
+                )
+            }
+        }
+        .padding(
+            .horizontal,
+            isPad ? 14 : 16
+        )
+        .padding(
+            .top,
+            isPad ? 10 : 16
+        )
+        .padding(
+            .bottom,
+            isPad ? 8 : 16
+        )
+    }
+}
+
+struct WeeklyActivityWidget:
+    Widget
+{
+    let kind =
+        "WeeklyActivityWidget"
+
+    var body:
+        some WidgetConfiguration
+    {
+        StaticConfiguration(
+            kind: kind,
+            provider:
+                WeeklyActivityProvider()
+        ) { entry in
+            WeeklyActivityView(
+                entry: entry
+            )
+            .containerBackground(
+                for: .widget
+            ) {
+                Color(
+                    red: 0.035,
+                    green: 0.035,
+                    blue: 0.04
+                )
+            }
+        }
+        .configurationDisplayName(
+            "Weekly Activity"
+        )
+        .description(
+            "Mostra os dias em que você manteve o foco durante a semana."
+        )
+        .supportedFamilies([
+            .systemMedium
+        ])
+    }
+}
+
+#Preview(
+    as: .systemMedium
+) {
+    WeeklyActivityWidget()
+} timeline: {
+    weeklySampleEntry
+}ios/App/FocusWidget/GoalsWidget.swift
+//
+//  GoalsWidget.swift
+//  FocusWidget
+//
+
+import AppIntents
+import Foundation
+import SwiftUI
+import UIKit
+import WidgetKit
+
+struct GoalsWidgetGoal:
+    Codable,
+    Identifiable
+{
+    let id: String
+    let title: String
+    let completed: Bool
+}
+
+private struct GoalsWidgetSnapshot:
+    Codable
+{
+    let year: Int
+    let completedCount: Int
+    let totalCount: Int
+    let goals: [GoalsWidgetGoal]
+}
+
+struct GoalsWidgetEntry:
+    TimelineEntry
+{
+    let date: Date
+    let year: Int
+    let completedCount: Int
+    let totalCount: Int
+    let goals: [GoalsWidgetGoal]
+}
+
+struct GoalsWidgetProvider:
+    TimelineProvider
+{
+    private let appGroupIdentifier =
+        "group.com.mateusgomes.focusapp.shared"
+
+    private let snapshotKey =
+        "goals_widget_snapshot"
+
+    private var currentYear: Int {
+        Calendar.current.component(
+            .year,
+            from: .now
+        )
+    }
+
+    private var sampleEntry:
+        GoalsWidgetEntry
+    {
+        GoalsWidgetEntry(
+            date: .now,
+            year: currentYear,
+            completedCount: 2,
+            totalCount: 6,
+            goals: [
+                GoalsWidgetGoal(
+                    id: "goal-1",
+                    title:
+                        "Finish the Focus App",
+                    completed: false
+                ),
+                GoalsWidgetGoal(
+                    id: "goal-2",
+                    title:
+                        "Update my portfolio",
+                    completed: false
+                ),
+                GoalsWidgetGoal(
+                    id: "goal-3",
+                    title:
+                        "Get an international role",
+                    completed: true
+                )
+            ]
+        )
+    }
+
+    private var emptyEntry:
+        GoalsWidgetEntry
+    {
+        GoalsWidgetEntry(
+            date: .now,
+            year: currentYear,
+            completedCount: 0,
+            totalCount: 0,
+            goals: []
+        )
+    }
+
+    func placeholder(
+        in context: Context
+    ) -> GoalsWidgetEntry {
+        sampleEntry
+    }
+
+    func getSnapshot(
+        in context: Context,
+        completion: @escaping (
+            GoalsWidgetEntry
+        ) -> Void
+    ) {
+        if context.isPreview {
+            completion(sampleEntry)
+
+            return
+        }
+
+        completion(loadEntry())
+    }
+
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (
+            Timeline<GoalsWidgetEntry>
+        ) -> Void
+    ) {
+        let entry = loadEntry()
+
+        let nextUpdate =
+            Calendar.current.date(
+                byAdding: .hour,
+                value: 1,
+                to: .now
+            ) ??
+            .now.addingTimeInterval(
+                3600
+            )
+
+        completion(
+            Timeline(
+                entries: [entry],
+                policy: .after(
+                    nextUpdate
+                )
+            )
+        )
+    }
+
+    private func loadEntry()
+        -> GoalsWidgetEntry
+    {
+        guard
+            let sharedDefaults =
+                UserDefaults(
+                    suiteName:
+                        appGroupIdentifier
+                ),
+            let payload =
+                sharedDefaults.string(
+                    forKey: snapshotKey
+                ),
+            let data =
+                payload.data(
+                    using: .utf8
+                )
+        else {
+            return emptyEntry
+        }
+
+        do {
+            let snapshot =
+                try JSONDecoder()
+                    .decode(
+                        GoalsWidgetSnapshot
+                            .self,
+                        from: data
+                    )
+
+            return GoalsWidgetEntry(
+                date: .now,
+                year: snapshot.year,
+                completedCount:
+                    snapshot.completedCount,
+                totalCount:
+                    snapshot.totalCount,
+                goals: snapshot.goals
+            )
+        } catch {
+            print(
+                "Unable to decode Goals widget snapshot: \(error)"
+            )
+
+            return emptyEntry
+        }
+    }
+}
+
+struct GoalsWidgetView: View {
+    let entry: GoalsWidgetEntry
+
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom ==
+            .pad
+    }
+
+    private let accentColor = Color(
+        red: 0.45,
+        green: 0.95,
+        blue: 0.64
+    )
+
+    private var progress: Double {
+        guard entry.totalCount > 0 else {
+            return 0
+        }
+
+        return min(
+            max(
+                Double(
+                    entry.completedCount
+                ) /
+                Double(
+                    entry.totalCount
+                ),
+                0
+            ),
+            1
+        )
+    }
+
+    private var completedLabel: String {
+        if entry.completedCount == 1 {
+            return "1 goal completed"
+        }
+
+        return
+            "\(entry.completedCount) goals completed"
+    }
+
+    var body: some View {
+        VStack(
+            alignment: .leading,
+            spacing: 0
+        ) {
+            header
+
+            Spacer(
+                minLength: isPad ? 4 : 11
+            )
+
+            goalsContent
+
+            Spacer(
+                minLength: isPad ? 4 : 11
+            )
+
+            progressContent
+        }
+        .padding(
+            .horizontal,
+            isPad ? 8 : 16
+        )
+        .padding(
+            .top,
+            isPad ? 8 : 16
+        )
+        .padding(
+            .bottom,
+            isPad ? 8 : 16
+        )
+    }
+
+    private var header: some View {
+        HStack(
+            alignment: .center
+        ) {
+            HStack(
+                spacing: isPad ? 8 : 9
+            ) {
+                ZStack {
+                    RoundedRectangle(
+                        cornerRadius: 10,
+                        style: .continuous
+                    )
+                    .fill(
+                        accentColor.opacity(
+                            0.12
+                        )
+                    )
+
+                    Image(
+                        systemName: "target"
+                    )
+                    .font(
+                        .system(
+                            size: isPad ? 13 : 14,
+                            weight: .bold
+                        )
+                    )
+                    .foregroundStyle(
+                        accentColor
+                    )
+                }
+                .frame(
+                    width: isPad ? 30 : 34,
+                    height: isPad ? 30 : 34
+                )
+
+                VStack(
+                    alignment: .leading,
+                    spacing: 2
+                ) {
+                    Text(
+                        "GOALS \(entry.year)"
+                    )
+                    .font(
+                        .system(
+                            size: isPad ? 9 : 10,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .tracking(
+                        isPad ? 1.0 : 1.1
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.35
+                        )
+                    )
+
+                    Text(
+                        entry.totalCount > 0
+                            ? completedLabel
+                            : "Plan your year"
+                    )
+                    .font(
+                        .system(
+                            size: isPad ? 15 : 16,
+                            weight: .semibold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(
+                        0.75
+                    )
+                }
+            }
+
+            Spacer()
+
+            Text(
+                "\(entry.completedCount)/\(entry.totalCount)"
+            )
+            .font(
+                .system(
+                    size: isPad ? 13 : 13,
+                    weight: .bold,
+                    design: .rounded
+                )
+            )
+            .foregroundStyle(
+                accentColor
+            )
+            .padding(
+                .horizontal,
+                isPad ? 9 : 10
+            )
+            .padding(
+                .vertical,
+                isPad ? 4 : 7
+            )
+            .background(
+                accentColor.opacity(
+                    0.1
+                ),
+                in: Capsule()
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var goalsContent: some View {
+        if entry.goals.isEmpty {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            accentColor.opacity(
+                                0.1
+                            )
+                        )
+
+                    Image(
+                        systemName:
+                            "plus"
+                    )
+                    .font(
+                        .system(
+                            size: 10,
+                            weight: .bold
+                        )
+                    )
+                    .foregroundStyle(
+                        accentColor
+                    )
+                }
+                .frame(
+                    width: 25,
+                    height: 25
+                )
+
+                VStack(
+                    alignment: .leading,
+                    spacing: 2
+                ) {
+                    Text(
+                        "No goals yet"
+                    )
+                    .font(
+                        .system(
+                            size: 12,
+                            weight: .semibold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.8
+                        )
+                    )
+
+                    Text(
+                        "Open Focus to add your first goal."
+                    )
+                    .font(
+                        .system(
+                            size: 10,
+                            weight: .medium,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundStyle(
+                        Color.white.opacity(
+                            0.3
+                        )
+                    )
+                    .lineLimit(1)
+                }
+
+                Spacer(
+                    minLength: 0
+                )
+            }
+            .frame(
+                maxHeight: .infinity,
+                alignment: .center
+            )
+        } else {
+            VStack(
+                alignment: .leading,
+                spacing: isPad ? 5 : 8
+            ) {
+                ForEach(
+                    entry.goals.prefix(3)
+                ) { goal in
+                    goalRow(for: goal)
+                }
+            }
+        }
+    }
+
+    private func goalRow(
+        for goal: GoalsWidgetGoal
+    ) -> some View {
+        HStack(
+            spacing: isPad ? 8 : 9
+        ) {
+            goalControl(for: goal)
+
+            Text(goal.title)
+                .font(
+                    .system(
+                        size: isPad ? 14 : 12,
+                        weight: .medium,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    goal.completed
+                        ? Color.white
+                            .opacity(
+                                0.35
+                            )
+                        : Color.white
+                            .opacity(
+                                0.82
+                            )
+                )
+                .strikethrough(
+                    goal.completed
+                )
+                .lineLimit(1)
+                .minimumScaleFactor(
+                    0.75
+                )
+
+            Spacer(
+                minLength: 0
+            )
+        }
+        .frame(
+            minHeight: isPad ? 20 : nil
+        )
+    }
+
+    @ViewBuilder
+    private func goalControl(
+        for goal: GoalsWidgetGoal
+    ) -> some View {
+        if goal.completed {
+            goalIndicator(
+                completed: true
+            )
+        } else {
+            if #available(
+                iOS 17.0,
+                *
+            ) {
+                Button(
+                    intent:
+                        CompleteGoalIntent(
+                            goalID: goal.id
+                        )
+                ) {
+                    goalIndicator(
+                        completed: false
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    "Complete \(goal.title)"
+                )
+            } else {
+                goalIndicator(
+                    completed: false
+                )
+            }
+        }
+    }
+
+    private func goalIndicator(
+        completed: Bool
+    ) -> some View {
+        ZStack {
+            Circle()
+                .stroke(
+                    completed
+                        ? accentColor
+                        : Color.white
+                            .opacity(
+                                0.18
+                            ),
+                    lineWidth: 1.5
+                )
+
+            if completed {
+                Circle()
+                    .fill(
+                        accentColor
+                    )
+                    .padding(
+                        isPad ? 3 : 3
+                    )
+
+                Image(
+                    systemName:
+                        "checkmark"
+                )
+                .font(
+                    .system(
+                        size: isPad ? 6 : 6,
+                        weight: .bold
+                    )
+                )
+                .foregroundStyle(
+                    .black
+                )
+            }
+        }
+        .frame(
+            width: isPad ? 19 : 18,
+            height: isPad ? 19 : 18
+        )
+        .contentShape(
+            Circle()
+        )
+    }
+
+    private var progressContent: some View {
+        VStack(
+            spacing: isPad ? 4 : 7
+        ) {
+            GeometryReader { geometry in
+                ZStack(
+                    alignment: .leading
+                ) {
+                    Capsule()
+                        .fill(
+                            Color.white
+                                .opacity(
+                                    0.06
+                                )
+                        )
+
+                    Capsule()
+                        .fill(
+                            accentColor
+                        )
+                        .frame(
+                            width:
+                                geometry
+                                    .size
+                                    .width *
+                                progress
+                        )
+                }
+            }
+            .frame(
+                height: isPad ? 5 : 5
+            )
+
+            HStack {
+                Text(
+                    "\(Int(progress * 100))% completed"
+                )
+                .font(
+                    .system(
+                        size: isPad ? 9 : 10,
+                        weight: .semibold,
+                        design: .rounded
+                    )
+                )
+                .foregroundStyle(
+                    Color.white.opacity(
+                        0.35
+                    )
+                )
+
+                Spacer()
+
+                Image(
+                    systemName:
+                        "trophy.fill"
+                )
+                .font(
+                    .system(
+                        size: isPad ? 9 : 10
+                    )
+                )
+                .foregroundStyle(
+                    accentColor.opacity(
+                        0.75
+                    )
+                )
+            }
+        }
+    }
+}
+
+struct GoalsWidget: Widget {
+    let kind = "GoalsWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(
+            kind: kind,
+            provider:
+                GoalsWidgetProvider()
+        ) { entry in
+            GoalsWidgetView(
+                entry: entry
+            )
+            .containerBackground(
+                for: .widget
+            ) {
+                Color(
+                    red: 0.035,
+                    green: 0.035,
+                    blue: 0.04
+                )
+            }
+        }
+        .configurationDisplayName(
+            "Yearly Goals"
+        )
+        .description(
+            "Mostra o progresso das suas metas do ano."
+        )
+        .supportedFamilies([
+            .systemMedium
+        ])
+    }
+}
+
+#Preview(
+    as: .systemMedium
+) {
+    GoalsWidget()
+} timeline: {
+    GoalsWidgetEntry(
+        date: .now,
+        year: Calendar.current
+            .component(
+                .year,
+                from: .now
+            ),
+        completedCount: 2,
+        totalCount: 6,
+        goals: [
+            GoalsWidgetGoal(
+                id: "goal-1",
+                title:
+                    "Finish the Focus App",
+                completed: false
+            ),
+            GoalsWidgetGoal(
+                id: "goal-2",
+                title:
+                    "Update my portfolio",
+                completed: false
+            ),
+            GoalsWidgetGoal(
+                id: "goal-3",
+                title:
+                    "Get an international role",
+                completed: true
+            )
+        ]
+    )
+}ios/App/FocusWidget/Info.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.widgetkit-extension</string>
+	</dict>
+</dict>
+</plist>
+===== IOS REFERENCES =====

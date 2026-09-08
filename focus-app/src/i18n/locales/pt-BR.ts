@@ -678,6 +678,10 @@ const ptBR = {
       loadError: 'Não foi possível carregar os projetos.',
     },
     settings: {
+      dailyGoal:
+        'Meta diária de foco',
+      dailyGoalDescription:
+        'Usada para calcular seu progresso diário no Dashboard.',
       focus: 'Foco',
       shortBreak: 'Pausa Curta',
       longBreak: 'Pausa Longa',

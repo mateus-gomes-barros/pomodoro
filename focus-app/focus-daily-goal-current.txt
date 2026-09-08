@@ -1,3 +1,5 @@
+===== LINKS DO DIAGNÓSTICO =====
+===== POMODORO STORE =====
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
@@ -57,7 +59,6 @@ interface PomodoroState {
 
 const DEFAULT_SETTINGS: TimerSettings = {
   workDuration: 25,
-  dailyFocusGoalMinutes: 120,
   shortBreakDuration: 5,
   longBreakDuration: 15,
   sessionsUntilLongBreak: 4,
@@ -499,4 +500,7 @@ export const usePomodoroStore =
         }),
       },
     ),
-  )
+  )===== TIMER SETTINGS =====
+===== TIMER PAGE SETTINGS REFERENCES =====
+===== DAILY GOAL REFERENCES =====
+===== TIMER TRANSLATIONS =====

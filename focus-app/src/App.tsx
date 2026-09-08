@@ -6,6 +6,7 @@ import {
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { Layout } from './components/layout/Layout'
+import { OnboardingGate } from './components/onboarding/OnboardingGate'
 
 import { useTimer } from './hooks/useTimer'
 
@@ -21,6 +22,7 @@ import { FocusMePage } from './pages/FocusMePage'
 import { FocusMeReportPage } from './pages/FocusMeReportPage'
 import { GoalsPage } from './pages/GoalsPage'
 import { LoginPage } from './pages/LoginPage'
+import { OnboardingPage } from './pages/OnboardingPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { StreaksPage } from './pages/StreaksPage'
@@ -41,7 +43,13 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         
         <Route element={<ProtectedRoute />}>
-          <Route element={<Layout />}>
+          <Route
+            path="/onboarding"
+            element={<OnboardingPage />}
+          />
+
+          <Route element={<OnboardingGate />}>
+            <Route element={<Layout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/timer" element={<TimerPage />} />
@@ -60,10 +68,12 @@ function App() {
               path="/focusme/history"
               element={<FocusMeHistoryPage />}
             />
-            <Route
-              path="/focusme/diagnostics"
-              element={<FocusHomeDiagnosticsPage />}
-            />
+            {import.meta.env.DEV && (
+              <Route
+                path="/focusme/diagnostics"
+                element={<FocusHomeDiagnosticsPage />}
+              />
+            )}
             <Route
               path="/focusme/reveal/:reportId"
               element={<FocusHomeRevealPage />}
@@ -84,6 +94,7 @@ function App() {
               path="/settings/changes"
               element={<ChangesPage />}
             />
+            </Route>
           </Route>
         </Route>
       </Routes>

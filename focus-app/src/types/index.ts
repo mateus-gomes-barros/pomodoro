@@ -76,7 +76,8 @@ export interface PomodoroSession {
 // ─── Timer Settings ─────────────────────────────────────────────────────────────
 
 export interface TimerSettings {
-  workDuration: number       // minutes
+  workDuration: number       
+  dailyFocusGoalMinutes: number// minutes
   shortBreakDuration: number
   longBreakDuration: number
   sessionsUntilLongBreak: number

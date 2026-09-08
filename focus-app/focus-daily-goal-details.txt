@@ -1,3 +1,5 @@
+===== TIMER TYPES =====
+===== CURRENT TIMER PAGE =====
 import { useState } from 'react'
 import {
   AnimatePresence,
@@ -485,85 +487,6 @@ export function TimerPage() {
               }}
               className="card overflow-hidden"
             >
-              <div className="border-b border-white/[0.05] p-5">
-                <div className="label-section mb-2">
-                  {t(
-                    'timer.settings.dailyGoal',
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateSettings({
-                        dailyFocusGoalMinutes:
-                          Math.max(
-                            15,
-                            (
-                              settings
-                                .dailyFocusGoalMinutes ??
-                              120
-                            ) - 15,
-                          ),
-                      })
-                    }
-                    disabled={
-                      (
-                        settings
-                          .dailyFocusGoalMinutes ??
-                        120
-                      ) <= 15
-                    }
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-white/60 disabled:opacity-30"
-                  >
-                    −
-                  </button>
-
-                  <span className="min-w-24 text-center font-mono text-sm text-white">
-                    {
-                      settings
-                        .dailyFocusGoalMinutes ??
-                      120
-                    }
-                    {' min'}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateSettings({
-                        dailyFocusGoalMinutes:
-                          Math.min(
-                            720,
-                            (
-                              settings
-                                .dailyFocusGoalMinutes ??
-                              120
-                            ) + 15,
-                          ),
-                      })
-                    }
-                    disabled={
-                      (
-                        settings
-                          .dailyFocusGoalMinutes ??
-                        120
-                      ) >= 720
-                    }
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-white/60 disabled:opacity-30"
-                  >
-                    +
-                  </button>
-                </div>
-
-                <p className="mt-2 text-xs text-white/35">
-                  {t(
-                    'timer.settings.dailyGoalDescription',
-                  )}
-                </p>
-              </div>
-
               <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2">
                 {([
                   [
@@ -684,3 +607,6 @@ export function TimerPage() {
     </div>
   )
 }
+===== TIMER TRANSLATIONS PT =====
+===== TIMER TRANSLATIONS EN =====
+===== DIAGNOSTIC ROUTE =====

@@ -1,6 +1,10 @@
 package com.mateusgomes.focusapp;
 
 import android.content.Intent;
+import androidx.core.app.NotificationManagerCompat;
+import android.provider.Settings;
+import android.content.Context;
+import android.app.NotificationManager;
 import android.os.Build;
 import android.util.Log;
 
@@ -120,6 +124,130 @@ public class PomodoroServicePlugin extends Plugin {
             call.reject(
                     "Failed to start Pomodoro service",
                     e
+            );
+        }
+    }
+
+    @PluginMethod
+    public void checkNotificationSetup(
+        PluginCall call
+    ) {
+        boolean notificationsEnabled =
+            NotificationManagerCompat
+                .from(getContext())
+                .areNotificationsEnabled();
+
+        boolean liveNotificationsSupported =
+            Build.VERSION.SDK_INT >= 36;
+
+        boolean liveNotificationsEnabled = false;
+
+        if (liveNotificationsSupported) {
+            NotificationManager manager =
+                (NotificationManager)
+                    getContext().getSystemService(
+                        Context.NOTIFICATION_SERVICE
+                    );
+
+            if (manager != null) {
+                liveNotificationsEnabled =
+                    manager
+                        .canPostPromotedNotifications();
+            }
+        }
+
+        com.getcapacitor.JSObject result =
+            new com.getcapacitor.JSObject();
+
+        result.put(
+            "notificationsEnabled",
+            notificationsEnabled
+        );
+
+        result.put(
+            "liveNotificationsSupported",
+            liveNotificationsSupported
+        );
+
+        result.put(
+            "liveNotificationsEnabled",
+            liveNotificationsEnabled
+        );
+
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void openNotificationSettings(
+        PluginCall call
+    ) {
+        try {
+            Intent intent =
+                new Intent(
+                    Settings
+                        .ACTION_APP_NOTIFICATION_SETTINGS
+                );
+
+            intent.putExtra(
+                Settings.EXTRA_APP_PACKAGE,
+                getContext().getPackageName()
+            );
+
+            intent.addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+            );
+
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception error) {
+            call.reject(
+                "Unable to open notification settings",
+                error
+            );
+        }
+    }
+
+    @PluginMethod
+    public void openLiveNotificationSettings(
+        PluginCall call
+    ) {
+        try {
+            Intent intent;
+
+            if (Build.VERSION.SDK_INT >= 36) {
+                intent =
+                    new Intent(
+                        Settings
+                            .ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS
+                    );
+
+                intent.putExtra(
+                    Settings.EXTRA_APP_PACKAGE,
+                    getContext().getPackageName()
+                );
+            } else {
+                intent =
+                    new Intent(
+                        Settings
+                            .ACTION_APP_NOTIFICATION_SETTINGS
+                    );
+
+                intent.putExtra(
+                    Settings.EXTRA_APP_PACKAGE,
+                    getContext().getPackageName()
+                );
+            }
+
+            intent.addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+            );
+
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception error) {
+            call.reject(
+                "Unable to open live notification settings",
+                error
             );
         }
     }
