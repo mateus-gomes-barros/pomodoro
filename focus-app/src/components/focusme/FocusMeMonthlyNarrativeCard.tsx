@@ -14,10 +14,12 @@ import type {
 
 interface FocusMeMonthlyNarrativeCardProps {
   report: FocusMeMonthlyReport
+  narrative?: string
 }
 
 export function FocusMeMonthlyNarrativeCard({
   report,
+  narrative,
 }: FocusMeMonthlyNarrativeCardProps) {
   const {
     t,
@@ -29,11 +31,19 @@ export function FocusMeMonthlyNarrativeCard({
       ? 'pt-BR'
       : 'en-US'
 
-  const narrative =
-    createFocusMeMonthlyNarrative(
-      report,
-      locale,
-    )
+  const paragraphs =
+    narrative
+      ? narrative
+          .split(/\n\s*\n/)
+          .map(
+            (paragraph) =>
+              paragraph.trim(),
+          )
+          .filter(Boolean)
+      : createFocusMeMonthlyNarrative(
+          report,
+          locale,
+        ).paragraphs
 
   return (
     <section className="card relative overflow-hidden p-5 sm:p-6">
@@ -54,14 +64,16 @@ export function FocusMeMonthlyNarrativeCard({
 
             <p className="mt-1 text-xs text-accent-subtle">
               {t(
-                'focusMeReportPage.monthlyNarrativeDescription',
+                narrative
+                  ? 'focusMeReportPage.monthlyNarrativeGeneratedDescription'
+                  : 'focusMeReportPage.monthlyNarrativeDescription',
               )}
             </p>
           </div>
         </div>
 
         <div className="mt-5 space-y-4">
-          {narrative.paragraphs.map(
+          {paragraphs.map(
             (paragraph, index) => (
               <p
                 key={`${index}-${paragraph}`}

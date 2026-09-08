@@ -1207,7 +1207,19 @@ const ptBR = {
     monthlyNarrativeTitle:
       'A história do seu mês',
     monthlyNarrativeDescription:
-      'Uma leitura editorial construída sem enviar nomes ou conteúdos pessoais.',
+      'Uma leitura editorial local enquanto sua narrativa personalizada não foi gerada.',
+    monthlyNarrativeGeneratedDescription:
+      'Uma narrativa personalizada construída apenas com métricas calculadas pelo Focus.',
+    narrativePreparing:
+      'O FocusMe está escrevendo sua retrospectiva personalizada. O relatório continua disponível enquanto isso.',
+    narrativeFallback:
+      'A escrita personalizada não ficou disponível. Sua retrospectiva local foi preservada.',
+    narrativeRetry:
+      'Tentar novamente',
+    legacyNarrativeTitle:
+      'Retrospectiva preservada',
+    legacyNarrativeDescription:
+      'Este relatório foi criado antes da nova análise comportamental do FocusMe. Suas métricas continuam disponíveis, mas não há dados suficientes para reconstruir uma narrativa mensal confiável.',
   },
 
   changesPage: {

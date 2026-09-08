@@ -1196,7 +1196,19 @@ const en = {
     monthlyNarrativeTitle:
       'The story of your month',
     monthlyNarrativeDescription:
-      'An editorial reading built without sending names or personal content.',
+      'A local editorial reading while your personalized narrative has not been generated.',
+    monthlyNarrativeGeneratedDescription:
+      'A personalized narrative built only from metrics calculated by Focus.',
+    narrativePreparing:
+      'FocusMe is writing your personalized retrospective. The report remains available in the meantime.',
+    narrativeFallback:
+      'Personalized writing was unavailable. Your local retrospective was preserved.',
+    narrativeRetry:
+      'Try again',
+    legacyNarrativeTitle:
+      'Preserved retrospective',
+    legacyNarrativeDescription:
+      'This report was created before the new FocusMe behavioral analysis. Its metrics remain available, but there is not enough information to rebuild a reliable monthly narrative.',
   },
 
   changesPage: {

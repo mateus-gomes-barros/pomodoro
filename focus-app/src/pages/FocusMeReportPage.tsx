@@ -18,8 +18,8 @@ import {
 } from 'react-router-dom'
 
 import {
-  FocusMeMonthlyNarrativeCard,
-} from '@/components/focusme/FocusMeMonthlyNarrativeCard'
+  FocusMeMonthlyNarrativeSection,
+} from '@/components/focusme/FocusMeMonthlyNarrativeSection'
 import {
   FocusMeWeeklyNarrativeCard,
 } from '@/components/focusme/FocusMeWeeklyNarrativeCard'
@@ -81,6 +81,9 @@ export function FocusMeReportPage() {
     i18n.resolvedLanguage === 'pt-BR'
       ? 'pt-BR'
       : 'en-US'
+
+
+
 
   function formatPeriod(
     startValue: string,
@@ -572,13 +575,12 @@ export function FocusMeReportPage() {
           </section>
         )}
 
-        {!isWeekly &&
-          monthly &&
-          !report.narrative && (
-            <FocusMeMonthlyNarrativeCard
-              report={monthly}
-            />
-          )}
+        {!isWeekly && monthly && (
+          <FocusMeMonthlyNarrativeSection
+            storedReport={report}
+            report={monthly}
+          />
+        )}
 
         {isWeekly && weekly && (
           <FocusMeWeeklyNarrativeCard
@@ -586,19 +588,7 @@ export function FocusMeReportPage() {
           />
         )}
 
-        {!isWeekly && report.narrative && (
-          <section className="card p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
-              {t(
-                'focusMeReportPage.yourStory',
-              )}
-            </p>
 
-            <p className="mt-4 whitespace-pre-line text-sm leading-7 text-accent-subtle">
-              {report.narrative}
-            </p>
-          </section>
-        )}
       </div>
     </div>
   )
