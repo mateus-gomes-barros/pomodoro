@@ -60,7 +60,8 @@ public class WidgetLanguagePlugin
             SmallStreakWidgetProvider.class,
             SmallTopProjectWidgetProvider.class,
             MediumTimerWidgetProvider.class,
-            MediumWeekWidgetProvider.class
+            MediumWeekWidgetProvider.class,
+            FocusHomeWidgetProvider.class
         };
 
         AppWidgetManager manager =
