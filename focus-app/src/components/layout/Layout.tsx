@@ -1,4 +1,5 @@
 import {
+  Suspense,
   useRef,
   useState,
   type TouchEvent,
@@ -329,7 +330,7 @@ export function Layout() {
         flex
         min-h-screen
         touch-pan-y
-        bg-[#0a0a0a]
+        focus-shell
         text-white
       "
     >
@@ -371,7 +372,15 @@ export function Layout() {
             lg:py-8
           "
         >
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="flex min-h-[45vh] items-center justify-center">
+                <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/10 border-t-accent-green" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>

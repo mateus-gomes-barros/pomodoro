@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/focushome_widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="6dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="8dp"
+        android:paddingTop="6dp"
+        android:paddingRight="18dp"
+        android:paddingBottom="6dp"
+        android:background="@drawable/widget_focushome_background">
+
+        <FrameLayout
+            android:layout_width="58dp"
+            android:layout_height="58dp"
+            android:background="@drawable/widget_focushome_symbol_background"
+            android:padding="9dp">
+
+            <ImageView
+                android:id="@+id/focushome_widget_symbol"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_focushome_default" />
+
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="13dp"
+            android:orientation="vertical"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/focushome_widget_eyebrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sua identidade"
+                android:textColor="#CCFFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/focushome_widget_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="FocushoMe"
+                android:textColor="#FFFFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

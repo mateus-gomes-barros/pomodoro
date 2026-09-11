@@ -219,6 +219,22 @@
                 android:resource="@xml/small_top_project_widget_info" />
 
         </receiver>
+
+        <receiver
+            android:name=".FocusHomeWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_focushome_name">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/focushome_widget_info" />
+
+        </receiver>
+
 </application>
     <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

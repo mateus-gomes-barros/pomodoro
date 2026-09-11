@@ -14,7 +14,7 @@ export function CircularProgress({
   size = 240,
   strokeWidth = 6,
   color = '#7EE081',
-  bgColor = '#1E1E1E',
+  bgColor = 'rgba(255,255,255,0.075)',
   children,
 }: CircularProgressProps) {
 

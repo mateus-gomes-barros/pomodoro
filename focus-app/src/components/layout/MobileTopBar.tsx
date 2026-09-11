@@ -125,9 +125,8 @@ import { useTranslation } from 'react-i18next'
           justify-between
           border-b
           border-white/[0.06]
-          bg-[#0a0a0a]/85
+          glass-topbar
           px-5
-          backdrop-blur-2xl
           lg:hidden
         "
       >

@@ -197,6 +197,16 @@ const ptBR = {
       'Você alcançou o nível máximo de sequência.',
 
     heatmap: 'Mapa de atividade',
+    activityMap: {
+      description:
+        'Consulte um mês por vez.',
+      select:
+        'Selecionar mês e ano',
+      previous:
+        'Mês anterior',
+      next:
+        'Próximo mês',
+    },
     achievementsTitle: 'Conquistas',
 
     journey: {

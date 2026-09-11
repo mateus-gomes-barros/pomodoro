@@ -269,7 +269,7 @@ export function ChangesPage() {
                       className={`relative z-10 rounded-xl p-2.5 ${
                         current
                           ? 'bg-accent-green text-black'
-                          : 'bg-bg-secondary text-accent-subtle'
+                          : 'glass-control text-accent-subtle'
                       }`}
                     >
                       <Icon size={18} />

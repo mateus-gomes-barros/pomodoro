@@ -14,6 +14,9 @@ import {
 import {
   useFocusHomeProfile,
 } from '@/hooks/focusme/useFocusHomeProfile'
+import {
+  FOCUS_HOME_PREVIEW,
+} from '@/config/focusHomePreview'
 
 export function FocusHomeIdentityHeader() {
   const { t } = useTranslation()
@@ -23,6 +26,10 @@ export function FocusHomeIdentityHeader() {
 
   const profile =
     profileQuery.data
+
+  const focusHome =
+    FOCUS_HOME_PREVIEW ??
+    profile?.focusHome
 
   return (
     <header className="mb-8 flex min-w-0 items-start justify-between gap-4 sm:gap-8">
@@ -53,7 +60,7 @@ export function FocusHomeIdentityHeader() {
               className="animate-spin text-accent-green"
             />
           </div>
-        ) : profile ? (
+        ) : focusHome ? (
           <>
             <div className="relative flex h-20 w-20 items-center justify-center sm:h-24 sm:w-24">
               <div className="absolute inset-3 rounded-full bg-white/[0.025] blur-xl" />
@@ -61,7 +68,7 @@ export function FocusHomeIdentityHeader() {
               <div className="relative">
                 <FocusHomeSymbol
                   type={
-                    profile.focusHome
+                    focusHome
                   }
                   size={88}
                   className="sm:h-24 sm:w-24"
@@ -76,18 +83,20 @@ export function FocusHomeIdentityHeader() {
             </span>
 
             <strong className="mt-1 text-sm font-semibold capitalize text-accent-white">
-              {profile.focusHome}
+              {focusHome}
             </strong>
 
-            <span className="mt-1 max-w-[150px] text-[10px] leading-relaxed text-accent-subtle">
-              {t(
-                `focusHomeIdentity.archetypes.${profile.archetype}`,
-              )}
-              {' · '}
-              {t(
-                `focusHomeIdentity.temporal.${profile.temporalExpression}`,
-              )}
-            </span>
+            {profile && (
+              <span className="mt-1 max-w-[150px] text-[10px] leading-relaxed text-accent-subtle">
+                {t(
+                  `focusHomeIdentity.archetypes.${profile.archetype}`,
+                )}
+                {' · '}
+                {t(
+                  `focusHomeIdentity.temporal.${profile.temporalExpression}`,
+                )}
+              </span>
+            )}
           </>
         ) : (
           <>

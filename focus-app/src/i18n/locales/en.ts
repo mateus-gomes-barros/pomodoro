@@ -193,6 +193,16 @@ const en = {
       'You reached the highest streak level.',
 
     heatmap: 'Activity Heatmap',
+    activityMap: {
+      description:
+        'Review one month at a time.',
+      select:
+        'Select month and year',
+      previous:
+        'Previous month',
+      next:
+        'Next month',
+    },
     achievementsTitle: 'Achievements',
 
     journey: {

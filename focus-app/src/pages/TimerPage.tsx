@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   AnimatePresence,
   motion,
+  useReducedMotion,
 } from 'framer-motion'
 import {
   ChevronDown,
@@ -16,6 +17,19 @@ import {
 import { useProjects } from '@/hooks/projects/useProjects'
 import { usePomodoroStore } from '@/store/pomodoroStore'
 import { CircularProgress } from '@/components/ui/CircularProgress'
+import {
+  FOCUS_HOME_COLORS,
+  FocusHomeSymbol,
+} from '@/components/focusme/FocusHomeSymbol'
+import {
+  FocusMeIcon,
+} from '@/components/icons/FocusMeIcon'
+import {
+  useFocusHomeProfile,
+} from '@/hooks/focusme/useFocusHomeProfile'
+import {
+  FOCUS_HOME_PREVIEW,
+} from '@/config/focusHomePreview'
 import {
   cn,
   formatTime,
@@ -41,6 +55,15 @@ const SESSION_TYPES: SessionType[] = [
 
 export function TimerPage() {
   const { t } = useTranslation()
+  const shouldReduceMotion =
+    useReducedMotion()
+
+  const focusHomeProfileQuery =
+    useFocusHomeProfile()
+
+  const focusHome =
+    FOCUS_HOME_PREVIEW ??
+    focusHomeProfileQuery.data?.focusHome
 
   const {
     status,
@@ -84,10 +107,19 @@ export function TimerPage() {
     1,
   )
 
+  const identityColor =
+    focusHome
+      ? FOCUS_HOME_COLORS[
+          focusHome
+        ]
+      : '#34d399'
+
   const ringColor =
-    sessionType === 'work'
-      ? '#34d399'
-      : '#60a5fa'
+    focusHome
+      ? identityColor
+      : sessionType === 'work'
+        ? '#34d399'
+        : '#60a5fa'
 
   const completedSessionDots =
     settings.sessionsUntilLongBreak > 0
@@ -155,59 +187,180 @@ export function TimerPage() {
             1,
           ],
         }}
-        className="relative"
+        className="relative isolate"
       >
+        {/* Outer glass halo */}
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-3 -z-10 rounded-full border border-white/[0.08] bg-white/[0.025] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur-xl"
+        />
+
+        {/* Inner translucent surface */}
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-[11px] -z-10 overflow-hidden rounded-full border border-white/[0.055] bg-[radial-gradient(circle_at_42%_30%,rgba(255,255,255,0.075),rgba(8,15,13,0.30)_42%,rgba(2,7,6,0.48)_78%)] shadow-[inset_0_1px_18px_rgba(255,255,255,0.025)] backdrop-blur-md"
+        >
+          <motion.div
+            className="absolute -left-16 top-4 h-20 w-72 rotate-[-18deg] bg-gradient-to-r from-transparent via-white/[0.045] to-transparent blur-xl"
+            animate={
+              shouldReduceMotion ||
+              status !== 'running'
+                ? {
+                    x: 0,
+                  }
+                : {
+                    x: [
+                      -35,
+                      35,
+                      -35,
+                    ],
+                  }
+            }
+            transition={{
+              duration: 8,
+              repeat:
+                shouldReduceMotion ||
+                status !== 'running'
+                  ? 0
+                  : Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        </div>
+
         <CircularProgress
           progress={progress}
           size={260}
           strokeWidth={5}
           color={ringColor}
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${sessionType}-${secondsLeft}`}
-              initial={{
-                opacity: 0.65,
-              }}
-              animate={{
-                opacity: 1,
-              }}
-              exit={{
-                opacity: 0.65,
-              }}
-              transition={{
-                duration: 0.12,
-              }}
-              className="flex flex-col items-center"
-            >
-              <span className="font-mono text-[52px] font-bold leading-none tracking-[-3px] text-white sm:text-[56px]">
-                {formatTime(
-                  secondsLeft,
-                )}
-              </span>
+          <div className="relative flex h-[210px] w-[210px] items-center justify-center overflow-hidden rounded-full">
+            {/* FocushoMe identity */}
 
-              <span className="mt-2 text-[13px] text-white/40">
-                {
-                  t(
+            <motion.div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 flex items-center justify-center"
+              animate={
+                shouldReduceMotion
+                  ? {
+                      opacity: 0.16,
+                      scale: 1,
+                    }
+                  : status === 'running'
+                    ? {
+                        opacity: [
+                          0.13,
+                          0.24,
+                          0.13,
+                        ],
+                        scale: [
+                          0.96,
+                          1.045,
+                          0.96,
+                        ],
+                      }
+                    : status === 'completed'
+                      ? {
+                          opacity: [
+                            0.16,
+                            0.38,
+                            0.16,
+                          ],
+                          scale: [
+                            1,
+                            1.2,
+                            1,
+                          ],
+                        }
+                      : {
+                          opacity: 0.16,
+                          scale: 1,
+                        }
+              }
+              transition={
+                status === 'running' &&
+                !shouldReduceMotion
+                  ? {
+                      duration: 5.2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }
+                  : {
+                      duration:
+                        status ===
+                        'completed'
+                          ? 0.9
+                          : 0.35,
+                      ease: 'easeOut',
+                    }
+              }
+              style={{
+                filter: `drop-shadow(0 0 22px ${identityColor}66)`,
+              }}
+            >
+              {focusHome ? (
+                <FocusHomeSymbol
+                  type={focusHome}
+                  size={205}
+                  className="h-[205px] w-[205px]"
+                />
+              ) : (
+                <FocusMeIcon
+                  size={185}
+                  className="h-[185px] w-[185px]"
+                  style={{
+                    color:
+                      identityColor,
+                  }}
+                />
+              )}
+            </motion.div>
+
+            {/* Remaining time */}
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${sessionType}-${secondsLeft}`}
+                initial={{
+                  opacity: 0.65,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                exit={{
+                  opacity: 0.65,
+                }}
+                transition={{
+                  duration: 0.12,
+                }}
+                className="relative z-10 flex flex-col items-center"
+              >
+                <span
+                  className="font-mono text-[52px] font-bold leading-none tracking-[-3px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.85)] sm:text-[56px]"
+                  style={{
+                    color:
+                      identityColor,
+                    textShadow: `0 0 22px ${identityColor}38`,
+                  }}
+                >
+                  {formatTime(
+                    secondsLeft,
+                  )}
+                </span>
+
+                <span className="mt-2 text-[13px] text-white/45 drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
+                  {t(
                     SESSION_LABEL_KEYS[
                       sessionType
                     ],
-                  )
-                }
-              </span>
-            </motion.div>
-          </AnimatePresence>
+                  )}
+                </span>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </CircularProgress>
-
-        {isRunning &&
-          sessionType === 'work' && (
-            <div
-              className="pointer-events-none absolute inset-0 animate-pulse rounded-full opacity-[0.07]"
-              style={{
-                background: `radial-gradient(circle, ${ringColor} 0%, transparent 70%)`,
-              }}
-            />
-          )}
       </motion.div>
 
       {/* Session dots */}

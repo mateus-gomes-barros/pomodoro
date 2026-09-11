@@ -748,7 +748,7 @@ function Setting({
               ),
             )
           }
-          className="w-7 h-7 rounded-lg bg-bg-secondary flex items-center justify-center"
+          className="w-7 h-7 rounded-lg glass-control flex items-center justify-center"
           aria-label={`Decrease ${label}`}
         >
           −
@@ -769,7 +769,7 @@ function Setting({
               ),
             )
           }
-          className="w-7 h-7 rounded-lg bg-bg-secondary flex items-center justify-center"
+          className="w-7 h-7 rounded-lg glass-control flex items-center justify-center"
           aria-label={`Increase ${label}`}
         >
           +
@@ -802,7 +802,7 @@ function Toggle({
         className={`relative h-6 w-11 shrink-0 justify-self-end rounded-full transition-all duration-300 ${
           value
             ? 'bg-accent-green'
-            : 'bg-bg-secondary border border-border-muted'
+            : 'glass-control border border-border-muted'
         }`}
         role="switch"
         aria-checked={value}

@@ -91,7 +91,7 @@ function ChartTooltip({
   }
 
   return (
-    <div className="rounded-xl border border-white/[0.1] bg-[#1c1c1c] px-3 py-2 text-[11px] shadow-xl">
+    <div className="rounded-xl border border-white/[0.1] glass-control px-3 py-2 text-[11px] shadow-xl">
       <p className="mb-1.5 text-white/40">
         {label}
       </p>

@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+
+:root {
+  --focus-background: #060807;
+  --focus-background-elevated: #0b100d;
+  --glass-surface: rgba(17, 23, 19, 0.58);
+  --glass-surface-strong: rgba(12, 17, 14, 0.76);
+  --glass-surface-soft: rgba(255, 255, 255, 0.035);
+  --glass-border: rgba(255, 255, 255, 0.105);
+  --glass-border-highlight: rgba(255, 255, 255, 0.16);
+  --glass-green: rgba(52, 211, 153, 0.102);
+  --glass-blur: 22px;
+  --glass-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+
 /* ─────────────────────────────────────────────────────────────
    Base
 ───────────────────────────────────────────────────────────── */
@@ -17,12 +34,42 @@
   body,
   #root {
     min-height: 100vh;
-    background: #0a0a0a;
     color: #f5f5f5;
+  }
+
+  html {
+    background: var(--focus-background);
   }
 
   body {
     overflow-x: hidden;
+    background:
+      radial-gradient(
+        circle at 12% 6%,
+        rgba(52, 211, 153, 0.085),
+        transparent 27rem
+      ),
+      radial-gradient(
+        circle at 88% 88%,
+        rgba(34, 197, 94, 0.055),
+        transparent 34rem
+      ),
+      radial-gradient(
+        circle at 72% 18%,
+        rgba(255, 255, 255, 0.025),
+        transparent 25rem
+      ),
+      linear-gradient(
+        145deg,
+        #050706 0%,
+        #080c09 48%,
+        #050706 100%
+      );
+    background-attachment: fixed;
+  }
+
+  #root {
+    background: transparent;
   }
 
   ::selection {
@@ -55,14 +102,68 @@
 @layer components {
 
   .card {
-    @apply bg-[#161616] rounded-2xl border border-white/[0.07];
-    box-shadow:
-      0 1px 3px rgba(0,0,0,.4),
-      0 8px 24px rgba(0,0,0,.28);
+    @apply rounded-2xl border;
+    position: relative;
+    border-color: var(--glass-border);
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.055),
+        rgba(255, 255, 255, 0.012) 42%,
+        rgba(52, 211, 153, 0.025)
+      ),
+      var(--glass-surface);
+    box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter:
+      blur(var(--glass-blur))
+      saturate(132%);
+    backdrop-filter:
+      blur(var(--glass-blur))
+      saturate(132%);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+      linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0.06),
+        transparent 24%,
+        transparent 76%,
+        rgba(52, 211, 153, 0.025)
+      );
+    opacity: 0.72;
+  }
+
+  .card > * {
+    position: relative;
+    z-index: 1;
   }
 
   .surface {
-    @apply bg-[#1c1c1c] rounded-xl border border-white/[0.06];
+    @apply rounded-xl border;
+    border-color: rgba(255, 255, 255, 0.085);
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.045),
+        rgba(255, 255, 255, 0.012)
+      ),
+      rgba(15, 21, 17, 0.48);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 12px 35px rgba(0, 0, 0, 0.16);
+    -webkit-backdrop-filter:
+      blur(18px)
+      saturate(125%);
+    backdrop-filter:
+      blur(18px)
+      saturate(125%);
   }
 
   .card-p {
@@ -84,7 +185,8 @@
       rounded-xl
       border
       border-white/[0.08]
-      bg-[#1c1c1c]
+      bg-white/[0.045]
+      backdrop-blur-xl
       px-4
       py-3
       text-sm
@@ -163,8 +265,9 @@
       gap-1
       rounded-xl
       border
-      border-white/[0.07]
-      bg-[#161616]
+      border-white/[0.09]
+      bg-white/[0.04]
+      backdrop-blur-xl
       p-1;
   }
 
@@ -206,5 +309,349 @@
       uppercase
       tracking-widest
       text-white/35;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Focus 5.0 — Living Glass foundation
+───────────────────────────────────────────────────────────── */
+
+.focus-shell {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+}
+
+.focus-shell::before,
+.focus-shell::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(95px);
+}
+
+.focus-shell::before {
+  top: 7rem;
+  right: -9rem;
+  width: 28rem;
+  height: 28rem;
+  background: rgba(52, 211, 153, 0.047);
+}
+
+.focus-shell::after {
+  bottom: -12rem;
+  left: 18%;
+  width: 34rem;
+  height: 34rem;
+  background: rgba(22, 163, 74, 0.034);
+}
+
+.glass-sidebar {
+  border-color: rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.055),
+      transparent 32%,
+      rgba(52, 211, 153, 0.025)
+    ),
+    rgba(8, 13, 10, 0.68);
+  box-shadow:
+    18px 0 55px rgba(0, 0, 0, 0.22),
+    inset -1px 0 rgba(255, 255, 255, 0.025);
+  -webkit-backdrop-filter:
+    blur(30px)
+    saturate(135%);
+  backdrop-filter:
+    blur(30px)
+    saturate(135%);
+}
+
+.glass-topbar {
+  border-color: rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.045),
+      transparent
+    ),
+    rgba(7, 11, 9, 0.68);
+  box-shadow:
+    0 14px 45px rgba(0, 0, 0, 0.18),
+    inset 0 -1px rgba(255, 255, 255, 0.025);
+  -webkit-backdrop-filter:
+    blur(28px)
+    saturate(135%);
+  backdrop-filter:
+    blur(28px)
+    saturate(135%);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --glass-blur: 17px;
+  }
+
+  .focus-shell::before {
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .card,
+  .surface,
+  .glass-sidebar,
+  .glass-topbar {
+    background: rgba(12, 17, 14, 0.94);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+
+/* Focus 5.0 — remaining glass surfaces */
+
+.glass-modal {
+  border-color: rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.015) 44%,
+      rgba(52, 211, 153, 0.025)
+    ),
+    rgba(10, 15, 12, 0.82);
+  box-shadow:
+    0 35px 100px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter:
+    blur(32px)
+    saturate(138%);
+  backdrop-filter:
+    blur(32px)
+    saturate(138%);
+}
+
+.glass-control {
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.055),
+      rgba(255, 255, 255, 0.018)
+    ),
+    rgba(255, 255, 255, 0.025);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 8px 24px rgba(0, 0, 0, 0.12);
+  -webkit-backdrop-filter:
+    blur(16px)
+    saturate(125%);
+  backdrop-filter:
+    blur(16px)
+    saturate(125%);
+}
+
+.glass-control-active {
+  border: 1px solid rgba(255, 255, 255, 0.19);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.10),
+      rgba(52, 211, 153, 0.045)
+    ),
+    rgba(255, 255, 255, 0.045);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.17),
+    inset 0 1px rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter:
+    blur(18px)
+    saturate(130%);
+  backdrop-filter:
+    blur(18px)
+    saturate(130%);
+}
+
+.glass-visual {
+  border-color: rgba(255, 255, 255, 0.105);
+  background:
+    radial-gradient(
+      circle at 20% 5%,
+      rgba(255, 255, 255, 0.065),
+      transparent 38%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(52, 211, 153, 0.018)
+    ),
+    rgba(10, 15, 12, 0.58);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.30),
+    inset 0 1px rgba(255, 255, 255, 0.055);
+  -webkit-backdrop-filter:
+    blur(24px)
+    saturate(130%);
+  backdrop-filter:
+    blur(24px)
+    saturate(130%);
+}
+
+
+/* Focus 5.0 — Living Glass navigation */
+
+.glass-sidebar {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.glass-sidebar::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  top: -9rem;
+  left: -8rem;
+  width: 23rem;
+  height: 23rem;
+  border-radius: 9999px;
+  background:
+    radial-gradient(
+      circle,
+      rgba(52, 211, 153, 0.085),
+      rgba(52, 211, 153, 0.025) 38%,
+      transparent 72%
+    );
+  filter: blur(18px);
+}
+
+.glass-sidebar::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  top: 4%;
+  right: 0;
+  width: 1px;
+  height: 92%;
+  background:
+    linear-gradient(
+      to bottom,
+      transparent,
+      rgba(255, 255, 255, 0.14) 18%,
+      rgba(52, 211, 153, 0.12) 50%,
+      rgba(255, 255, 255, 0.08) 82%,
+      transparent
+    );
+  opacity: 0.7;
+}
+
+.glass-sidebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.glass-nav-active {
+  position: relative;
+  border: 1px solid
+    rgba(255, 255, 255, 0.105);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.105),
+      rgba(255, 255, 255, 0.035) 56%,
+      rgba(52, 211, 153, 0.075)
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.075),
+    0 8px 24px
+      rgba(0, 0, 0, 0.13),
+    0 0 22px
+      rgba(52, 211, 153, 0.025);
+  backdrop-filter:
+    blur(16px)
+    saturate(130%);
+  -webkit-backdrop-filter:
+    blur(16px)
+    saturate(130%);
+}
+
+.glass-nav-active::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 28%;
+  bottom: 28%;
+  width: 2px;
+  border-radius: 9999px;
+  background: #34d399;
+  box-shadow:
+    0 0 9px
+      rgba(52, 211, 153, 0.62);
+}
+
+.glass-nav-active svg {
+  color: #6ee7b7;
+  filter:
+    drop-shadow(
+      0 0 6px
+      rgba(52, 211, 153, 0.24)
+    );
+}
+
+.glass-focusme-active {
+  border: 1px solid
+    rgba(52, 211, 153, 0.16);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(52, 211, 153, 0.13),
+      rgba(255, 255, 255, 0.025)
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.055),
+    0 8px 22px
+      rgba(0, 0, 0, 0.12);
+}
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+  .glass-sidebar *,
+  .glass-nav-active,
+  .glass-focusme-active {
+    transition-duration: 0.01ms
+      !important;
+  }
+}
+
+
+/* Focus 5.0 — tablet landscape safe area */
+
+@media (
+  min-width: 768px
+) and (
+  orientation: landscape
+) and (
+  pointer: coarse
+) {
+  .sidebar-brand-header {
+    height:
+      calc(
+        3.5rem +
+        max(
+          env(safe-area-inset-top),
+          18px
+        )
+      );
+    padding-top:
+      max(
+        env(safe-area-inset-top),
+        18px
+      );
   }
 }

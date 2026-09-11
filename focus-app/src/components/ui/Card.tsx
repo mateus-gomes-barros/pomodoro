@@ -7,10 +7,10 @@ import { cn } from '@/utils'
 // ─────────────────────────────────────────────────────────────
 
 const CARD_BASE =
-  'bg-[#161616] rounded-2xl border border-white/[0.07] shadow-[0_1px_3px_rgba(0,0,0,0.4),0_6px_20px_rgba(0,0,0,0.25)]'
+  'card'
 
 const CARD_HOVER =
-  'hover:border-white/[0.12] hover:shadow-[0_4px_12px_rgba(0,0,0,0.5),0_12px_32px_rgba(0,0,0,0.3)] transition-all duration-300'
+  'hover:border-white/[0.16] hover:shadow-[0_22px_55px_rgba(0,0,0,0.30)] transition-all duration-300'
 
 // ─────────────────────────────────────────────────────────────
 // Card

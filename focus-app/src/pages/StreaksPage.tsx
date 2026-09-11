@@ -6,7 +6,12 @@ import {
   useRef,
   useState,
 } from 'react'
-import { motion } from 'framer-motion'
+import {
+  createPortal,
+} from 'react-dom'
+import {
+  motion,
+} from 'framer-motion'
 import {
   Calendar,
   Check,
@@ -19,12 +24,12 @@ import {
   Zap,
 } from 'lucide-react'
 import {
+  addMonths,
   eachDayOfInterval,
   endOfMonth,
   format,
   startOfMonth,
   subDays,
-  subMonths,
 } from 'date-fns'
 
 import { useAnalytics } from '@/hooks/analytics/useAnalytics'
@@ -236,7 +241,10 @@ function chunkBadges() {
 }
 
 export function StreaksPage() {
-  const { t } = useTranslation()
+  const {
+    t,
+    i18n,
+  } = useTranslation()
 
   const carouselRef =
     useRef<HTMLDivElement>(null)
@@ -245,6 +253,29 @@ export function StreaksPage() {
     activeBadgePage,
     setActiveBadgePage,
   ] = useState(0)
+
+  const [
+    selectedActivityMonth,
+    setSelectedActivityMonth,
+  ] = useState(
+    () =>
+      startOfMonth(
+        new Date(),
+      ),
+  )
+
+  const [
+    activityCalendarOpen,
+    setActivityCalendarOpen,
+  ] = useState(false)
+
+  const [
+    activityCalendarYear,
+    setActivityCalendarYear,
+  ] = useState(
+    () =>
+      new Date().getFullYear(),
+  )
 
   const {
     totalFocusMinutes,
@@ -284,10 +315,60 @@ export function StreaksPage() {
 
   const today = new Date()
 
+  const currentActivityMonth =
+    startOfMonth(today)
+
+  const firstWorkDate =
+    sessions
+      .filter(
+        (session) =>
+          session.type === 'work',
+      )
+      .map(
+        (session) =>
+          session.date,
+      )
+      .sort()[0]
+
+  const firstActivityMonth =
+    firstWorkDate
+      ? startOfMonth(
+          new Date(
+            `${firstWorkDate}T12:00:00`,
+          ),
+        )
+      : currentActivityMonth
+
+  const previousActivityMonth =
+    addMonths(
+      selectedActivityMonth,
+      -1,
+    )
+
+  const nextActivityMonth =
+    addMonths(
+      selectedActivityMonth,
+      1,
+    )
+
+  const canGoPrevious =
+    previousActivityMonth.getTime() >=
+    firstActivityMonth.getTime()
+
+  const canGoNext =
+    nextActivityMonth.getTime() <=
+    currentActivityMonth.getTime()
+
   const months = [
-    subMonths(today, 2),
-    subMonths(today, 1),
-    today,
+    addMonths(
+      selectedActivityMonth,
+      -2,
+    ),
+    addMonths(
+      selectedActivityMonth,
+      -1,
+    ),
+    selectedActivityMonth,
   ]
 
   const currentBadge =
@@ -686,18 +767,373 @@ export function StreaksPage() {
         }}
         className="card mb-6 p-6"
       >
-        <h3 className="mb-5 font-semibold text-accent-white">
-          {t('streaksPage.heatmap')}
-        </h3>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="font-semibold text-accent-white">
+              {t(
+                'streaksPage.heatmap',
+              )}
+            </h3>
 
-        <div className="space-y-6 overflow-auto">
-          {months.map((month) => (
-            <MonthGrid
-              key={month.toISOString()}
-              month={month}
-              dailyStats={dailyStats}
-            />
-          ))}
+          </div>
+
+          <div className="grid w-full min-w-0 grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-1 sm:flex sm:w-auto sm:gap-2">
+            <button
+              type="button"
+              disabled={!canGoPrevious}
+              onClick={() =>
+                setSelectedActivityMonth(
+                  previousActivityMonth,
+                )
+              }
+              aria-label={t(
+                'streaksPage.activityMap.previous',
+              )}
+              className="glass-control flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/55 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-25 sm:h-10 sm:w-10"
+            >
+              <ChevronLeft size={17} />
+            </button>
+
+            <div className="relative min-w-0 flex-1 sm:flex-none">
+              <button
+                type="button"
+                onClick={() => {
+                  setActivityCalendarYear(
+                    selectedActivityMonth
+                      .getFullYear(),
+                  )
+
+                  setActivityCalendarOpen(
+                    (open) => !open,
+                  )
+                }}
+                aria-expanded={
+                  activityCalendarOpen
+                }
+                aria-haspopup="dialog"
+                className={cn(
+                  'glass-control flex h-8 w-full min-w-0 max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-xl px-2 text-[11px] font-medium capitalize text-white/75 transition sm:h-10 sm:w-auto sm:min-w-[154px] sm:gap-2 sm:px-3 sm:text-sm',
+                  activityCalendarOpen &&
+                    'glass-control-active text-white',
+                )}
+                aria-label={t(
+                  'streaksPage.activityMap.select',
+                )}
+              >
+                <Calendar
+                  size={15}
+                  className="shrink-0 text-accent-green"
+                />
+
+                <span className="min-w-0 truncate whitespace-nowrap">
+                  {format(
+                    selectedActivityMonth,
+                    'MMMM yyyy',
+                    {
+                      locale:
+                        i18n.language ===
+                        'pt-BR'
+                          ? ptBR
+                          : enUS,
+                    },
+                  )}
+                </span>
+              </button>
+
+              {activityCalendarOpen &&
+                  createPortal(
+                    <>
+                    <motion.button
+                      type="button"
+                      aria-label="Fechar calendário"
+                      onClick={() =>
+                        setActivityCalendarOpen(
+                          false,
+                        )
+                      }
+                      initial={{
+                        opacity: 0,
+                      }}
+                      animate={{
+                        opacity: 1,
+                      }}
+                      exit={{
+                        opacity: 0,
+                      }}
+                      className="fixed inset-0 z-[9998] cursor-default bg-black/70 backdrop-blur-md"
+                    />
+
+                    <motion.div
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label={t(
+                        'streaksPage.activityMap.select',
+                      )}
+                      initial={{
+                        opacity: 0,
+                      }}
+                      animate={{
+                        opacity: 1,
+                      }}
+                      exit={{
+                        opacity: 0,
+                      }}
+                      transition={{
+                        duration: 0.18,
+                        ease: [
+                          0.16,
+                          1,
+                          0.3,
+                          1,
+                        ],
+                      }}
+                      className="glass-modal fixed left-1/2 top-1/2 z-[9999] h-[min(340px,calc(100vw-2rem))] w-[min(340px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border border-white/[0.16] bg-[#07100d]/95 p-0 shadow-[0_32px_100px_rgba(0,0,0,0.82),inset_0_1px_0_rgba(255,255,255,0.10),0_0_40px_rgba(52,211,153,0.06)] backdrop-blur-3xl"
+                    >
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-accent-green/[0.09] blur-3xl"
+                      />
+
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -bottom-20 -left-16 h-44 w-44 rounded-full bg-white/[0.035] blur-3xl"
+                      />
+
+                      <div className="relative h-full w-full">
+                        {/* Concentric glass layers */}
+
+                        <div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-3 rounded-full border border-white/[0.07] shadow-[inset_0_1px_16px_rgba(255,255,255,0.025)]"
+                        />
+
+                        <div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-[42px] rounded-full border border-white/[0.06] bg-white/[0.012]"
+                        />
+
+                        <div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-[91px] rounded-full border border-accent-green/[0.10] bg-black/20 shadow-[0_0_30px_rgba(52,211,153,0.04)]"
+                        />
+
+                        <div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute left-[14%] top-[8%] h-[28%] w-[52%] -rotate-[18deg] rounded-full bg-white/[0.035] blur-xl"
+                        />
+
+                        {/* Months around the dial */}
+
+                        {Array.from({
+                          length: 12,
+                        }).map(
+                          (
+                            _,
+                            monthIndex,
+                          ) => {
+                            const monthDate =
+                              startOfMonth(
+                                new Date(
+                                  activityCalendarYear,
+                                  monthIndex,
+                                  1,
+                                ),
+                              )
+
+                            const unavailable =
+                              monthDate.getTime() <
+                                firstActivityMonth.getTime() ||
+                              monthDate.getTime() >
+                                currentActivityMonth.getTime()
+
+                            const selected =
+                              monthDate.getTime() ===
+                              selectedActivityMonth.getTime()
+
+                            const angle =
+                              (
+                                monthIndex /
+                                12
+                              ) *
+                                Math.PI *
+                                2 -
+                              Math.PI / 2
+
+                            const radius = 34
+
+                            const left =
+                              50 +
+                              Math.cos(
+                                angle,
+                              ) *
+                                radius
+
+                            const top =
+                              50 +
+                              Math.sin(
+                                angle,
+                              ) *
+                                radius
+
+                            return (
+                              <button
+                                key={
+                                  monthIndex
+                                }
+                                type="button"
+                                disabled={
+                                  unavailable
+                                }
+                                onClick={() => {
+                                  setSelectedActivityMonth(
+                                    monthDate,
+                                  )
+
+                                  setActivityCalendarOpen(
+                                    false,
+                                  )
+                                }}
+                                style={{
+                                  left: `${left}%`,
+                                  top: `${top}%`,
+                                  transform:
+                                    'translate(-50%, -50%)',
+                                }}
+                                className={cn(
+                                  'absolute z-10 flex h-9 w-12 items-center justify-center rounded-full border text-[10px] font-semibold capitalize transition duration-200',
+                                  selected
+                                    ? 'border-accent-green/50 bg-accent-green/[0.18] text-accent-green shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_18px_rgba(52,211,153,0.22)]'
+                                    : 'border-white/[0.065] bg-white/[0.025] text-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-white',
+                                  unavailable &&
+                                    'cursor-not-allowed opacity-18',
+                                )}
+                              >
+                                {format(
+                                  monthDate,
+                                  'MMM',
+                                  {
+                                    locale:
+                                      i18n.language ===
+                                      'pt-BR'
+                                        ? ptBR
+                                        : enUS,
+                                  },
+                                )}
+                              </button>
+                            )
+                          },
+                        )}
+
+                        {/* Central year control */}
+
+                        <div className="absolute left-1/2 top-1/2 z-20 flex h-[118px] w-[118px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.11] bg-[radial-gradient(circle_at_38%_28%,rgba(255,255,255,0.09),rgba(255,255,255,0.025)_42%,rgba(0,0,0,0.24)_78%)] shadow-[inset_0_1px_12px_rgba(255,255,255,0.05),0_12px_30px_rgba(0,0,0,0.26)] backdrop-blur-2xl">
+                          <div className="absolute inset-2 rounded-full border border-accent-green/[0.09]" />
+
+                          <button
+                            type="button"
+                            disabled={
+                              activityCalendarYear <=
+                              firstActivityMonth
+                                .getFullYear()
+                            }
+                            onClick={() =>
+                              setActivityCalendarYear(
+                                (year) =>
+                                  year - 1,
+                              )
+                            }
+                            aria-label={`${
+                              activityCalendarYear -
+                              1
+                            }`}
+                            className="absolute left-2 flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-15"
+                          >
+                            <ChevronLeft
+                              size={15}
+                            />
+                          </button>
+
+                          <span className="relative text-lg font-semibold tracking-tight text-white">
+                            {
+                              activityCalendarYear
+                            }
+                          </span>
+
+                          <button
+                            type="button"
+                            disabled={
+                              activityCalendarYear >=
+                              currentActivityMonth
+                                .getFullYear()
+                            }
+                            onClick={() =>
+                              setActivityCalendarYear(
+                                (year) =>
+                                  year + 1,
+                              )
+                            }
+                            aria-label={`${
+                              activityCalendarYear +
+                              1
+                            }`}
+                            className="absolute right-2 flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-15"
+                          >
+                            <ChevronRight
+                              size={15}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                    </>,
+                    document.body,
+                  )}
+            </div>
+
+            <button
+              type="button"
+              disabled={!canGoNext}
+              onClick={() =>
+                setSelectedActivityMonth(
+                  nextActivityMonth,
+                )
+              }
+              aria-label={t(
+                'streaksPage.activityMap.next',
+              )}
+              className="glass-control flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/55 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-25 sm:h-10 sm:w-10"
+            >
+              <ChevronRight size={17} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-6 overflow-hidden lg:grid-cols-3">
+          {months.map(
+            (
+              month,
+              index,
+            ) => (
+              <div
+                key={
+                  month.toISOString()
+                }
+                className={cn(
+                  'min-w-0 justify-self-center lg:justify-self-stretch',
+                  index <
+                    months.length - 1 &&
+                    'hidden lg:block',
+                )}
+              >
+                <MonthGrid
+                  month={month}
+                  dailyStats={
+                    dailyStats
+                  }
+                />
+              </div>
+            ),
+          )}
         </div>
       </motion.section>
 
@@ -732,7 +1168,7 @@ export function StreaksPage() {
                     'rounded-2xl border p-4',
                     unlocked
                       ? 'border-accent-green/30 bg-accent-green/10'
-                      : 'border-border-subtle bg-bg-secondary opacity-50',
+                      : 'glass-control opacity-50',
                   )}
                 >
                   <div className="mb-2 text-2xl">
@@ -1079,7 +1515,7 @@ function MonthGrid({
         )}
       </p>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid w-full max-w-[270px] grid-cols-7 gap-1.5 sm:max-w-[245px] lg:max-w-[220px]">
         {(
           i18n.language === 'pt-BR'
             ? [
@@ -1146,7 +1582,7 @@ function MonthGrid({
                         0.2 +
                         intensity * 0.8
                       })`
-                    : '#1E1E1E',
+                    : 'rgba(255,255,255,0.075)',
               }}
             />
           )

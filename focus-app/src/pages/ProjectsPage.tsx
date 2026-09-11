@@ -449,10 +449,10 @@ export function ProjectsPage() {
                     )}
                     className={cn(
                       'flex h-10 w-10 items-center justify-center rounded-xl text-lg transition-all',
-                      'bg-bg-secondary',
+                      'glass-control',
                       form.emoji ===
                         emoji &&
-                        'border border-border-muted bg-bg-elevated scale-105',
+                        'glass-control-active scale-105',
                       isSaving &&
                         'cursor-not-allowed opacity-50',
                     )}
@@ -552,7 +552,7 @@ export function ProjectsPage() {
                       'h-8 w-8 rounded-full transition-all',
                       form.color.toLowerCase() ===
                         color.toLowerCase() &&
-                        'scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#111111]',
+                        'scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#0b100d]',
                       isSaving &&
                         'cursor-not-allowed opacity-50',
                     )}

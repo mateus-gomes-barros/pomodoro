@@ -26,4 +26,6 @@
     <string name="widget_medium_goals_description">Compact goals progress</string>
     <string name="widget_small_top_project_name">Top Project</string>
     <string name="widget_small_top_project_description">Your top focus project this week</string>
+    <string name="widget_focushome_name">FocushoMe</string>
+    <string name="widget_focushome_description">Your current FocushoMe identity</string>
 </resources>

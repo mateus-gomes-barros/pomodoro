@@ -178,7 +178,7 @@ export function SidebarMobile({
           'flex h-[100dvh] w-64 flex-col',
           'pt-[env(safe-area-inset-top)]',
           'pb-[env(safe-area-inset-bottom)]',
-          'border-r border-white/[0.07] bg-[#111111]',
+          'glass-sidebar border-r',
           'touch-pan-y',
           'will-change-transform',
         )}
@@ -276,7 +276,7 @@ export function SidebarMobile({
                   cn(
                     'flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors duration-150',
                     isActive
-                      ? 'bg-white/10 text-white'
+                      ? 'glass-nav-active text-white'
                       : 'text-white/50 hover:bg-white/5 hover:text-white/80',
                   )
                 }
@@ -309,7 +309,7 @@ export function SidebarMobile({
               cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
                 isActive
-                  ? 'bg-emerald-400/[0.10]'
+                  ? 'glass-focusme-active'
                   : 'hover:bg-emerald-400/[0.06]',
               )
             }
@@ -335,7 +335,7 @@ export function SidebarMobile({
               cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors duration-150',
                 isActive
-                  ? 'bg-white/10 text-white'
+                  ? 'glass-nav-active text-white'
                   : 'text-white/50 hover:bg-white/5 hover:text-white/80',
               )
             }

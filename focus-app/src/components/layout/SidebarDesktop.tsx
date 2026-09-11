@@ -222,10 +222,10 @@ export function SidebarDesktop() {
         'hidden lg:flex flex-col',
         'w-64 flex-shrink-0',
         'h-screen sticky top-0',
-        'bg-[#111111] border-r border-white/[0.07]',
+        'glass-sidebar border-r',
       )}
     >
-      <div className="h-14 flex items-center px-5 border-b border-white/[0.07] flex-shrink-0">
+      <div className="sidebar-brand-header h-14 flex items-center px-5 border-b border-white/[0.07] flex-shrink-0">
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0">
           <Timer
             size={14}
@@ -255,7 +255,7 @@ export function SidebarDesktop() {
                 cn(
                   'flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
                   isActive
-                    ? 'bg-white/10 text-white'
+                    ? 'glass-nav-active text-white'
                     : 'text-white/50 hover:text-white/80 hover:bg-white/5',
                 )
               }
@@ -444,7 +444,7 @@ export function SidebarDesktop() {
             cn(
               'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
               isActive
-                ? 'bg-emerald-400/[0.10]'
+                ? 'glass-focusme-active'
                 : 'hover:bg-emerald-400/[0.06]',
             )
           }
@@ -469,7 +469,7 @@ export function SidebarDesktop() {
             cn(
               'flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-150',
               isActive
-                ? 'bg-white/10 text-white'
+                ? 'glass-nav-active text-white'
                 : 'text-white/50 hover:text-white/80 hover:bg-white/5',
             )
           }

@@ -235,7 +235,7 @@ export function Modal({
                 rounded-3xl
                 border
                 border-white/[0.08]
-                bg-[#161616]
+                glass-modal
                 p-6
                 shadow-2xl
               "
@@ -263,7 +263,7 @@ export function Modal({
                     items-center
                     justify-center
                     rounded-xl
-                    bg-[#1e1e1e]
+                    glass-control
                     text-gray-400
                     transition-colors
                     hover:text-white

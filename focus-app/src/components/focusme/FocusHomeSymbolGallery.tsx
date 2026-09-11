@@ -196,7 +196,7 @@ export function FocusHomeSymbolGallery() {
               onClick={(event) =>
                 event.stopPropagation()
               }
-              className="relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/[0.09] bg-[#111111] p-6 shadow-2xl sm:rounded-3xl sm:p-7"
+              className="relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/[0.09] glass-modal p-6 shadow-2xl sm:rounded-3xl sm:p-7"
             >
               <button
                 type="button"

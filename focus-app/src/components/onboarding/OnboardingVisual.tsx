@@ -130,7 +130,7 @@ function Frame({
   children: React.ReactNode
 }) {
   return (
-    <div className="relative mx-auto flex h-[330px] w-full max-w-[440px] items-center justify-center overflow-hidden rounded-[36px] border border-white/[0.07] bg-[#0b0e0c] p-5 shadow-2xl sm:h-[380px]">
+    <div className="relative mx-auto flex h-[330px] w-full max-w-[440px] items-center justify-center overflow-hidden rounded-[36px] border border-white/[0.07] glass-visual p-5 shadow-2xl sm:h-[380px]">
       <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-emerald-400/[0.09] blur-3xl" />
       <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-emerald-400/[0.05] blur-3xl" />
 
@@ -436,7 +436,7 @@ function NotificationCard() {
   const labels = useVisualCopy()
 
   return (
-    <div className="rounded-[30px] border border-white/[0.08] bg-[#171a18]/95 p-5 shadow-2xl">
+    <div className="rounded-[30px] border border-white/[0.08] glass-visual p-5 shadow-2xl">
       <div className="flex gap-4">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-400">
           <FocusMeIcon size={28} />
@@ -513,7 +513,7 @@ function LiveVisual() {
         </span>
       </div>
 
-      <div className="mx-auto max-w-[330px] rounded-full border border-white/[0.08] bg-[#191c1a]/95 px-5 py-4 shadow-2xl">
+      <div className="mx-auto max-w-[330px] rounded-full border border-white/[0.08] glass-visual px-5 py-4 shadow-2xl">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-400">
             <FocusMeIcon size={23} />
@@ -553,7 +553,7 @@ function FinaleVisual() {
         <div className="absolute inset-8 rounded-full border border-emerald-400/20" />
         <div className="absolute inset-16 rounded-full bg-emerald-400/[0.08] blur-xl" />
 
-        <div className="relative flex h-24 w-24 items-center justify-center rounded-[30px] border border-emerald-400/20 bg-[#101411] text-emerald-400 shadow-2xl">
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-[30px] border border-emerald-400/20 glass-visual text-emerald-400 shadow-2xl">
           <BrainCircuit size={42} />
         </div>
 
