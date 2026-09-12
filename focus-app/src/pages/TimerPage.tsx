@@ -5,17 +5,23 @@ import {
   useReducedMotion,
 } from 'framer-motion'
 import {
+  CheckCircle2,
   ChevronDown,
+  Coffee,
   LoaderCircle,
   Pause,
   Play,
   RotateCcw,
+  TimerReset,
   Volume2,
   VolumeX,
 } from 'lucide-react'
 
 import { useProjects } from '@/hooks/projects/useProjects'
-import { useTasks } from '@/hooks/tasks/useTasks'
+import {
+  useTasks,
+  useToggleTask,
+} from '@/hooks/tasks/useTasks'
 import { usePomodoroStore } from '@/store/pomodoroStore'
 import { CircularProgress } from '@/components/ui/CircularProgress'
 import {
@@ -85,6 +91,7 @@ export function TimerPage() {
 
   const projectsQuery = useProjects()
   const tasksQuery = useTasks()
+  const toggleTaskMutation = useToggleTask()
 
   const projects =
     projectsQuery.data ?? []
@@ -141,6 +148,38 @@ export function TimerPage() {
 
   const isRunning =
     status === 'running'
+
+  const isSessionCompleted =
+    status === 'completed'
+
+  const completedWorkSession =
+    isSessionCompleted &&
+    sessionType !== 'work'
+
+  const handleContinueFocus = () => {
+    switchSession('work')
+    usePomodoroStore.getState().start()
+  }
+
+  const handleStartBreak = () => {
+    usePomodoroStore.getState().start()
+  }
+
+  const handleCompleteTask = async () => {
+    if (!activeTask) {
+      return
+    }
+
+    await toggleTaskMutation.mutateAsync(
+      activeTask,
+    )
+    setActiveTask(null)
+  }
+
+  const handleChooseAnotherTask = () => {
+    setActiveTask(null)
+    switchSession('work')
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col items-center space-y-7">
@@ -410,6 +449,83 @@ export function TimerPage() {
           until long break
         </span>
       </motion.div>
+
+      <AnimatePresence initial={false}>
+        {isSessionCompleted && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="card w-full p-5"
+          >
+            <p className="label-section">
+              {t(
+                completedWorkSession
+                  ? 'timer.completion.focusFinished'
+                  : 'timer.completion.breakFinished',
+              )}
+            </p>
+
+            <p className="mt-1 text-xs text-white/40">
+              {activeTask
+                ? t('timer.completion.taskContext', {
+                    task: activeTask.title,
+                  })
+                : t('timer.completion.noTaskContext')}
+            </p>
+
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={handleContinueFocus}
+                className="flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-xs font-semibold text-black transition-opacity hover:opacity-90"
+              >
+                <TimerReset size={15} />
+                {t('timer.completion.continueFocus')}
+              </button>
+
+              {completedWorkSession && (
+                <button
+                  type="button"
+                  onClick={handleStartBreak}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-white/[0.06] px-4 py-2.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/[0.1]"
+                >
+                  <Coffee size={15} />
+                  {t('timer.completion.startBreak')}
+                </button>
+              )}
+
+              {activeTask && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleCompleteTask()
+                  }}
+                  disabled={
+                    toggleTaskMutation.isPending
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl bg-white/[0.06] px-4 py-2.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/[0.1] disabled:opacity-40"
+                >
+                  <CheckCircle2 size={15} />
+                  {t('timer.completion.completeTask')}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleChooseAnotherTask}
+                className="rounded-xl bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-white/50 transition-colors hover:text-white/75"
+              >
+                {t(
+                  activeTask
+                    ? 'timer.completion.chooseTask'
+                    : 'timer.completion.selectTask',
+                )}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Timer controls */}
 
@@ -910,6 +1026,76 @@ export function TimerPage() {
                     </div>
                   ),
                 )}
+              </div>
+
+              <div className="border-t border-white/[0.05] p-5">
+                <p className="label-section mb-3">
+                  {t('timer.settings.automation')}
+                </p>
+
+                <div className="space-y-3">
+                  {([
+                    [
+                      'autoStartBreaks',
+                      t('timer.settings.autoStartBreaks'),
+                      t('timer.settings.autoStartBreaksDescription'),
+                      settings.autoStartBreaks,
+                    ],
+                    [
+                      'autoStartWork',
+                      t('timer.settings.autoStartWork'),
+                      t('timer.settings.autoStartWorkDescription'),
+                      settings.autoStartWork,
+                    ],
+                  ] as const).map(
+                    ([
+                      key,
+                      label,
+                      description,
+                      enabled,
+                    ]) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between gap-4"
+                      >
+                        <div>
+                          <p className="text-sm text-white/75">
+                            {label}
+                          </p>
+                          <p className="mt-0.5 text-xs text-white/35">
+                            {description}
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={enabled}
+                          onClick={() =>
+                            updateSettings({
+                              [key]: !enabled,
+                            })
+                          }
+                          className={cn(
+                            'relative h-6 w-11 flex-shrink-0 rounded-full transition-colors',
+                            enabled
+                              ? 'bg-emerald-400'
+                              : 'bg-white/10',
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'absolute top-1 h-4 w-4 rounded-full bg-white transition-transform',
+                              enabled
+                                ? 'translate-x-5'
+                                : 'translate-x-1',
+                            )}
+                          />
+                        </button>
+                      </div>
+                    ),
+                  )}
+                </div>
               </div>
 
               {isRunning && (
