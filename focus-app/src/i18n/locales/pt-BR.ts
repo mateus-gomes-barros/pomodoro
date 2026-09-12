@@ -454,6 +454,12 @@ const ptBR = {
     save: 'Salvar alterações',
     pomodoroCount_one: '{{count}} pomodoro',
     pomodoroCount_other: '{{count}} pomodoros',
+    focusProgress:
+      '{{completed}} de {{estimated}} sessões',
+    focus: {
+      start: 'Iniciar foco em {{title}}',
+      openActive: 'Abrir foco ativo em {{title}}',
+    },
     plannedDateLabel: 'Planejada: {{date}}',
     dueDateLabel: 'Prazo: {{date}}',
 
