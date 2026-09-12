@@ -7,6 +7,7 @@ import {
   Clock3,
   LoaderCircle,
   Pencil,
+  Play,
   Plus,
   Trash2,
 } from 'lucide-react'
@@ -23,6 +24,7 @@ import {
   useTrashTasks,
   useUpdateTask,
 } from '@/hooks/tasks/useTasks'
+import { usePomodoroStore } from '@/store/pomodoroStore'
 
 import type {
   Task,
@@ -87,6 +89,15 @@ function toLocalDateInput(
 export function TasksPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+
+  const {
+    status: timerStatus,
+    sessionType,
+    activeTaskId,
+    setActiveTask,
+    setActiveProject,
+    switchSession,
+  } = usePomodoroStore()
 
   const {
     data: tasks = [],
@@ -279,6 +290,32 @@ export function TasksPage() {
         mutationError,
       )
     }
+  }
+
+  function handleStartFocus(task: Task) {
+    const timerIsBusy =
+      timerStatus === 'running' ||
+      timerStatus === 'paused'
+
+    if (timerIsBusy) {
+      navigate('/timer')
+      return
+    }
+
+    setActiveTask(task.id)
+    setActiveProject(
+      task.projectId ?? null,
+    )
+
+    if (
+      sessionType !== 'work' ||
+      timerStatus === 'completed'
+    ) {
+      switchSession('work')
+    }
+
+    usePomodoroStore.getState().start()
+    navigate('/timer')
   }
 
   async function handleToggle(
@@ -664,9 +701,11 @@ export function TasksPage() {
                         <Clock3 size={11} />
 
                         {t(
-                          'tasksPage.pomodoroCount',
+                          'tasksPage.focusProgress',
                           {
-                            count:
+                            completed:
+                              task.completedPomodoros,
+                            estimated:
                               task.estimatedPomodoros,
                           },
                         )}
@@ -720,6 +759,45 @@ export function TasksPage() {
                       )}
                     </div>
                   </div>
+
+                  {!task.completed && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleStartFocus(task)
+                      }
+                      disabled={
+                        isUpdating ||
+                        (
+                          (
+                            timerStatus === 'running' ||
+                            timerStatus === 'paused'
+                          ) &&
+                          activeTaskId !== task.id
+                        )
+                      }
+                      aria-label={t(
+                        activeTaskId === task.id &&
+                          (
+                            timerStatus === 'running' ||
+                            timerStatus === 'paused'
+                          )
+                          ? 'tasksPage.focus.openActive'
+                          : 'tasksPage.focus.start',
+                        {
+                          title: task.title,
+                        },
+                      )}
+                      className={cn(
+                        'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-30',
+                        activeTaskId === task.id
+                          ? 'bg-emerald-300/15 text-emerald-300'
+                          : 'bg-white/[0.04] text-accent-subtle hover:text-emerald-300',
+                      )}
+                    >
+                      <Play size={14} />
+                    </button>
+                  )}
 
                   <button
                     type="button"
