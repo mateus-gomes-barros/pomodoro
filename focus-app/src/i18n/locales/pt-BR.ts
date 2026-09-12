@@ -666,6 +666,19 @@ const ptBR = {
         'As prioridades 1, 2 e 3 ficam no topo. Nenhuma tarefa será reorganizada automaticamente.',
       moveUp: 'Mover {{title}} para cima',
       moveDown: 'Mover {{title}} para baixo',
+      load: {
+        light: 'Carga leve',
+        balanced: 'Carga equilibrada',
+        overloaded: 'Acima da capacidade',
+        comparison:
+          '{{planned}} planejados · {{available}} disponíveis',
+        lightDescription:
+          'Seu plano deixa espaço para imprevistos ou novas tarefas.',
+        balancedDescription:
+          'A estimativa cabe no tempo de foco que ainda resta hoje.',
+        overloadedDescription:
+          'O plano exige mais tempo do que resta na sua meta diária. Você decide se mantém ou ajusta.',
+      },
       planEmpty:
         'Nenhuma tarefa planejada para hoje.',
       addToToday: 'Adicionar ao dia',
