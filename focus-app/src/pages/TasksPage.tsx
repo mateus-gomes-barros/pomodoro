@@ -758,6 +758,37 @@ export function TasksPage() {
                         </span>
                       )}
                     </div>
+
+                    <div
+                      className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.06]"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={
+                        task.estimatedPomodoros
+                      }
+                      aria-valuenow={
+                        Math.min(
+                          task.completedPomodoros,
+                          task.estimatedPomodoros,
+                        )
+                      }
+                    >
+                      <div
+                        className="h-full rounded-full bg-emerald-300 transition-[width] duration-300"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (
+                              task.completedPomodoros /
+                              Math.max(
+                                task.estimatedPomodoros,
+                                1,
+                              )
+                            ) * 100,
+                          )}%`,
+                        }}
+                      />
+                    </div>
                   </div>
 
                   {!task.completed && (
