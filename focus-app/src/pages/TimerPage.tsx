@@ -500,7 +500,7 @@ export function TimerPage() {
       >
         <div className="card p-5">
           <p className="label-section mb-3">
-            Assign to Project
+            {t('timer.projects.assign')}
           </p>
 
           {projectsQuery.isLoading ? (
@@ -590,7 +590,7 @@ export function TimerPage() {
           }
         >
           <span>
-            Timer Settings
+            {t('timer.settings.title')}
           </span>
 
           <motion.span
