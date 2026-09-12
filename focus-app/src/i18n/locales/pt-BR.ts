@@ -650,6 +650,17 @@ const ptBR = {
         'Você já ultrapassou metade da sua meta diária de foco.',
       insightComplete:
         'Meta diária alcançada. O restante do dia pode ser mais leve.',
+      achievementsTitle:
+        'Essas são suas conquistas até agora!',
+      badgeCount_one:
+        '{{count}} insígnia conquistada',
+      badgeCount_other:
+        '{{count}} insígnias conquistadas',
+      noBadgesYet:
+        'Conclua sua primeira sessão para iniciar suas conquistas.',
+      focusHomeLabel: 'Seu emblema FocushoMe',
+      focusHomeLocked:
+        'Ainda não revelado',
     },
 
     stats: {
