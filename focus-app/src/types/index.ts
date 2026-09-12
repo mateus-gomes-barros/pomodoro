@@ -91,6 +91,34 @@ export interface TimerSettings {
   autoStartWork: boolean
 }
 
+// ─── Focus Routine ──────────────────────────────────────────────────────────────
+
+export type FocusRoutineTemplate =
+  | 'work'
+  | 'study'
+  | 'reading'
+
+export interface FocusRoutine {
+  id: string
+  name: string
+  templateKey?: FocusRoutineTemplate
+  icon: string
+  color: string
+  workDuration: number
+  shortBreakDuration: number
+  longBreakDuration: number
+  sessionsUntilLongBreak: number
+  defaultProjectId?: string
+  soundEnabled: boolean
+  autoStartBreaks: boolean
+  autoStartWork: boolean
+  doNotDisturb: boolean
+  isDefault: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Stats ──────────────────────────────────────────────────────────────────────
 
 export interface DailyStats {
