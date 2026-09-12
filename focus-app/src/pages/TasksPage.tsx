@@ -790,7 +790,7 @@ export function TasksPage() {
           <div>
             <label
               htmlFor="task-title"
-              className="mb-2 block text-xs font-medium text-accent-subtle"
+              className="mb-2 block text-xs font-semibold text-emerald-300"
             >
               {t(
                 'tasksPage.form.name',
@@ -823,7 +823,7 @@ export function TasksPage() {
           </div>
 
           <div>
-            <span className="mb-2 block text-xs font-medium text-accent-subtle">
+            <span className="mb-2 block text-xs font-semibold text-emerald-300">
               {t(
                 'tasksPage.form.category',
               )}
@@ -876,7 +876,7 @@ export function TasksPage() {
           <div>
             <label
               htmlFor="task-project"
-              className="mb-2 block text-xs font-medium text-accent-subtle"
+              className="mb-2 block text-xs font-semibold text-emerald-300"
             >
               {t(
                 'tasksPage.form.project',
