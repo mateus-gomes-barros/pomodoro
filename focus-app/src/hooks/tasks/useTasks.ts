@@ -215,7 +215,8 @@ export function useSetDailyTaskPriority() {
                   return {
                     ...currentTask,
                     dailyPriority:
-                      priority,
+                      priority ??
+                      undefined,
                   }
                 }
 
@@ -228,7 +229,8 @@ export function useSetDailyTaskPriority() {
                 ) {
                   return {
                     ...currentTask,
-                    dailyPriority: null,
+                    dailyPriority:
+                      undefined,
                   }
                 }
 
