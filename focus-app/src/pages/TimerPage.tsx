@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 
 import { useProjects } from '@/hooks/projects/useProjects'
+import { useTasks } from '@/hooks/tasks/useTasks'
 import { usePomodoroStore } from '@/store/pomodoroStore'
 import { CircularProgress } from '@/components/ui/CircularProgress'
 import {
@@ -72,18 +73,29 @@ export function TimerPage() {
     settings,
     currentSessionCount,
     activeProjectId,
+    activeTaskId,
     start,
     pause,
     reset,
     switchSession,
     setActiveProject,
+    setActiveTask,
     updateSettings,
   } = usePomodoroStore()
 
   const projectsQuery = useProjects()
+  const tasksQuery = useTasks()
 
   const projects =
     projectsQuery.data ?? []
+
+  const tasks = (tasksQuery.data ?? []).filter(
+    (task) => !task.completed,
+  )
+
+  const activeTask = tasks.find(
+    (task) => task.id === activeTaskId,
+  )
 
   const [showSettings, setShowSettings] =
     useState(false)
@@ -498,6 +510,79 @@ export function TimerPage() {
         }}
         className="w-full space-y-3"
       >
+        <div className="card p-5">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <p className="label-section">
+                {t('timer.tasks.assign')}
+              </p>
+              {activeTask && (
+                <p className="mt-1 text-xs text-white/40">
+                  {t('timer.tasks.progress', {
+                    completed: activeTask.completedPomodoros,
+                    estimated: activeTask.estimatedPomodoros,
+                  })}
+                </p>
+              )}
+            </div>
+            {activeTask && (
+              <button
+                type="button"
+                onClick={() => setActiveTask(null)}
+                disabled={isRunning}
+                className="text-xs text-white/35 transition-colors hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {t('timer.tasks.clear')}
+              </button>
+            )}
+          </div>
+
+          {tasksQuery.isLoading ? (
+            <div className="flex min-h-10 items-center justify-center">
+              <LoaderCircle
+                size={18}
+                className="animate-spin text-white/35"
+              />
+            </div>
+          ) : tasksQuery.isError ? (
+            <p className="text-xs text-red-400">
+              {t('timer.tasks.loadError')}
+            </p>
+          ) : tasks.length === 0 ? (
+            <p className="text-xs text-white/35">
+              {t('timer.tasks.empty')}
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {tasks.map((task) => (
+                <button
+                  key={task.id}
+                  type="button"
+                  disabled={isRunning}
+                  onClick={() => {
+                    setActiveTask(task.id)
+                    if (task.projectId) {
+                      setActiveProject(task.projectId)
+                    }
+                  }}
+                  title={task.title}
+                  className={cn(
+                    'max-w-full rounded-xl px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                    activeTaskId === task.id
+                      ? 'border border-emerald-300/30 bg-emerald-300/10 text-emerald-300'
+                      : 'bg-white/[0.04] text-white/40 hover:text-white/60',
+                    isRunning && 'cursor-not-allowed opacity-60',
+                  )}
+                >
+                  <span className="block max-w-[260px] truncate">
+                    {task.title}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="card p-5">
           <p className="label-section mb-3">
             {t('timer.projects.assign')}
