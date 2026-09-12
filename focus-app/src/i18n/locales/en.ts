@@ -815,6 +815,23 @@ const en = {
       mute: 'Mute sound',
       enable: 'Enable sound',
     },
+    routines: {
+      title: 'Focus routine',
+      description:
+        'Choose a routine to prepare the timer.',
+      active: '{{routine}} is ready',
+      locked:
+        'The routine cannot be changed during a session.',
+      duration:
+        '{{minutes}} min · {{sessions}} sessions',
+      loadError:
+        'Unable to load your routines.',
+      presets: {
+        work: 'Work',
+        study: 'Study',
+        reading: 'Reading',
+      },
+    },
     tasks: {
       assign: 'Focus task',
       clear: 'Clear',
