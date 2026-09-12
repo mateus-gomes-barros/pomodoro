@@ -677,6 +677,16 @@ const en = {
       suggestionsDescription:
         'Selected from your pending tasks.',
       suggestedTask: 'Suggested for your plan',
+      suggestionReasons: {
+        overdue: 'Overdue',
+        dueToday: 'Due today',
+        dueSoon: 'Due soon',
+        urgent: 'Marked as urgent',
+        continue: 'Continue recent progress',
+        fits: 'Fits your available time',
+        projectMomentum: 'Recently active project',
+        recommended: 'Recommended for your plan',
+      },
       morePlannedTasks_one:
         'View {{count}} more planned task',
       morePlannedTasks_other:
