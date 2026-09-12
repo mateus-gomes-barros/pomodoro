@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 
 import { FocusMeIcon } from '@/components/icons/FocusMeIcon'
+import { StreakBadgeIcon } from '@/components/streaks/StreakBadgeIcon'
 import {
   format,
   subDays,
@@ -313,19 +314,18 @@ export function SidebarDesktop() {
                 shrink-0
                 items-center
                 justify-center
-                rounded-2xl
-                border
-                border-white/[0.07]
-                bg-white/[0.045]
-                text-2xl
-                shadow-[0_8px_24px_rgba(0,0,0,0.18)]
                 transition
                 duration-200
                 group-hover:scale-[1.03]
               "
               aria-hidden="true"
             >
-              {currentBadge.icon}
+              <StreakBadgeIcon
+                minimumDays={
+                  currentBadge.minimumDays
+                }
+                size={44}
+              />
             </div>
 
             <div className="min-w-0 flex-1">
