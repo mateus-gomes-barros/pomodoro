@@ -656,6 +656,19 @@ const en = {
         'Priorities 1, 2 and 3 stay at the top. No task will be reorganized automatically.',
       moveUp: 'Move {{title}} up',
       moveDown: 'Move {{title}} down',
+      load: {
+        light: 'Light load',
+        balanced: 'Balanced load',
+        overloaded: 'Over capacity',
+        comparison:
+          '{{planned}} planned · {{available}} available',
+        lightDescription:
+          'Your plan leaves room for unexpected work or new tasks.',
+        balancedDescription:
+          'The estimate fits the focus time still available today.',
+        overloadedDescription:
+          'The plan requires more time than remains in your daily goal. You decide whether to keep or adjust it.',
+      },
       planEmpty:
         'No tasks planned for today.',
       addToToday: 'Add to today',
