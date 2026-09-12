@@ -104,7 +104,7 @@ export function StatCard({
       {/* Header */}
 
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
+        <span className="stat-card-label text-[10px] font-semibold uppercase tracking-[0.18em]">
           {label}
         </span>
 
