@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
+  CalendarDays,
   CheckCircle2,
   Circle,
   Clock3,
@@ -64,7 +65,7 @@ const statusOptions: StatusFilter[] = [
 ]
 
 export function TasksPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
 
   const {
@@ -101,6 +102,8 @@ export function TasksPage() {
   const [category, setCategory] =
     useState<TaskCategory>('planned')
   const [projectId, setProjectId] =
+    useState('')
+  const [dueDate, setDueDate] =
     useState('')
   const [
     estimatedPomodoros,
@@ -156,6 +159,7 @@ export function TasksPage() {
     setTitle('')
     setCategory('planned')
     setProjectId('')
+    setDueDate('')
     setEstimatedPomodoros(1)
   }
 
@@ -174,6 +178,9 @@ export function TasksPage() {
     setTitle(task.title)
     setCategory(task.category)
     setProjectId(task.projectId ?? '')
+    setDueDate(
+      task.dueAt?.slice(0, 10) ?? '',
+    )
     setEstimatedPomodoros(
       task.estimatedPomodoros,
     )
@@ -208,6 +215,12 @@ export function TasksPage() {
             title: trimmedTitle,
             category,
             projectId,
+            dueAt: dueDate
+              ? new Date(
+                  dueDate +
+                    'T23:59:59',
+                ).toISOString()
+              : null,
             estimatedPomodoros,
           },
         })
@@ -216,6 +229,11 @@ export function TasksPage() {
           title: trimmedTitle,
           category,
           projectId,
+          dueAt: dueDate
+            ? new Date(
+                dueDate + 'T23:59:59',
+              ).toISOString()
+            : null,
           priority: 'medium',
           estimatedPomodoros,
         })
@@ -623,6 +641,29 @@ export function TasksPage() {
                           },
                         )}
                       </span>
+
+                      {task.dueAt && (
+                        <span className="flex items-center gap-1 text-amber-200/70">
+                          <CalendarDays
+                            size={11}
+                          />
+                          {t(
+                            'tasksPage.dueDateLabel',
+                            {
+                              date:
+                                new Date(
+                                  task.dueAt,
+                                ).toLocaleDateString(
+                                  i18n.language,
+                                  {
+                                    day: '2-digit',
+                                    month: 'short',
+                                  },
+                                ),
+                            },
+                          )}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -815,6 +856,43 @@ export function TasksPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label
+                htmlFor="task-due-date"
+                className="block text-xs font-medium text-accent-subtle"
+              >
+                {t(
+                  'tasksPage.form.dueDate',
+                )}
+              </label>
+              <span className="text-[10px] uppercase tracking-[0.12em] text-accent-subtle/60">
+                {t(
+                  'tasksPage.form.optional',
+                )}
+              </span>
+            </div>
+
+            <input
+              id="task-due-date"
+              type="date"
+              className="input"
+              value={dueDate}
+              disabled={isSaving}
+              onChange={(event) =>
+                setDueDate(
+                  event.target.value,
+                )
+              }
+            />
+
+            <p className="mt-2 text-[11px] leading-relaxed text-accent-subtle">
+              {t(
+                'tasksPage.form.dueDateHelp',
+              )}
+            </p>
           </div>
 
           <div>
