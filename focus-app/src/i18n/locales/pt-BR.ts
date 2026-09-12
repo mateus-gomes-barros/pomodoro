@@ -666,6 +666,21 @@ const ptBR = {
         'As prioridades 1, 2 e 3 ficam no topo. Nenhuma tarefa será reorganizada automaticamente.',
       moveUp: 'Mover {{title}} para cima',
       moveDown: 'Mover {{title}} para baixo',
+      closure: {
+        open: 'Encerrar o dia',
+        title: 'Encerrar planejamento de hoje',
+        description:
+          'Escolha o destino de cada tarefa pendente. Nada será alterado antes da confirmação.',
+        tomorrow: 'Amanhã',
+        backlog: 'Retirar',
+        keep: 'Manter hoje',
+        history:
+          'Tarefas concluídas permanecem registradas no dia de hoje.',
+        confirm: 'Confirmar encerramento',
+        saving: 'Salvando decisões...',
+        error:
+          'Não foi possível encerrar o planejamento. Tente novamente.',
+      },
       load: {
         light: 'Carga leve',
         balanced: 'Carga equilibrada',
