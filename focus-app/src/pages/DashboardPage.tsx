@@ -19,7 +19,6 @@ import {
   Play,
   Trophy,
   Sparkles,
-  Timer,
   TriangleAlert,
 } from 'lucide-react'
 import {
@@ -247,6 +246,25 @@ export function DashboardPage() {
         .slice(0, 3),
     [tasks, today],
   )
+
+  const visibleTodayPlan =
+    todayPlan.slice(0, 3)
+
+  const hiddenTodayCount =
+    Math.max(
+      0,
+      todayPlan.length -
+        visibleTodayPlan.length,
+    )
+
+  const contextualSuggestions =
+    suggestions.slice(
+      0,
+      Math.max(
+        0,
+        3 - visibleTodayPlan.length,
+      ),
+    )
 
   const activeTask = tasks.find(
     (task) =>
@@ -726,16 +744,59 @@ export function DashboardPage() {
           </div>
 
           {todayPlan.length === 0 ? (
-            <div className="flex min-h-[130px] items-center justify-center rounded-2xl border border-dashed border-white/[0.08]">
-              <p className="text-sm text-white/30">
-                {t(
-                  'dashboard.today.planEmpty',
+            contextualSuggestions.length > 0 ? (
+              <div className="space-y-2">
+                <p className="mb-3 text-xs text-white/35">
+                  {t(
+                    'dashboard.today.suggestionsDescription',
+                  )}
+                </p>
+                {contextualSuggestions.map(
+                  (task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() =>
+                        addToToday(task)
+                      }
+                      disabled={
+                        updateTask.isPending
+                      }
+                      className="group flex w-full min-w-0 items-center gap-3 rounded-2xl border border-dashed border-white/[0.07] p-3.5 text-left transition-colors hover:border-emerald-400/20 hover:bg-emerald-400/[0.035]"
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white/35">
+                        +
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-white/55">
+                          {task.title}
+                        </span>
+                        <span className="mt-1 block text-[10px] uppercase tracking-[0.12em] text-emerald-300/45">
+                          {t(
+                            'dashboard.today.suggestedTask',
+                          )}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={14}
+                        className="shrink-0 text-white/15 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300"
+                      />
+                    </button>
+                  ),
                 )}
-              </p>
-            </div>
+              </div>
+            ) : (
+              <div className="flex min-h-[130px] items-center justify-center rounded-2xl border border-dashed border-white/[0.08]">
+                <p className="text-sm text-white/30">
+                  {t(
+                    'dashboard.today.planEmpty',
+                  )}
+                </p>
+              </div>
+            )
           ) : (
             <div className="space-y-2">
-              {todayPlan.map(
+              {visibleTodayPlan.map(
                 (task, index) => (
                   <div
                     key={task.id}
@@ -806,6 +867,56 @@ export function DashboardPage() {
                     </span>
                   </div>
                 ),
+              )}
+
+              {contextualSuggestions.map(
+                (task) => (
+                  <button
+                    key={task.id}
+                    type="button"
+                    onClick={() =>
+                      addToToday(task)
+                    }
+                    disabled={
+                      updateTask.isPending
+                    }
+                    className="group flex w-full min-w-0 items-center gap-3 rounded-2xl border border-dashed border-white/[0.07] p-3.5 text-left transition-colors hover:border-emerald-400/20 hover:bg-emerald-400/[0.035]"
+                  >
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white/35">
+                      +
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-white/45">
+                        {task.title}
+                      </span>
+                      <span className="mt-1 block text-[10px] uppercase tracking-[0.12em] text-emerald-300/45">
+                        {t(
+                          'dashboard.today.suggestedTask',
+                        )}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      size={14}
+                      className="shrink-0 text-white/15 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300"
+                    />
+                  </button>
+                ),
+              )}
+
+              {hiddenTodayCount > 0 && (
+                <Link
+                  to="/tasks"
+                  className="flex items-center justify-center gap-1 py-1 text-xs text-white/35 transition-colors hover:text-white/65"
+                >
+                  {t(
+                    'dashboard.today.morePlannedTasks',
+                    {
+                      count:
+                        hiddenTodayCount,
+                    },
+                  )}
+                  <ArrowRight size={12} />
+                </Link>
               )}
             </div>
           )}
@@ -891,207 +1002,134 @@ export function DashboardPage() {
             </div>
           </motion.section>
 
-          <motion.section
-            initial={{
-              opacity: 0,
-              y: 8,
-            }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.24 }}
-            className="card overflow-hidden p-5"
-          >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold leading-snug text-white">
-                  {t(
-                    'dashboard.today.achievementsTitle',
-                  )}
-                </h2>
-                <p className="mt-1 text-xs text-white/35">
-                  {t(
-                    'dashboard.today.badgeCount',
-                    {
-                      count:
-                        earnedBadges.length,
-                    },
-                  )}
-                </p>
-              </div>
+        </div>
+      </div>
 
-              <Trophy
-                size={17}
-                className="shrink-0 text-amber-300/60"
-              />
-            </div>
+      <motion.section
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.24 }}
+        className="card overflow-hidden p-5 sm:p-6"
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold leading-snug text-white">
+              {t(
+                'dashboard.today.achievementsTitle',
+              )}
+            </h2>
+            <p className="mt-1 text-xs text-white/35">
+              {t(
+                'dashboard.today.badgeCount',
+                {
+                  count:
+                    earnedBadges.length,
+                },
+              )}
+            </p>
+          </div>
+          <Trophy
+            size={17}
+            className="shrink-0 text-amber-300/60"
+          />
+        </div>
 
-            {earnedBadges.length > 0 ? (
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
-                {earnedBadges.map(
-                  (badge) => (
-                    <Link
-                      key={
-                        badge.minimumDays
-                      }
-                      to="/streaks"
-                      title={t(
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_250px] xl:items-center">
+          {earnedBadges.length > 0 ? (
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              {earnedBadges.map(
+                (badge) => (
+                  <Link
+                    key={
+                      badge.minimumDays
+                    }
+                    to="/streaks"
+                    title={t(
+                      'streaksPage.badges.' +
+                        badge.minimumDays +
+                        '.name',
+                    )}
+                    className="flex w-[76px] shrink-0 flex-col items-center rounded-2xl border border-white/[0.05] bg-white/[0.025] px-2 py-3 text-center transition-colors hover:border-amber-300/20 hover:bg-amber-300/[0.04]"
+                  >
+                    <span className="text-2xl">
+                      {badge.icon}
+                    </span>
+                    <span className="mt-2 line-clamp-2 text-[10px] leading-tight text-white/45">
+                      {t(
                         'streaksPage.badges.' +
                           badge.minimumDays +
                           '.name',
                       )}
-                      className="flex w-[76px] shrink-0 flex-col items-center rounded-2xl border border-white/[0.05] bg-white/[0.025] px-2 py-3 text-center transition-colors hover:border-amber-300/20 hover:bg-amber-300/[0.04]"
-                    >
-                      <span className="text-2xl">
-                        {badge.icon}
-                      </span>
-                      <span className="mt-2 line-clamp-2 text-[10px] leading-tight text-white/45">
-                        {t(
-                          'streaksPage.badges.' +
-                            badge.minimumDays +
-                            '.name',
-                        )}
-                      </span>
-                    </Link>
-                  ),
-                )}
+                    </span>
+                  </Link>
+                ),
+              )}
+            </div>
+          ) : (
+            <p className="rounded-2xl border border-dashed border-white/[0.08] px-3 py-4 text-center text-xs text-white/30">
+              {t(
+                'dashboard.today.noBadgesYet',
+              )}
+            </p>
+          )}
+
+          <Link
+            to="/focusme"
+            className="group flex items-center gap-3 rounded-2xl border border-white/[0.05] bg-white/[0.02] p-3 transition-colors hover:bg-white/[0.035]"
+          >
+            {focusHome ? (
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border bg-white/[0.025]"
+                style={{
+                  color:
+                    FOCUS_HOME_COLORS[
+                      focusHome.focusHome
+                    ],
+                  borderColor:
+                    FOCUS_HOME_COLORS[
+                      focusHome.focusHome
+                    ] + '35',
+                }}
+              >
+                <FocusHomeSymbol
+                  type={
+                    focusHome.focusHome
+                  }
+                  size={34}
+                  compact
+                  colored
+                />
               </div>
             ) : (
-              <p className="rounded-2xl border border-dashed border-white/[0.08] px-3 py-4 text-center text-xs text-white/30">
-                {t(
-                  'dashboard.today.noBadgesYet',
-                )}
-              </p>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.025] text-white/20">
+                <Sparkles size={17} />
+              </div>
             )}
 
-            <div className="mt-3 border-t border-white/[0.06] pt-3">
-              <Link
-                to="/focusme"
-                className="group flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-white/[0.035]"
-              >
-                {focusHome ? (
-                  <div
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border bg-white/[0.025]"
-                    style={{
-                      color:
-                        FOCUS_HOME_COLORS[
-                          focusHome.focusHome
-                        ],
-                      borderColor:
-                        FOCUS_HOME_COLORS[
-                          focusHome.focusHome
-                        ] + '35',
-                    }}
-                  >
-                    <FocusHomeSymbol
-                      type={
-                        focusHome.focusHome
-                      }
-                      size={34}
-                      compact
-                      colored
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.025] text-white/20">
-                    <Sparkles size={17} />
-                  </div>
-                )}
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
-                    {t(
-                      'dashboard.today.focusHomeLabel',
-                    )}
-                  </p>
-                  <p className="mt-1 truncate text-sm font-medium text-white/70">
-                    {focusHome
-                      ? t(
-                          'focusHomeIdentity.archetypes.' +
-                            focusHome.archetype,
-                        )
-                      : t(
-                          'dashboard.today.focusHomeLocked',
-                        )}
-                  </p>
-                </div>
-
-                <ChevronRight
-                  size={14}
-                  className="text-white/20 transition-transform group-hover:translate-x-0.5 group-hover:text-white/50"
-                />
-              </Link>
-            </div>
-          </motion.section>
-        </div>
-      </div>
-
-      {suggestions.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.24 }}
-          className="card p-6"
-        >
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-sm font-semibold text-white">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
                 {t(
-                  'dashboard.today.suggestionsTitle',
-                )}
-              </h2>
-              <p className="mt-1 text-xs text-white/35">
-                {t(
-                  'dashboard.today.suggestionsDescription',
+                  'dashboard.today.focusHomeLabel',
                 )}
               </p>
-            </div>
-
-            <Timer
-              size={16}
-              className="text-white/20"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {suggestions.map((task) => (
-              <button
-                key={task.id}
-                type="button"
-                onClick={() =>
-                  addToToday(task)
-                }
-                disabled={
-                  updateTask.isPending
-                }
-                className="group flex min-w-0 items-center gap-3 rounded-2xl border border-white/[0.05] bg-white/[0.025] p-4 text-left transition-colors hover:border-emerald-400/15 hover:bg-emerald-400/[0.04]"
-              >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-base">
-                  {task.projectId
-                    ? projectById.get(
-                        task.projectId,
-                      )?.emoji ?? '＋'
-                    : '＋'}
-                </span>
-
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-white/70">
-                    {task.title}
-                  </span>
-                  <span className="mt-1 block text-xs text-white/25">
-                    {t(
-                      'dashboard.today.addToToday',
+              <p className="mt-1 truncate text-sm font-medium text-white/70">
+                {focusHome
+                  ? t(
+                      'focusHomeIdentity.archetypes.' +
+                        focusHome.archetype,
+                    )
+                  : t(
+                      'dashboard.today.focusHomeLocked',
                     )}
-                  </span>
-                </span>
-
-                <ChevronRight
-                  size={14}
-                  className="shrink-0 text-white/15 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300"
-                />
-              </button>
-            ))}
-          </div>
-        </motion.section>
-      )}
+              </p>
+            </div>
+            <ChevronRight
+              size={14}
+              className="text-white/20 transition-transform group-hover:translate-x-0.5 group-hover:text-white/50"
+            />
+          </Link>
+        </div>
+      </motion.section>
     </div>
   )
 }
