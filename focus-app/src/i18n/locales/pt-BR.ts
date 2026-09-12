@@ -454,6 +454,7 @@ const ptBR = {
     save: 'Salvar alterações',
     pomodoroCount_one: '{{count}} pomodoro',
     pomodoroCount_other: '{{count}} pomodoros',
+    plannedDateLabel: 'Planejada: {{date}}',
     dueDateLabel: 'Prazo: {{date}}',
 
     filters: {
@@ -498,6 +499,9 @@ const ptBR = {
       category: 'Categoria',
       project: 'Projeto',
       noProject: 'Sem projeto',
+      plannedDate: 'Planejar para',
+      plannedDateHelp:
+        'Escolha o dia em que esta tarefa deve aparecer no seu plano.',
       dueDate: 'Prazo para conclusão',
       optional: 'Opcional',
       dueDateHelp:
@@ -633,6 +637,7 @@ const ptBR = {
       planEmpty:
         'Nenhuma tarefa planejada para hoje.',
       addToToday: 'Adicionar ao dia',
+      removeFromToday: 'Retirar do plano de hoje',
       suggestionsTitle: 'Sugestões para hoje',
       suggestionsDescription:
         'Escolhidas entre suas tarefas pendentes.',
