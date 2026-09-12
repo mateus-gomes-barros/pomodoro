@@ -1076,8 +1076,9 @@ export function TimerPage() {
                               [key]: !enabled,
                             })
                           }
+                          disabled={isRunning}
                           className={cn(
-                            'relative h-6 w-11 flex-shrink-0 rounded-full transition-colors',
+                            'relative h-6 w-11 flex-shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40',
                             enabled
                               ? 'bg-emerald-400'
                               : 'bg-white/10',
