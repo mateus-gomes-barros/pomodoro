@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { formatLocalDate } from '@/utils'
 
 import type {
   PomodoroSession,
@@ -89,7 +90,10 @@ export async function createPomodoroSession(
     input.completedAt ?? new Date().toISOString()
 
   const date =
-    input.date ?? completedAt.split('T')[0]
+    input.date ??
+    formatLocalDate(
+      new Date(completedAt),
+    )
 
   const { data, error } = await supabase
     .from('pomodoro_sessions')

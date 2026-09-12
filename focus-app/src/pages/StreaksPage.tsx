@@ -39,7 +39,6 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import {
   getNextStreakBadge,
   getStreakBadge,
-  getStreakBadgeProgress,
   STREAK_BADGES,
 } from '@/lib/streakBadges'
 import { cn, formatDuration } from '@/utils'
@@ -381,15 +380,21 @@ export function StreaksPage() {
       streak.currentStreak,
     )
 
-  const badgeProgress =
-    getStreakBadgeProgress(
-      streak.currentStreak,
-    )
-
   const progressPercentage =
-    Math.round(
-      badgeProgress * 100,
-    )
+    nextBadge
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(
+              (
+                streak.currentStreak /
+                nextBadge.minimumDays
+              ) * 100,
+            ),
+          ),
+        )
+      : 100
 
   const daysUntilNextBadge =
     nextBadge
@@ -702,20 +707,16 @@ export function StreaksPage() {
                 </div>
               </div>
 
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[0.06]">
-                <motion.div
-                  initial={{
-                    width: 0,
-                  }}
-                  animate={{
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[0.08]">
+                <div
+                  className="h-full rounded-full transition-[width] duration-700 ease-out"
+                  style={{
                     width: `${progressPercentage}%`,
+                    background:
+                      'linear-gradient(90deg, #10b981, #6ee7b7)',
+                    boxShadow:
+                      '0 0 12px rgba(52, 211, 153, 0.55)',
                   }}
-                  transition={{
-                    duration: 0.7,
-                    delay: 0.2,
-                    ease: 'easeOut',
-                  }}
-                  className="h-full rounded-full bg-accent-green"
                 />
               </div>
 
@@ -725,7 +726,7 @@ export function StreaksPage() {
                   'streaksPage.daysCount',
                   {
                     count:
-                      currentBadge.minimumDays,
+                      streak.currentStreak,
                   },
                 )}
                 </span>

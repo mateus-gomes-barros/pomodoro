@@ -30,6 +30,7 @@ import { CircularProgress } from '@/components/ui/CircularProgress'
 
 import {
   formatDuration,
+  formatLocalDate,
   formatTime,
   getTodayString,
 } from '@/utils'
@@ -170,9 +171,11 @@ const completedGoalsThisYear =
           }
 
           return (
-            task.completedAt.split(
-              'T',
-            )[0] === today
+            formatLocalDate(
+              new Date(
+                task.completedAt,
+              ),
+            ) === today
           )
         }).length,
       [tasks, today],

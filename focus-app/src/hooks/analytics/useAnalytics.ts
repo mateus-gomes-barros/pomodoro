@@ -17,6 +17,8 @@ import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { useProjects } from '@/hooks/projects/useProjects'
 import { useTasks } from '@/hooks/tasks/useTasks'
 
+import { formatLocalDate } from '@/utils'
+
 import type {
   DailyStats,
   PomodoroSession,
@@ -155,7 +157,9 @@ function buildDailyStats(
     }
 
     const completedDate =
-      task.completedAt.split('T')[0]
+      formatLocalDate(
+        new Date(task.completedAt),
+      )
 
     const currentStats =
       statsByDate.get(completedDate)
