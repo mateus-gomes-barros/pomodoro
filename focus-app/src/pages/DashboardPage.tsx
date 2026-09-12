@@ -982,10 +982,10 @@ export function DashboardPage() {
                     ).toLowerCase()}
                   </span>
 
-                  <span className="text/20">·</span>
+                  <span className="text-white/20">·</span>
 
                   <span
-                    className={cnLoadColor}
+                    className={dailyLoadColor}
                   >
                     {t(
                       `dashboard.today.load.${dailyLoadStatus}`,
