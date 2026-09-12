@@ -24,6 +24,10 @@ interface TaskRow {
   completed_at: string | null
   deleted_at: string | null
   scheduled_deletion_at: string | null
+  planned_date: string | null
+  due_at: string | null
+  daily_order: number | null
+  daily_priority: 1 | 2 | 3 | null
   task_order: number
 }
 
@@ -33,6 +37,10 @@ export interface CreateTaskInput {
   priority: TaskPriority
   category?: TaskCategory
   estimatedPomodoros: number
+  plannedDate?: string | null
+  dueAt?: string | null
+  dailyOrder?: number | null
+  dailyPriority?: 1 | 2 | 3 | null
 }
 
 export interface UpdateTaskInput {
@@ -44,6 +52,10 @@ export interface UpdateTaskInput {
   estimatedPomodoros?: number
   completedPomodoros?: number
   completedAt?: string
+  plannedDate?: string | null
+  dueAt?: string | null
+  dailyOrder?: number | null
+  dailyPriority?: 1 | 2 | 3 | null
   order?: number
 }
 
@@ -60,6 +72,10 @@ const TASK_SELECT = `
   completed_at,
   deleted_at,
   scheduled_deletion_at,
+  planned_date,
+  due_at,
+  daily_order,
+  daily_priority,
   task_order
 `
 
@@ -84,6 +100,14 @@ function mapTaskRow(row: TaskRow): Task {
     scheduledDeletionAt:
       row.scheduled_deletion_at ??
       undefined,
+    plannedDate:
+      row.planned_date ?? undefined,
+    dueAt:
+      row.due_at ?? undefined,
+    dailyOrder:
+      row.daily_order ?? undefined,
+    dailyPriority:
+      row.daily_priority ?? undefined,
     order: row.task_order,
   }
 }
@@ -187,6 +211,14 @@ export async function createTask(
         input.category ?? 'planned',
       estimated_pomodoros:
         input.estimatedPomodoros,
+      planned_date:
+        input.plannedDate ?? null,
+      due_at:
+        input.dueAt ?? null,
+      daily_order:
+        input.dailyOrder ?? null,
+      daily_priority:
+        input.dailyPriority ?? null,
       task_order: count ?? 0,
     })
     .select(TASK_SELECT)
@@ -268,6 +300,25 @@ export async function updateTask(
   if (input.completedAt !== undefined) {
     updates.completed_at =
       input.completedAt || null
+  }
+
+  if (input.plannedDate !== undefined) {
+    updates.planned_date =
+      input.plannedDate
+  }
+
+  if (input.dueAt !== undefined) {
+    updates.due_at = input.dueAt
+  }
+
+  if (input.dailyOrder !== undefined) {
+    updates.daily_order =
+      input.dailyOrder
+  }
+
+  if (input.dailyPriority !== undefined) {
+    updates.daily_priority =
+      input.dailyPriority
   }
 
   if (input.order !== undefined) {
