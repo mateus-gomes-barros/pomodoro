@@ -64,6 +64,25 @@ const statusOptions: StatusFilter[] = [
   'all',
 ]
 
+function toLocalDateInput(
+  value?: string,
+) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  const year = date.getFullYear()
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, '0')
+  const day = String(
+    date.getDate(),
+  ).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
 export function TasksPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -179,7 +198,7 @@ export function TasksPage() {
     setCategory(task.category)
     setProjectId(task.projectId ?? '')
     setDueDate(
-      task.dueAt?.slice(0, 10) ?? '',
+      toLocalDateInput(task.dueAt),
     )
     setEstimatedPomodoros(
       task.estimatedPomodoros,
