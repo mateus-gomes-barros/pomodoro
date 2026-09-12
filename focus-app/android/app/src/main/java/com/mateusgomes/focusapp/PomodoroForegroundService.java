@@ -30,7 +30,7 @@ public class PomodoroForegroundService extends Service {
     public static final String EXTRA_TITLE = "title";
     public static final String EXTRA_BODY = "body";
     public static final String EXTRA_END_TIME = "endTime";
-    public static final String EXTRA_BADGE_ICON = "badgeIcon";
+    public static final String EXTRA_BADGE_LEVEL = "badgeLevel";
 
     public static final String ACTION_PAUSE =
             "com.mateusgomes.focusapp.ACTION_PAUSE";
@@ -82,7 +82,7 @@ public class PomodoroForegroundService extends Service {
 
         String title = "Foco";
         String body = "";
-        String badgeIcon = "";
+        int badgeLevel = 0;
         long endTime = 0;
 
         if (intent != null) {
@@ -97,8 +97,8 @@ public class PomodoroForegroundService extends Service {
                 body = intent.getStringExtra(EXTRA_BODY);
             }
 
-            if (intent.hasExtra(EXTRA_BADGE_ICON)) {
-                badgeIcon = intent.getStringExtra(EXTRA_BADGE_ICON);
+            if (intent.hasExtra(EXTRA_BADGE_LEVEL)) {
+                badgeLevel = intent.getIntExtra(EXTRA_BADGE_LEVEL, 0);
             }
 
             if (intent.hasExtra(EXTRA_END_TIME)) {
@@ -108,7 +108,7 @@ public class PomodoroForegroundService extends Service {
 
         Log.d(TAG, "title=" + title);
         Log.d(TAG, "body=" + body);
-        Log.d(TAG, "badgeIcon=" + badgeIcon);
+        Log.d(TAG, "badgeLevel=" + badgeLevel);
         Log.d(TAG, "endTime=" + endTime);
 
         // ---------------------------------------------------------
@@ -202,8 +202,8 @@ public class PomodoroForegroundService extends Service {
 
        NotificationCompat.Builder builder =
         new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(getBadgeIconResource(badgeIcon))
-                .setLargeIcon(createBadgeLargeIcon(badgeIcon))
+                .setSmallIcon(getBadgeIconResource(badgeLevel))
+                .setLargeIcon(createBadgeLargeIcon(badgeLevel))
                 .setContentTitle(title)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
@@ -249,7 +249,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && endTime > 0) {
                         .setProgressTrackerIcon(
                                 IconCompat.createWithResource(
                                         this,
-                                        getBadgeIconResource(badgeIcon)
+                                        getBadgeIconResource(badgeLevel)
                                 )
                         );
 
@@ -411,9 +411,9 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && endTime > 0) {
     // CURRENT BADGE -> LARGE NOTIFICATION ICON
     // -------------------------------------------------------------
 
-    private Bitmap createBadgeLargeIcon(String badgeIcon) {
+    private Bitmap createBadgeLargeIcon(int badgeLevel) {
 
-        int resourceId = getBadgeIconResource(badgeIcon);
+        int resourceId = getBadgeIconResource(badgeLevel);
 
         Drawable drawable =
                 ContextCompat.getDrawable(this, resourceId);
@@ -463,63 +463,21 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && endTime > 0) {
         return bitmap;
     }
 
-    private int getBadgeIconResource(String badgeIcon) {
-
-        if (badgeIcon == null) {
-            return R.drawable.ic_stat_name;
-        }
-
-        switch (badgeIcon) {
-
-            case "💧":
-                return R.drawable.ic_badge_drop;
-
-            case "🌱":
-                return R.drawable.ic_badge_sprout;
-
-            case "🔥":
-                return R.drawable.ic_badge_fire;
-
-            case "❤️‍🔥":
-                return R.drawable.ic_badge_heart;
-
-            case "⚡":
-                return R.drawable.ic_badge_bolt;
-
-            case "🚀":
-                return R.drawable.ic_badge_rocket;
-
-            case "��":
-                return R.drawable.ic_badge_moon;
-
-            case "⭐":
-            case "🌟":
-                return R.drawable.ic_badge_star;
-
-            case "🏅":
-            case "🥉":
-            case "🥈":
-            case "🥇":
-                return R.drawable.ic_badge_medal;
-
-            case "💎":
-                return R.drawable.ic_badge_diamond;
-
-            case "🔮":
-                return R.drawable.ic_badge_crystal;
-
-            case "👑":
-                return R.drawable.ic_badge_crown;
-
-            case "🏆":
-                return R.drawable.ic_badge_trophy;
-
-            case "♾️":
-                return R.drawable.ic_badge_infinity;
-
-            default:
-                return R.drawable.ic_stat_name;
-        }
+    private int getBadgeIconResource(int badgeLevel) {
+        if (badgeLevel >= 2000) return R.drawable.ic_badge_infinity;
+        if (badgeLevel >= 1500) return R.drawable.ic_badge_trophy;
+        if (badgeLevel >= 1000) return R.drawable.ic_badge_crown;
+        if (badgeLevel >= 750) return R.drawable.ic_badge_crystal;
+        if (badgeLevel >= 600) return R.drawable.ic_badge_diamond;
+        if (badgeLevel >= 200) return R.drawable.ic_badge_medal;
+        if (badgeLevel >= 100) return R.drawable.ic_badge_star;
+        if (badgeLevel >= 75) return R.drawable.ic_badge_moon;
+        if (badgeLevel >= 50) return R.drawable.ic_badge_rocket;
+        if (badgeLevel >= 30) return R.drawable.ic_badge_bolt;
+        if (badgeLevel >= 14) return R.drawable.ic_badge_heart;
+        if (badgeLevel >= 7) return R.drawable.ic_badge_fire;
+        if (badgeLevel >= 3) return R.drawable.ic_badge_sprout;
+        return R.drawable.ic_badge_drop;
     }
 
     @Override
