@@ -445,6 +445,7 @@ const en = {
     save: 'Save Changes',
     pomodoroCount_one: '{{count}} Pomodoro',
     pomodoroCount_other: '{{count}} Pomodoros',
+    plannedDateLabel: 'Planned: {{date}}',
     dueDateLabel: 'Due: {{date}}',
 
     filters: {
@@ -489,6 +490,9 @@ const en = {
       category: 'Category',
       project: 'Project',
       noProject: 'No project',
+      plannedDate: 'Plan for',
+      plannedDateHelp:
+        'Choose the day when this task should appear in your plan.',
       dueDate: 'Completion deadline',
       optional: 'Optional',
       dueDateHelp:
@@ -623,6 +627,7 @@ const en = {
       planEmpty:
         'No tasks planned for today.',
       addToToday: 'Add to today',
+      removeFromToday: "Remove from today's plan",
       suggestionsTitle: 'Suggestions for today',
       suggestionsDescription:
         'Selected from your pending tasks.',
