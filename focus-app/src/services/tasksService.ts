@@ -537,3 +537,72 @@ export async function reorderTasks(
     throw failedResult.error
   }
 }
+
+
+export async function reorderDailyPlan(
+  tasks: Task[],
+): Promise<void> {
+  const results = await Promise.all(
+    tasks.map((task, index) =>
+      supabase
+        .from('tasks')
+        .update({
+          daily_order: index,
+        })
+        .eq('id', task.id)
+        .is('deleted_at', null),
+    ),
+  )
+
+  const failedResult = results.find(
+    ({ error }) => error,
+  )
+
+  if (failedResult?.error) {
+    throw failedResult.error
+  }
+}
+
+export async function setDailyTaskPriority(
+  task: Task,
+  priority: 1 | 2 | 3 | null,
+): Promise<void> {
+  if (!task.plannedDate) {
+    return
+  }
+
+  if (priority !== null) {
+    const { error: clearError } =
+      await supabase
+        .from('tasks')
+        .update({
+          daily_priority: null,
+        })
+        .eq(
+          'planned_date',
+          task.plannedDate,
+        )
+        .eq(
+          'daily_priority',
+          priority,
+        )
+        .neq('id', task.id)
+        .is('deleted_at', null)
+
+    if (clearError) {
+      throw clearError
+    }
+  }
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({
+      daily_priority: priority,
+    })
+    .eq('id', task.id)
+    .is('deleted_at', null)
+
+  if (error) {
+    throw error
+  }
+}
