@@ -39,7 +39,7 @@ struct FocusActivityAttributes:
         let remainingSeconds: Int
         let projectName: String?
         let taskName: String?
-        let badgeIcon: String?
+        let badgeLevel: Int
     }
 
     let sessionId: String
