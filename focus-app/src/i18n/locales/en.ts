@@ -656,6 +656,21 @@ const en = {
         'Priorities 1, 2 and 3 stay at the top. No task will be reorganized automatically.',
       moveUp: 'Move {{title}} up',
       moveDown: 'Move {{title}} down',
+      closure: {
+        open: 'Close the day',
+        title: "Close today's plan",
+        description:
+          'Choose where each pending task should go. Nothing changes before confirmation.',
+        tomorrow: 'Tomorrow',
+        backlog: 'Remove',
+        keep: 'Keep today',
+        history:
+          'Completed tasks remain recorded on today’s date.',
+        confirm: 'Confirm day closure',
+        saving: 'Saving decisions...',
+        error:
+          'Unable to close the plan. Please try again.',
+      },
       load: {
         light: 'Light load',
         balanced: 'Balanced load',
