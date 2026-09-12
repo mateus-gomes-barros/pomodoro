@@ -9,7 +9,9 @@ import {
   getTasks,
   getTrashTasks,
   incrementTaskPomodoro,
+  reorderDailyPlan,
   reorderTasks,
+  setDailyTaskPriority,
   restoreTask,
   toggleTask,
   updateTask,
@@ -136,6 +138,39 @@ export function useReorderTasks() {
       mutationFn: (
         tasks: Task[],
       ) => reorderTasks(tasks),
+    },
+  )
+}
+
+
+export function useReorderDailyPlan() {
+  return useInvalidateQuery(
+    tasksQueryKey,
+    {
+      mutationFn: (
+        tasks: Task[],
+      ) => reorderDailyPlan(tasks),
+    },
+  )
+}
+
+interface SetDailyTaskPriorityVariables {
+  task: Task
+  priority: 1 | 2 | 3 | null
+}
+
+export function useSetDailyTaskPriority() {
+  return useInvalidateQuery(
+    tasksQueryKey,
+    {
+      mutationFn: ({
+        task,
+        priority,
+      }: SetDailyTaskPriorityVariables) =>
+        setDailyTaskPriority(
+          task,
+          priority,
+        ),
     },
   )
 }
