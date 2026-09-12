@@ -171,6 +171,16 @@ export function DashboardPage() {
   useEffect(() => {
     let timeoutId: number
 
+    function refreshToday() {
+      const currentDate = getTodayString()
+
+      setToday((previousDate) =>
+        previousDate === currentDate
+          ? previousDate
+          : currentDate,
+      )
+    }
+
     function scheduleNextDay() {
       const now = new Date()
       const nextDay = new Date(
@@ -183,15 +193,38 @@ export function DashboardPage() {
       )
 
       timeoutId = window.setTimeout(() => {
-        setToday(getTodayString())
+        refreshToday()
         scheduleNextDay()
       }, nextDay.getTime() - now.getTime())
     }
 
-    scheduleNextDay()
+    function handleVisibilityChange() {
+      if (!document.hidden) {
+        refreshToday()
+      }
+    }
 
-    return () =>
+    scheduleNextDay()
+    window.addEventListener(
+      'focus',
+      refreshToday,
+    )
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    )
+
+    return () => {
       window.clearTimeout(timeoutId)
+      window.removeEventListener(
+        'focus',
+        refreshToday,
+      )
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      )
+    }
   }, [])
 
   const todaySessions = useMemo(
