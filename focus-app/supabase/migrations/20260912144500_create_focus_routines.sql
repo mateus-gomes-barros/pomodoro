@@ -38,10 +38,9 @@ create table if not exists public.focus_routines (
     check (sort_order >= 0)
 );
 
-create unique index if not exists
-  focus_routines_user_template_key_idx
-on public.focus_routines (user_id, template_key)
-where template_key is not null;
+alter table public.focus_routines
+  add constraint focus_routines_user_template_key_key
+  unique (user_id, template_key);
 
 create unique index if not exists
   focus_routines_one_default_per_user_idx
