@@ -774,6 +774,13 @@ const ptBR = {
     },
     settings: {
       title: 'Configurações do timer',
+      automation: 'Automação',
+      autoStartBreaks: 'Iniciar pausas automaticamente',
+      autoStartBreaksDescription:
+        'Começa a pausa assim que uma sessão de foco termina.',
+      autoStartWork: 'Iniciar foco automaticamente',
+      autoStartWorkDescription:
+        'Começa a próxima sessão mantendo a mesma tarefa e projeto.',
       dailyGoal:
         'Meta diária de foco',
       dailyGoalDescription:
@@ -784,6 +791,17 @@ const ptBR = {
       sessionsUntilLongBreak:
         'Sessões até a pausa longa',
       minutes: 'min',
+    },
+    completion: {
+      focusFinished: 'Sessão de foco concluída',
+      breakFinished: 'Pausa concluída',
+      taskContext: 'Você estava focando em “{{task}}”.',
+      noTaskContext: 'Escolha como deseja continuar.',
+      continueFocus: 'Continuar focando',
+      startBreak: 'Iniciar pausa',
+      completeTask: 'Concluir tarefa',
+      chooseTask: 'Escolher outra tarefa',
+      selectTask: 'Selecionar uma tarefa',
     },
     sessionNumber: 'Sessão {{current}} de {{total}}',
   },
