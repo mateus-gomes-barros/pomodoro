@@ -20,6 +20,7 @@ import {
   Trophy,
   Sparkles,
   TriangleAlert,
+  X,
 } from 'lucide-react'
 import {
   Link,
@@ -386,6 +387,17 @@ export function DashboardPage() {
 
   function completeTask(task: Task) {
     toggleTask.mutate(task)
+  }
+
+  function removeFromToday(task: Task) {
+    updateTask.mutate({
+      taskId: task.id,
+      input: {
+        plannedDate: null,
+        dailyOrder: null,
+        dailyPriority: null,
+      },
+    })
   }
 
   function startTask(task: Task) {
@@ -849,6 +861,25 @@ export function DashboardPage() {
                         min
                       </p>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeFromToday(task)
+                      }
+                      disabled={
+                        updateTask.isPending
+                      }
+                      title={t(
+                        'dashboard.today.removeFromToday',
+                      )}
+                      aria-label={t(
+                        'dashboard.today.removeFromToday',
+                      )}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/20 transition-colors hover:bg-red-400/[0.08] hover:text-red-300 disabled:opacity-30"
+                    >
+                      <X size={13} />
+                    </button>
 
                     {!task.completed && (
                       <button
