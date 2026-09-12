@@ -120,24 +120,77 @@ function getLongestStreak(activeDates: string[]) {
   return longest
 }
 
-function sortSuggestions(a: Task, b: Task) {
-  const categoryDifference =
-    CATEGORY_WEIGHT[a.category] -
-    CATEGORY_WEIGHT[b.category]
+function getSuggestionScore(
+  task: Task,
+  availableMinutes: number,
+  workDuration: number,
+  recentTaskIds: Set<string>,
+  recentProjectIds: Set<string>,
+) {
+  let score =
+    (4 - CATEGORY_WEIGHT[task.category]) *
+      12 +
+    (3 - PRIORITY_WEIGHT[task.priority]) *
+      6
 
-  if (categoryDifference !== 0) {
-    return categoryDifference
+  if (task.dueAt) {
+    const daysUntilDue =
+      differenceInCalendarDays(
+        new Date(task.dueAt),
+        new Date(),
+      )
+
+    score +=
+      daysUntilDue < 0
+        ? 80
+        : daysUntilDue === 0
+          ? 70
+          : daysUntilDue <= 3
+            ? 45
+            : daysUntilDue <= 7
+              ? 20
+              : 0
   }
 
-  const priorityDifference =
-    PRIORITY_WEIGHT[a.priority] -
-    PRIORITY_WEIGHT[b.priority]
+  const remainingMinutes =
+    Math.max(
+      0,
+      task.estimatedPomodoros -
+        task.completedPomodoros,
+    ) * workDuration
 
-  if (priorityDifference !== 0) {
-    return priorityDifference
+  if (
+    availableMinutes > 0 &&
+    remainingMinutes > 0 &&
+    remainingMinutes <= availableMinutes
+  ) {
+    score += 18
+  } else if (
+    availableMinutes > 0 &&
+    remainingMinutes >
+      availableMinutes * 1.5
+  ) {
+    score -= 10
   }
 
-  return a.order - b.order
+  if (
+    task.completedPomodoros > 0
+  ) {
+    score += 12
+  }
+
+  if (recentTaskIds.has(task.id)) {
+    score += 16
+  }
+
+  if (
+    task.projectId &&
+    recentProjectIds.has(task.projectId)
+  ) {
+    score += 7
+  }
+
+  return score
 }
 
 export function DashboardPage() {
@@ -315,6 +368,64 @@ export function DashboardPage() {
     (task) => task.completed,
   )
 
+  const recentFocusThreshold =
+    Date.now() -
+    14 * 24 * 60 * 60 * 1000
+
+  const recentTaskIds = useMemo(
+    () =>
+      new Set(
+        sessions
+          .filter(
+            (session) =>
+              session.type === 'work' &&
+              Boolean(session.taskId) &&
+              new Date(
+                session.completedAt,
+              ).getTime() >=
+                recentFocusThreshold,
+          )
+          .map(
+            (session) =>
+              session.taskId as string,
+          ),
+      ),
+    [sessions, recentFocusThreshold],
+  )
+
+  const recentProjectIds = useMemo(
+    () =>
+      new Set(
+        sessions
+          .filter(
+            (session) =>
+              session.type === 'work' &&
+              Boolean(
+                session.projectId,
+              ) &&
+              new Date(
+                session.completedAt,
+              ).getTime() >=
+                recentFocusThreshold,
+          )
+          .map(
+            (session) =>
+              session.projectId as string,
+          ),
+      ),
+    [sessions, recentFocusThreshold],
+  )
+
+  const suggestionCapacity =
+    Math.max(
+      0,
+      (
+        settings.dailyFocusGoalMinutes ??
+        120
+      ) -
+        todayFocus,
+    )
+
   const suggestions = useMemo(
     () =>
       tasks
@@ -323,10 +434,112 @@ export function DashboardPage() {
             !task.completed &&
             task.plannedDate !== today,
         )
-        .sort(sortSuggestions)
+        .sort(
+          (a, b) =>
+            getSuggestionScore(
+              b,
+              suggestionCapacity,
+              settings.workDuration,
+              recentTaskIds,
+              recentProjectIds,
+            ) -
+              getSuggestionScore(
+                a,
+                suggestionCapacity,
+                settings.workDuration,
+                recentTaskIds,
+                recentProjectIds,
+              ) ||
+            a.order - b.order,
+        )
         .slice(0, 3),
-    [tasks, today],
+    [
+      tasks,
+      today,
+      suggestionCapacity,
+      settings.workDuration,
+      recentTaskIds,
+      recentProjectIds,
+    ],
   )
+
+  function getSuggestionReason(
+    task: Task,
+  ) {
+    if (task.dueAt) {
+      const daysUntilDue =
+        differenceInCalendarDays(
+          new Date(task.dueAt),
+          new Date(),
+        )
+
+      if (daysUntilDue < 0) {
+        return t(
+          'dashboard.today.suggestionReasons.overdue',
+        )
+      }
+
+      if (daysUntilDue === 0) {
+        return t(
+          'dashboard.today.suggestionReasons.dueToday',
+        )
+      }
+
+      if (daysUntilDue <= 3) {
+        return t(
+          'dashboard.today.suggestionReasons.dueSoon',
+        )
+      }
+    }
+
+    if (task.category === 'urgent') {
+      return t(
+        'dashboard.today.suggestionReasons.urgent',
+      )
+    }
+
+    if (
+      recentTaskIds.has(task.id) ||
+      task.completedPomodoros > 0
+    ) {
+      return t(
+        'dashboard.today.suggestionReasons.continue',
+      )
+    }
+
+    const remainingMinutes =
+      Math.max(
+        0,
+        task.estimatedPomodoros -
+          task.completedPomodoros,
+      ) * settings.workDuration
+
+    if (
+      suggestionCapacity > 0 &&
+      remainingMinutes > 0 &&
+      remainingMinutes <=
+        suggestionCapacity
+    ) {
+      return t(
+        'dashboard.today.suggestionReasons.fits',
+      )
+    }
+
+    if (
+      task.projectId &&
+      recentProjectIds.has(
+        task.projectId,
+      )
+    ) {
+      return t(
+        'dashboard.today.suggestionReasons.projectMomentum',
+      )
+    }
+
+    return t(
+      'dashboard.today.suggestionReasons.recommended',
+    )
+  }
 
   const visibleTodayPlan =
     todayPlan.slice(0, 3)
@@ -1052,8 +1265,8 @@ export function DashboardPage() {
                           {task.title}
                         </span>
                         <span className="mt-1 block text-[10px] uppercase tracking-[0.12em] text-emerald-300/45">
-                          {t(
-                            'dashboard.today.suggestedTask',
+                          {getSuggestionReason(
+                            task,
                           )}
                         </span>
                       </span>
