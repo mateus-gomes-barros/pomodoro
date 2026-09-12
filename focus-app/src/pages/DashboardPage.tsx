@@ -33,7 +33,6 @@ import { usePomodoroStore } from '@/store/pomodoroStore'
 import type { Task } from '@/types'
 import {
   formatDuration,
-  formatLocalDate,
   formatTime,
   getTodayString,
 } from '@/utils'
