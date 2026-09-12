@@ -40,6 +40,7 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import { Modal } from '@/components/ui/Modal'
+import { StreakBadgeIcon } from '@/components/streaks/StreakBadgeIcon'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { useFocusHomeProfile } from '@/hooks/focusme/useFocusHomeProfile'
@@ -1550,14 +1551,14 @@ export function DashboardPage() {
                           to="/streaks"
                           title={badgeName}
                           aria-label={badgeName}
-                          className="flex aspect-square min-w-0 items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.025] text-xl transition-colors hover:border-amber-300/20 hover:bg-amber-300/[0.04] sm:text-lg"
+                          className="flex aspect-square min-w-0 items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.025] transition-colors hover:border-emerald-300/20 hover:bg-emerald-300/[0.04]"
                         >
-                          <span
-                            aria-hidden="true"
-                            className="leading-none"
-                          >
-                            {badge.icon}
-                          </span>
+                          <StreakBadgeIcon
+                            minimumDays={
+                              badge.minimumDays
+                            }
+                            size={34}
+                          />
                         </Link>
                       )
                     },
