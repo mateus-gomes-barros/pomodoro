@@ -31,7 +31,10 @@ import {
 
 import { Modal } from '@/components/ui/Modal'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { cn } from '@/utils'
+import {
+  cn,
+  formatDuration,
+} from '@/utils'
 
 export function GoalsPage() {
   const { t, i18n } = useTranslation()
@@ -655,8 +658,10 @@ export function GoalsPage() {
                           {t(
                             'goalsPage.progress.focus',
                             {
-                              minutes:
-                                totalFocusMinutes,
+                              duration:
+                                formatDuration(
+                                  totalFocusMinutes,
+                                ),
                               sessions:
                                 totalSessions,
                             },
