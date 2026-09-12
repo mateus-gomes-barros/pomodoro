@@ -599,6 +599,49 @@ const en = {
     startMomentum:
       'Start your first session to build momentum.',
 
+    today: {
+      summaryEmpty:
+        'Choose what deserves your attention today.',
+      summaryWithPlan:
+        '{{count}} tasks are part of your plan for today.',
+      primaryEyebrow: 'Next action',
+      activeEyebrow: 'Focusing now',
+      noTaskTitle: 'Your day is still open',
+      noTaskDescription:
+        'Add a task to your plan and turn intention into progress.',
+      planDay: 'Plan my day',
+      startFocus: 'Start focus',
+      continueFocus: 'Continue session',
+      estimatedSessions: '{{count}} estimated sessions',
+      oneEstimatedSession: '1 estimated session',
+      planTitle: "Today's plan",
+      planEmpty:
+        'No tasks planned for today.',
+      addToToday: 'Add to today',
+      suggestionsTitle: 'Suggestions for today',
+      suggestionsDescription:
+        'Selected from your pending tasks.',
+      viewAllTasks: 'View all',
+      completed: 'Completed',
+      progressTitle: 'Your progress',
+      plannedTasks: 'Tasks',
+      focusTime: 'Focused time',
+      sessions: 'Sessions',
+      dailyGoal: 'of daily goal',
+      urgentTitle: 'Needs attention',
+      urgentDescription:
+        'This task is marked as urgent.',
+      insightTitle: "Today's rhythm",
+      insightStart:
+        'Your first session is the most important step right now.',
+      insightBuilding:
+        "You've built momentum. Continue with the next planned task.",
+      insightHalfway:
+        "You're already past halfway toward your daily focus goal.",
+      insightComplete:
+        'Daily goal reached. The rest of your day can feel lighter.',
+    },
+
     stats: {
       todayFocus: "Today's Focus",
       goal: 'Goal: {{duration}}',
