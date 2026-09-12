@@ -80,6 +80,8 @@ export function useTimer() {
     activeTaskId,
     activeProjectId,
     sessions: localSessions,
+    pendingSessionIds,
+    markSessionSynced,
   } = usePomodoroStore()
 
   const tasksQuery = useTasks()
@@ -100,110 +102,143 @@ export function useTimer() {
   }, [sessionsQuery.data])
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const lastSavedSessionIdRef =
-    useRef<string | null>(
-      localSessions.at(-1)?.id ??
-      null,
-    )
+  const sessionSyncInProgressRef =
+    useRef<string | null>(null)
   const liveActivityStateRef = useRef<string | null>(null)
   const hasSyncedLiveActivityRef = useRef(false)
 
-  // 1. Salva cada sessão adicionada ao histórico local.
-  // Funciona também quando a próxima sessão inicia automaticamente.
+  // 1. Sincroniza a fila persistente de sessões concluídas.
+  // A fila sobrevive a recargas, reinícios e períodos sem conexão.
   useEffect(() => {
-    const completedSession =
-      localSessions.at(-1)
+    const pendingSessionId =
+      pendingSessionIds[0]
 
     if (
-      !completedSession ||
-      completedSession.id ===
-        lastSavedSessionIdRef.current
+      !pendingSessionId ||
+      sessionSyncInProgressRef.current
     ) {
       return
     }
 
-    lastSavedSessionIdRef.current =
-      completedSession.id
+    const completedSession =
+      localSessions.find(
+        (session) =>
+          session.id ===
+          pendingSessionId,
+      )
 
-    void createPomodoroSessionMutation
-      .mutateAsync({
-        type:
-          completedSession.type,
-        projectId:
-          completedSession.projectId,
-        taskId:
-          completedSession.taskId,
-        durationMinutes:
-          completedSession.durationMinutes,
-        completedAt:
-          completedSession.completedAt,
-        date:
-          completedSession.date,
-      })
-      .catch((error: unknown) => {
-        console.error(
-          'Failed to save pomodoro session:',
-          error,
-        )
-
-        lastSavedSessionIdRef.current =
-          null
-      })
+    if (!completedSession) {
+      markSessionSynced(pendingSessionId)
+      return
+    }
 
     if (
-      completedSession.type ===
-      'work'
+      completedSession.type === 'work' &&
+      (
+        (
+          completedSession.taskId &&
+          tasksQuery.isLoading
+        ) ||
+        (
+          completedSession.projectId &&
+          projectsQuery.isLoading
+        )
+      )
     ) {
-      if (completedSession.taskId) {
-        const activeTask =
-          tasksQuery.data?.find(
-            (task) =>
-              task.id ===
-              completedSession.taskId,
-          )
+      return
+    }
 
-        if (activeTask) {
-          void incrementTaskPomodoroMutation
-            .mutateAsync(activeTask)
-            .catch(console.error)
-        }
-      }
+    sessionSyncInProgressRef.current =
+      completedSession.id
 
-      if (
-        completedSession.projectId
-      ) {
-        const activeProject =
-          projectsQuery.data?.find(
-            (project) =>
-              project.id ===
+    const syncSession = async () => {
+      try {
+        const result =
+          await createPomodoroSessionMutation.mutateAsync({
+            id: completedSession.id,
+            type: completedSession.type,
+            projectId:
               completedSession.projectId,
-          )
+            taskId:
+              completedSession.taskId,
+            durationMinutes:
+              completedSession.durationMinutes,
+            completedAt:
+              completedSession.completedAt,
+            date: completedSession.date,
+          })
 
-        if (activeProject) {
-          void incrementProjectSessionMutation
-            .mutateAsync({
-              project:
-                activeProject,
-              minutes:
-                completedSession
-                  .durationMinutes,
-            })
-            .catch(console.error)
+        if (
+          result.created &&
+          completedSession.type === 'work'
+        ) {
+          if (completedSession.taskId) {
+            const task =
+              tasksQuery.data?.find(
+                (currentTask) =>
+                  currentTask.id ===
+                  completedSession.taskId,
+              )
+
+            if (task) {
+              await incrementTaskPomodoroMutation.mutateAsync(
+                task,
+              )
+            }
+          }
+
+          if (completedSession.projectId) {
+            const project =
+              projectsQuery.data?.find(
+                (currentProject) =>
+                  currentProject.id ===
+                  completedSession.projectId,
+              )
+
+            if (project) {
+              await incrementProjectSessionMutation.mutateAsync({
+                project,
+                minutes:
+                  completedSession.durationMinutes,
+              })
+            }
+          }
         }
+
+        markSessionSynced(
+          completedSession.id,
+        )
+
+        if (
+          result.created &&
+          settings.soundEnabled
+        ) {
+          playCompletionSound()
+        }
+      } catch (error: unknown) {
+        console.error(
+          'Failed to sync pomodoro session:',
+          error,
+        )
+      } finally {
+        sessionSyncInProgressRef.current =
+          null
       }
     }
 
-    if (settings.soundEnabled) {
-      playCompletionSound()
-    }
+    void syncSession()
   }, [
+    pendingSessionIds,
     localSessions,
     settings.soundEnabled,
     tasksQuery.data,
+    tasksQuery.isLoading,
     projectsQuery.data,
+    projectsQuery.isLoading,
     createPomodoroSessionMutation,
     incrementTaskPomodoroMutation,
     incrementProjectSessionMutation,
+    markSessionSynced,
   ])
 
   // 2. Hook para sincronizar atividades nativas (Live Activity iOS + Notification Android)
