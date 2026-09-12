@@ -370,6 +370,10 @@ const en = {
       description: 'Description',
       descriptionPlaceholder:
         'Optional description',
+      goal: 'Linked goal',
+      noGoal: 'No goal',
+      goalHelp:
+        'Focus completed in this project will contribute to the selected goal.',
       color: 'Color',
       selectColor:
         'Select project color {{color}}',
@@ -574,6 +578,15 @@ const en = {
       reopen: 'Reopen {{title}}',
       complete: 'Complete {{title}}',
       delete: 'Delete {{title}}',
+    },
+
+    progress: {
+      projects_one: '{{count}} linked project',
+      projects_other: '{{count}} linked projects',
+      focus:
+        '{{duration}} focused · {{sessions}} sessions',
+      tasks:
+        '{{completed}} of {{total}} tasks completed',
     },
 
     achievements: {
