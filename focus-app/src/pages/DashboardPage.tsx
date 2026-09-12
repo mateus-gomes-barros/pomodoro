@@ -5,6 +5,7 @@ import {
 } from 'react'
 import { enUS, ptBR } from 'date-fns/locale'
 import {
+  addDays,
   differenceInCalendarDays,
   format,
   isBefore,
@@ -20,11 +21,13 @@ import {
   Check,
   ChevronRight,
   Circle,
+  Archive,
   Clock3,
   Gauge,
   LoaderCircle,
   Play,
   Trophy,
+  CalendarPlus,
   SlidersHorizontal,
   Sparkles,
   TriangleAlert,
@@ -41,6 +44,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { useFocusHomeProfile } from '@/hooks/focusme/useFocusHomeProfile'
 import {
+  useCloseDailyPlan,
   useReorderDailyPlan,
   useSetDailyTaskPriority,
   useTasks,
@@ -55,6 +59,7 @@ import {
 } from '@/components/focusme/FocusHomeSymbol'
 import { STREAK_BADGES } from '@/lib/streakBadges'
 import type { Task } from '@/types'
+import type { DailyPlanDestination } from '@/services/tasksService'
 import {
   cn,
   formatDuration,
@@ -200,6 +205,17 @@ export function DashboardPage() {
 
   const [planEditorOpen, setPlanEditorOpen] =
     useState(false)
+  const [dayClosureOpen, setDayClosureOpen] =
+    useState(false)
+  const [
+    dayClosureDecisions,
+    setDayClosureDecisions,
+  ] = useState<
+    Record<
+      string,
+      DailyPlanDestination | undefined
+    >
+  >({})
 
   const {
     status,
@@ -223,6 +239,8 @@ export function DashboardPage() {
   const toggleTask = useToggleTask()
   const reorderDailyPlan =
     useReorderDailyPlan()
+  const closeDailyPlan =
+    useCloseDailyPlan()
   const setDailyPriority =
     useSetDailyTaskPriority()
 
@@ -758,6 +776,51 @@ export function DashboardPage() {
         dailyPriority: null,
       },
     })
+  }
+
+  function openDayClosure() {
+    setDayClosureDecisions({})
+    setPlanEditorOpen(false)
+    setDayClosureOpen(true)
+  }
+
+  async function confirmDayClosure() {
+    const decisions =
+      pendingToday.map((task) => ({
+        taskId: task.id,
+        destination:
+          dayClosureDecisions[
+            task.id
+          ],
+      }))
+
+    if (
+      decisions.some(
+        (decision) =>
+          !decision.destination,
+      )
+    ) {
+      return
+    }
+
+    await closeDailyPlan.mutateAsync({
+      decisions:
+        decisions.map(
+          (decision) => ({
+            taskId:
+              decision.taskId,
+            destination:
+              decision.destination as DailyPlanDestination,
+          }),
+        ),
+      tomorrowDate: format(
+        addDays(new Date(), 1),
+        'yyyy-MM-dd',
+      ),
+    })
+
+    setDayClosureOpen(false)
+    setDayClosureDecisions({})
   }
 
   function moveTodayTask(
@@ -1798,6 +1861,163 @@ export function DashboardPage() {
               'dashboard.today.priorityHelp',
             )}
           </p>
+
+          {pendingToday.length > 0 && (
+            <button
+              type="button"
+              onClick={openDayClosure}
+              className="btn-ghost flex w-full items-center justify-center gap-2"
+            >
+              <Archive size={14} />
+              {t(
+                'dashboard.today.closure.open',
+              )}
+            </button>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={dayClosureOpen}
+        onClose={() => {
+          if (!closeDailyPlan.isPending) {
+            setDayClosureOpen(false)
+          }
+        }}
+        title={t(
+          'dashboard.today.closure.title',
+        )}
+      >
+        <div className="space-y-4">
+          <p className="text-xs leading-relaxed text-white/40">
+            {t(
+              'dashboard.today.closure.description',
+            )}
+          </p>
+
+          <div className="space-y-3">
+            {pendingToday.map(
+              (task) => {
+                const selected =
+                  dayClosureDecisions[
+                    task.id
+                  ]
+
+                return (
+                  <div
+                    key={task.id}
+                    className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5"
+                  >
+                    <p className="truncate text-sm text-white/75">
+                      {task.title}
+                    </p>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {([
+                        [
+                          'tomorrow',
+                          'dashboard.today.closure.tomorrow',
+                          CalendarPlus,
+                        ],
+                        [
+                          'backlog',
+                          'dashboard.today.closure.backlog',
+                          Archive,
+                        ],
+                        [
+                          'keep',
+                          'dashboard.today.closure.keep',
+                          Clock3,
+                        ],
+                      ] as const).map(
+                        ([
+                          destination,
+                          labelKey,
+                          Icon,
+                        ]) => (
+                          <button
+                            key={destination}
+                            type="button"
+                            onClick={() =>
+                              setDayClosureDecisions(
+                                (
+                                  current,
+                                ) => ({
+                                  ...current,
+                                  [task.id]:
+                                    destination,
+                                }),
+                              )
+                            }
+                            disabled={
+                              closeDailyPlan.isPending
+                            }
+                            className={cn(
+                              'flex min-w-0 flex-col items-center gap-1.5 rounded-xl px-2 py-2.5 text-[10px] transition-colors',
+                              selected ===
+                                destination
+                                ? 'bg-emerald-300 text-black'
+                                : 'bg-white/[0.04] text-white/40 hover:text-white/70',
+                            )}
+                          >
+                            <Icon size={13} />
+                            <span className="truncate">
+                              {t(labelKey)}
+                            </span>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )
+              },
+            )}
+          </div>
+
+          <p className="text-[11px] leading-relaxed text-white/30">
+            {t(
+              'dashboard.today.closure.history',
+            )}
+          </p>
+
+          {closeDailyPlan.isError && (
+            <p className="text-xs text-red-300">
+              {t(
+                'dashboard.today.closure.error',
+              )}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              void confirmDayClosure()
+            }}
+            disabled={
+              closeDailyPlan.isPending ||
+              pendingToday.some(
+                (task) =>
+                  !dayClosureDecisions[
+                    task.id
+                  ],
+              )
+            }
+            className="btn-primary flex w-full items-center justify-center gap-2 disabled:opacity-35"
+          >
+            {closeDailyPlan.isPending ? (
+              <LoaderCircle
+                size={15}
+                className="animate-spin"
+              />
+            ) : (
+              <Check size={15} />
+            )}
+            {t(
+              closeDailyPlan.isPending
+                ? 'dashboard.today.closure.saving'
+                : 'dashboard.today.closure.confirm',
+            )}
+          </button>
         </div>
       </Modal>
     </div>
