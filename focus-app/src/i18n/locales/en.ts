@@ -647,6 +647,15 @@ const en = {
       estimatedSessions: '{{count}} estimated sessions',
       oneEstimatedSession: '1 estimated session',
       planTitle: "Today's plan",
+      organize: 'Organize',
+      organizeTitle: "Organize today's plan",
+      organizeDescription:
+        'Set up to three priorities and manually adjust the order of your day.',
+      priorityLabel: 'Daily priority',
+      priorityHelp:
+        'Priorities 1, 2 and 3 stay at the top. No task will be reorganized automatically.',
+      moveUp: 'Move {{title}} up',
+      moveDown: 'Move {{title}} down',
       planEmpty:
         'No tasks planned for today.',
       addToToday: 'Add to today',
