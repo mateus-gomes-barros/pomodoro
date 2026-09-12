@@ -445,6 +445,7 @@ const en = {
     save: 'Save Changes',
     pomodoroCount_one: '{{count}} Pomodoro',
     pomodoroCount_other: '{{count}} Pomodoros',
+    dueDateLabel: 'Due: {{date}}',
 
     filters: {
       status: 'Filter by status',
@@ -488,6 +489,10 @@ const en = {
       category: 'Category',
       project: 'Project',
       noProject: 'No project',
+      dueDate: 'Completion deadline',
+      optional: 'Optional',
+      dueDateHelp:
+        'The deadline is independent from the day you plan to work on this task.',
       estimate: 'Focus estimate',
     },
 
@@ -621,6 +626,11 @@ const en = {
       suggestionsTitle: 'Suggestions for today',
       suggestionsDescription:
         'Selected from your pending tasks.',
+      suggestedTask: 'Suggested for your plan',
+      morePlannedTasks_one:
+        'View {{count}} more planned task',
+      morePlannedTasks_other:
+        'View {{count}} more planned tasks',
       viewAllTasks: 'View all',
       completed: 'Completed',
       progressTitle: 'Your progress',
