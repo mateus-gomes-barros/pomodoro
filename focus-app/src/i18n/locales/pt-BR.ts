@@ -499,10 +499,10 @@ const ptBR = {
       category: 'Categoria',
       project: 'Projeto',
       noProject: 'Sem projeto',
-      plannedDate: 'Planejar para',
+      plannedDate: 'Planejar para:',
       plannedDateHelp:
         'Escolha o dia em que esta tarefa deve aparecer no seu plano.',
-      dueDate: 'Prazo para conclusão',
+      dueDate: 'Conclusão:',
       optional: 'Opcional',
       selectDate: 'Selecionar uma data',
       clearDate: 'Limpar',
