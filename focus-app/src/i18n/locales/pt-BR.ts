@@ -825,6 +825,23 @@ const ptBR = {
       mute: 'Desativar som',
       enable: 'Ativar som',
     },
+    routines: {
+      title: 'Rotina de foco',
+      description:
+        'Escolha uma rotina para preparar o timer.',
+      active: '{{routine}} está preparada',
+      locked:
+        'A rotina não pode ser alterada durante uma sessão.',
+      duration:
+        '{{minutes}} min · {{sessions}} sessões',
+      loadError:
+        'Não foi possível carregar suas rotinas.',
+      presets: {
+        work: 'Trabalho',
+        study: 'Estudos',
+        reading: 'Leitura',
+      },
+    },
     tasks: {
       assign: 'Tarefa em foco',
       clear: 'Remover',
