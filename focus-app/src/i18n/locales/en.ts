@@ -640,6 +640,17 @@ const en = {
         "You're already past halfway toward your daily focus goal.",
       insightComplete:
         'Daily goal reached. The rest of your day can feel lighter.',
+      achievementsTitle:
+        'These are your achievements so far!',
+      badgeCount_one:
+        '{{count}} badge earned',
+      badgeCount_other:
+        '{{count}} badges earned',
+      noBadgesYet:
+        'Complete your first session to begin earning achievements.',
+      focusHomeLabel: 'Your FocushoMe emblem',
+      focusHomeLocked:
+        'Not revealed yet',
     },
 
     stats: {
