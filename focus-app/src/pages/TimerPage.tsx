@@ -5,9 +5,12 @@ import {
   useReducedMotion,
 } from 'framer-motion'
 import {
+  BookOpen,
+  Briefcase,
   CheckCircle2,
   ChevronDown,
   Coffee,
+  GraduationCap,
   LoaderCircle,
   Pause,
   Play,
@@ -18,6 +21,7 @@ import {
 } from 'lucide-react'
 
 import { useProjects } from '@/hooks/projects/useProjects'
+import { useFocusRoutines } from '@/hooks/routines/useFocusRoutines'
 import {
   useTasks,
   useToggleTask,
@@ -42,7 +46,10 @@ import {
   formatTime,
 } from '@/utils'
 
-import type { SessionType } from '@/types'
+import type {
+  FocusRoutine,
+  SessionType,
+} from '@/types'
 import { useTranslation } from 'react-i18next'
 
 const SESSION_LABEL_KEYS: Record<
@@ -80,17 +87,21 @@ export function TimerPage() {
     currentSessionCount,
     activeProjectId,
     activeTaskId,
+    activeRoutineId,
     start,
     pause,
     reset,
     switchSession,
     setActiveProject,
     setActiveTask,
+    setActiveRoutine,
     updateSettings,
   } = usePomodoroStore()
 
   const projectsQuery = useProjects()
   const tasksQuery = useTasks()
+  const routinesQuery =
+    useFocusRoutines()
   const toggleTaskMutation = useToggleTask()
 
   const projects =
@@ -103,6 +114,16 @@ export function TimerPage() {
   const activeTask = tasks.find(
     (task) => task.id === activeTaskId,
   )
+
+  const routines =
+    routinesQuery.data ?? []
+
+  const activeRoutine =
+    routines.find(
+      (routine) =>
+        routine.id ===
+        activeRoutineId,
+    )
 
   const [showSettings, setShowSettings] =
     useState(false)
@@ -189,8 +210,196 @@ export function TimerPage() {
     switchSession('work')
   }
 
+  const routineSelectionLocked =
+    status === 'running' ||
+    status === 'paused'
+
+  const getRoutineName = (
+    routine: FocusRoutine,
+  ) =>
+    routine.templateKey
+      ? t(
+          `timer.routines.presets.${routine.templateKey}`,
+        )
+      : routine.name
+
+  const handleSelectRoutine = (
+    routine: FocusRoutine,
+  ) => {
+    if (routineSelectionLocked) {
+      return
+    }
+
+    updateSettings({
+      workDuration:
+        routine.workDuration,
+      shortBreakDuration:
+        routine.shortBreakDuration,
+      longBreakDuration:
+        routine.longBreakDuration,
+      sessionsUntilLongBreak:
+        routine.sessionsUntilLongBreak,
+      soundEnabled:
+        routine.soundEnabled,
+      autoStartBreaks:
+        routine.autoStartBreaks,
+      autoStartWork:
+        routine.autoStartWork,
+    })
+
+    setActiveRoutine(routine.id)
+    setActiveProject(
+      activeTask?.projectId ??
+        routine.defaultProjectId ??
+        null,
+    )
+
+    if (sessionType !== 'work') {
+      usePomodoroStore
+        .getState()
+        .switchSession('work')
+    }
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col items-center space-y-7">
+      {/* Focus routines */}
+
+      <motion.section
+        initial={{
+          opacity: 0,
+          y: -6,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className="card w-full overflow-hidden p-4"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="label-section">
+              {t(
+                'timer.routines.title',
+              )}
+            </p>
+            <p className="mt-1 text-xs text-white/35">
+              {routineSelectionLocked
+                ? t(
+                    'timer.routines.locked',
+                  )
+                : activeRoutine
+                  ? t(
+                      'timer.routines.active',
+                      {
+                        routine:
+                          getRoutineName(
+                            activeRoutine,
+                          ),
+                      },
+                    )
+                  : t(
+                      'timer.routines.description',
+                    )}
+            </p>
+          </div>
+        </div>
+
+        {routinesQuery.isLoading ? (
+          <div className="flex justify-center py-4">
+            <LoaderCircle
+              size={18}
+              className="animate-spin text-emerald-300/60"
+            />
+          </div>
+        ) : routinesQuery.isError ? (
+          <p className="mt-3 text-xs text-red-400">
+            {t(
+              'timer.routines.loadError',
+            )}
+          </p>
+        ) : (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {routines.map(
+              (routine) => {
+                const isActive =
+                  routine.id ===
+                  activeRoutineId
+
+                return (
+                  <button
+                    key={routine.id}
+                    type="button"
+                    onClick={() =>
+                      handleSelectRoutine(
+                        routine,
+                      )
+                    }
+                    disabled={
+                      routineSelectionLocked
+                    }
+                    aria-pressed={
+                      isActive
+                    }
+                    className={cn(
+                      'flex min-w-[132px] flex-1 items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all',
+                      isActive
+                        ? 'border-emerald-300/45 bg-emerald-300/[0.08]'
+                        : 'border-white/[0.06] bg-white/[0.025] hover:border-white/[0.12] hover:bg-white/[0.04]',
+                      routineSelectionLocked &&
+                        'cursor-not-allowed opacity-45',
+                    )}
+                  >
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05]"
+                      style={{
+                        color:
+                          routine.color,
+                      }}
+                    >
+                      {routine.templateKey ===
+                      'work' ? (
+                        <Briefcase
+                          size={15}
+                        />
+                      ) : routine.templateKey ===
+                        'study' ? (
+                        <GraduationCap
+                          size={16}
+                        />
+                      ) : (
+                        <BookOpen
+                          size={15}
+                        />
+                      )}
+                    </span>
+
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-medium text-white/80">
+                        {getRoutineName(
+                          routine,
+                        )}
+                      </span>
+                      <span className="mt-0.5 block text-[10px] text-white/30">
+                        {t(
+                          'timer.routines.duration',
+                          {
+                            minutes:
+                              routine.workDuration,
+                            sessions:
+                              routine.sessionsUntilLongBreak,
+                          },
+                        )}
+                      </span>
+                    </span>
+                  </button>
+                )
+              },
+            )}
+          </div>
+        )}
+      </motion.section>
+
       {/* Session type switcher */}
 
       <motion.div
