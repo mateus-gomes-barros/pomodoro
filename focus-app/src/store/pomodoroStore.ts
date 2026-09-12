@@ -478,6 +478,7 @@ export const usePomodoroStore =
 
             return {
               settings: merged,
+              activeRoutineId: null,
               secondsLeft: getDuration(
                 state.sessionType,
                 merged,
