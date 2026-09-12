@@ -761,10 +761,12 @@ const ptBR = {
     },
     projects: {
       title: 'Projeto',
+      assign: 'Atribuir a um projeto',
       none: 'Sem projeto',
       loadError: 'Não foi possível carregar os projetos.',
     },
     settings: {
+      title: 'Configurações do timer',
       dailyGoal:
         'Meta diária de foco',
       dailyGoalDescription:
