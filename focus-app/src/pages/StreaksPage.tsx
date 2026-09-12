@@ -35,6 +35,7 @@ import {
 import { useAnalytics } from '@/hooks/analytics/useAnalytics'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { StatCard } from '@/components/ui/Card'
+import { StreakBadgeIcon } from '@/components/streaks/StreakBadgeIcon'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   getNextStreakBadge,
@@ -628,10 +629,15 @@ export function StreaksPage() {
               duration: 0.4,
               ease: 'easeOut',
             }}
-            className="flex h-24 w-24 items-center justify-center rounded-[2rem] border border-white/[0.08] bg-white/[0.045] text-6xl shadow-[0_20px_60px_rgba(0,0,0,0.28)]"
+            className="flex h-28 w-28 items-center justify-center"
             aria-hidden="true"
           >
-            {currentBadge.icon}
+            <StreakBadgeIcon
+              minimumDays={
+                currentBadge.minimumDays
+              }
+              size={108}
+            />
           </motion.div>
 
           <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/30">
@@ -671,10 +677,15 @@ export function StreaksPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <div
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.05] text-2xl"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center"
                     aria-hidden="true"
                   >
-                    {nextBadge.icon}
+                    <StreakBadgeIcon
+                      minimumDays={
+                        nextBadge.minimumDays
+                      }
+                      size={44}
+                    />
                   </div>
 
                   <div className="min-w-0">
@@ -1267,7 +1278,7 @@ export function StreaksPage() {
                 {badgePage.map(
                   (badge) => {
                     const unlocked =
-                      streak.currentStreak >=
+                      streak.longestStreak >=
                       badge.minimumDays
 
                     const isCurrent =
@@ -1305,14 +1316,18 @@ export function StreaksPage() {
 
                         <div
                           className={cn(
-                            'mt-3 flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl',
-                            unlocked
-                              ? 'border-white/[0.08] bg-white/[0.05]'
-                              : 'border-white/[0.05] bg-white/[0.02] grayscale opacity-40',
+                            'mt-3 flex h-16 w-16 items-center justify-center',
+                            !unlocked &&
+                              'grayscale opacity-35',
                           )}
                           aria-hidden="true"
                         >
-                          {badge.icon}
+                          <StreakBadgeIcon
+                            minimumDays={
+                              badge.minimumDays
+                            }
+                            size={62}
+                          />
                         </div>
 
                         <div className="mt-4 w-full min-w-0 overflow-hidden px-1">
