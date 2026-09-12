@@ -333,7 +333,7 @@ export function TaskDatePicker({
                           selectDate(date)
                         }
                         className={cn(
-                          'relative flex aspect-square items-center justify-center rounded-full text-[11px] transition',
+                          'relative flex h-8 items-center justify-center rounded-full text-[11px] transition',
                           outsideMonth
                             ? 'text-white/15'
                             : 'text-white/60 hover:bg-white/[0.06] hover:text-white',
