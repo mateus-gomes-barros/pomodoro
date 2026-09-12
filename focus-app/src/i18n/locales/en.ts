@@ -445,6 +445,12 @@ const en = {
     save: 'Save Changes',
     pomodoroCount_one: '{{count}} Pomodoro',
     pomodoroCount_other: '{{count}} Pomodoros',
+    focusProgress:
+      '{{completed}} of {{estimated}} sessions',
+    focus: {
+      start: 'Start focusing on {{title}}',
+      openActive: 'Open active focus for {{title}}',
+    },
     plannedDateLabel: 'Planned: {{date}}',
     dueDateLabel: 'Due: {{date}}',
 
