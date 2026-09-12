@@ -319,7 +319,7 @@ export function useTimer() {
       status === 'paused' ? remainingSeconds : 'countdown',
       activeProject?.name ?? '',
       activeTask?.title ?? '',
-      currentBadge.icon,
+      currentBadge.nativeSymbol,
     ].join('|')
 
     const stateHasNotChanged =
@@ -341,7 +341,7 @@ export function useTimer() {
       remainingSeconds,
       projectName: activeProject?.name,
       taskName: activeTask?.title,
-      badgeIcon: currentBadge.icon,
+      badgeIcon: currentBadge.nativeSymbol,
     })
 
     // Atualiza Notificação Fixa / Now Bar (Android)
@@ -370,7 +370,7 @@ void showTimerNotification(
   notificationTitle,
   notificationBody,
   status === 'running' ? (endsAt ?? 0) : 0,
-  currentBadge.icon,
+  currentBadge.nativeSymbol,
 )
   }, [
     status,
@@ -381,7 +381,7 @@ void showTimerNotification(
     activeProjectId,
     tasksQuery.data,
     projectsQuery.data,
-    currentBadge.icon,
+    currentBadge.nativeSymbol,
   ])
 
   // 4. Hook para ouvir ações da notificação (Android)
