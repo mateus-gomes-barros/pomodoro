@@ -606,3 +606,110 @@ export async function setDailyTaskPriority(
     throw error
   }
 }
+
+
+export type DailyPlanDestination =
+  | 'tomorrow'
+  | 'backlog'
+  | 'keep'
+
+export interface DailyPlanDecision {
+  taskId: string
+  destination: DailyPlanDestination
+}
+
+export async function closeDailyPlan(
+  decisions: DailyPlanDecision[],
+  tomorrowDate: string,
+): Promise<void> {
+  const tomorrowDecisions =
+    decisions.filter(
+      (decision) =>
+        decision.destination ===
+        'tomorrow',
+    )
+
+  let nextTomorrowOrder = 0
+
+  if (tomorrowDecisions.length > 0) {
+    const { data, error } =
+      await supabase
+        .from('tasks')
+        .select('daily_order')
+        .eq(
+          'planned_date',
+          tomorrowDate,
+        )
+        .is('deleted_at', null)
+        .order('daily_order', {
+          ascending: false,
+          nullsFirst: false,
+        })
+        .limit(1)
+        .maybeSingle()
+
+    if (error) {
+      throw error
+    }
+
+    nextTomorrowOrder =
+      typeof data?.daily_order ===
+      'number'
+        ? data.daily_order + 1
+        : 0
+  }
+
+  let tomorrowOffset = 0
+
+  const results = await Promise.all(
+    decisions.map((decision) => {
+      if (
+        decision.destination === 'keep'
+      ) {
+        return Promise.resolve({
+          error: null,
+        })
+      }
+
+      if (
+        decision.destination ===
+        'tomorrow'
+      ) {
+        const dailyOrder =
+          nextTomorrowOrder +
+          tomorrowOffset
+
+        tomorrowOffset += 1
+
+        return supabase
+          .from('tasks')
+          .update({
+            planned_date:
+              tomorrowDate,
+            daily_order: dailyOrder,
+            daily_priority: null,
+          })
+          .eq('id', decision.taskId)
+          .is('deleted_at', null)
+      }
+
+      return supabase
+        .from('tasks')
+        .update({
+          planned_date: null,
+          daily_order: null,
+          daily_priority: null,
+        })
+        .eq('id', decision.taskId)
+        .is('deleted_at', null)
+    }),
+  )
+
+  const failedResult = results.find(
+    ({ error }) => error,
+  )
+
+  if (failedResult?.error) {
+    throw failedResult.error
+  }
+}
