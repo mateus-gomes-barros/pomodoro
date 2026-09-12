@@ -53,7 +53,7 @@ public class PomodoroServicePlugin extends Plugin {
         String title = call.getString("title", "Tempo de Foco");
         String body = call.getString("body", "Focando...");
         long endTime = call.getLong("endTime", 0L);
-        String badgeIcon = call.getString("badgeIcon", "");
+        int badgeLevel = call.getInt("badgeLevel", 0);
 
         getContext()
             .getSharedPreferences(
@@ -63,7 +63,7 @@ public class PomodoroServicePlugin extends Plugin {
             .edit()
             .putString("timer_widget_title", title)
             .putString("timer_widget_body", body)
-            .putString("timer_widget_badge", badgeIcon)
+            .putInt("timer_widget_badge_level", badgeLevel)
             .putLong("timer_widget_end_time", endTime)
             .putBoolean("timer_widget_running", endTime > System.currentTimeMillis())
             .apply();
@@ -73,7 +73,7 @@ public class PomodoroServicePlugin extends Plugin {
         );
 
         Log.d(TAG, "endTime=" + endTime);
-        Log.d(TAG, "badgeIcon=" + badgeIcon);
+        Log.d(TAG, "badgeLevel=" + badgeLevel);
 
         Intent intent =
                 new Intent(getContext(), PomodoroForegroundService.class);
@@ -94,8 +94,8 @@ public class PomodoroServicePlugin extends Plugin {
         );
 
         intent.putExtra(
-                PomodoroForegroundService.EXTRA_BADGE_ICON,
-                badgeIcon
+                PomodoroForegroundService.EXTRA_BADGE_LEVEL,
+                badgeLevel
         );
 
         try {
