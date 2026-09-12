@@ -156,6 +156,14 @@ export function TimerPage() {
     isSessionCompleted &&
     sessionType !== 'work'
 
+  const shouldAutoContinue =
+    isSessionCompleted &&
+    (
+      sessionType === 'work'
+        ? settings.autoStartWork
+        : settings.autoStartBreaks
+    )
+
   const handleContinueFocus = () => {
     switchSession('work')
     usePomodoroStore.getState().start()
@@ -451,7 +459,8 @@ export function TimerPage() {
       </motion.div>
 
       <AnimatePresence initial={false}>
-        {isSessionCompleted && (
+        {isSessionCompleted &&
+          !shouldAutoContinue && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
