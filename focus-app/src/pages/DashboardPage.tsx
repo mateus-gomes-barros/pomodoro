@@ -1121,7 +1121,7 @@ export function DashboardPage() {
 
             <div className="space-y-4">
               {earnedBadges.length > 0 ? (
-                <div className="grid grid-cols-9 gap-1.5">
+                <div className="grid grid-cols-6 gap-2 sm:grid-cols-9 sm:gap-1.5">
                   {earnedBadges.map(
                     (badge) => {
                       const badgeName = t(
@@ -1138,7 +1138,7 @@ export function DashboardPage() {
                           to="/streaks"
                           title={badgeName}
                           aria-label={badgeName}
-                          className="flex aspect-square min-w-0 items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.025] text-[clamp(0.8rem,4vw,1.15rem)] transition-colors hover:border-amber-300/20 hover:bg-amber-300/[0.04]"
+                          className="flex aspect-square min-w-0 items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.025] text-xl transition-colors hover:border-amber-300/20 hover:bg-amber-300/[0.04] sm:text-lg"
                         >
                           <span
                             aria-hidden="true"
