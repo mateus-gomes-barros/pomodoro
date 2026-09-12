@@ -32,6 +32,7 @@ interface PomodoroState {
 
   // History
   sessions: PomodoroSession[]
+  pendingSessionIds: string[]
 
   // Actions
   start: () => void
@@ -42,6 +43,9 @@ interface PomodoroState {
     type: SessionType,
   ) => void
   completeSession: () => void
+  markSessionSynced: (
+    sessionId: string,
+  ) => void
   setActiveProject: (
     id: string | null,
   ) => void
@@ -112,6 +116,7 @@ export const usePomodoroStore =
         activeTaskId: null,
         settings: DEFAULT_SETTINGS,
         sessions: [],
+        pendingSessionIds: [],
 
         start: () => {
           const {
@@ -381,6 +386,10 @@ export const usePomodoroStore =
               ...state.sessions,
               session,
             ],
+            pendingSessionIds: [
+              ...state.pendingSessionIds,
+              session.id,
+            ],
             status: shouldAutoStart
               ? 'running'
               : 'completed',
@@ -414,6 +423,17 @@ export const usePomodoroStore =
               },
             })
           }
+        },
+
+        markSessionSynced: (
+          sessionId,
+        ) => {
+          set((state) => ({
+            pendingSessionIds:
+              state.pendingSessionIds.filter(
+                (id) => id !== sessionId,
+              ),
+          }))
         },
 
         setActiveProject: (id) => {
@@ -493,6 +513,8 @@ export const usePomodoroStore =
           activeTaskId:
             state.activeTaskId,
           sessions: state.sessions,
+          pendingSessionIds:
+            state.pendingSessionIds,
           settings: state.settings,
           currentSessionCount:
             state.currentSessionCount,
