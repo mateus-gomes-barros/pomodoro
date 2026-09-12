@@ -1817,7 +1817,7 @@ const ptBR = {
     about: {
       title: 'Sobre',
       description:
-        'Focus v5.0.1 — Um aplicativo minimalista de Pomodoro e produtividade. Dados do modo visitante são armazenados localmente no dispositivo.',
+        'Focus v6.0 — Planeje o que importa. Foque no que transforma. Dados do modo visitante são armazenados localmente no dispositivo.',
     },
   },
 }
