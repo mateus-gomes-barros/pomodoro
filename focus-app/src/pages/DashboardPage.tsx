@@ -526,7 +526,7 @@ export function DashboardPage() {
         className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
       >
         <div className="min-w-0">
-        <p className="label-section mb-2">
+          <p className="label-section mb-2">
           {format(
             new Date(),
             i18n.language === 'pt-BR'
@@ -1077,7 +1077,7 @@ export function DashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.24 }}
             className="card overflow-hidden p-5"
-      >
+          >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold leading-snug text-white">
@@ -1196,54 +1196,7 @@ export function DashboardPage() {
                 />
               </Link>
             </div>
-      </motion.section>
-          <motion.section
-              initial={{
-                opacity: 0,
-                y: 8,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{ delay: 0.18 }}
-              className="rounded-[24px] border border-amber-400/15 bg-amber-400/[0.055] p-5"
-            >
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-400/10 text-amber-300">
-                  <TriangleAlert
-                    size={15}
-                  />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="label-section text-amber-200/60">
-                    {t(
-                      'dashboard.today.urgentTitle',
-                    )}
-                  </p>
-                  <p className="mt-2 truncate text-sm font-medium text-white/85">
-                    {urgentTask.title}
-                  </p>
-                  <p className="mt-1 text-xs text-white/35">
-                    {t(
-                      'dashboard.today.urgentDescription',
-                    )}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    addToToday(urgentTask)
-                  }
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white"
-                >
-                  <ChevronRight size={15} />
-                </button>
-              </div>
-            </motion.section>
-          )}
+          </motion.section>
 
           <motion.section
             initial={{
