@@ -14,6 +14,165 @@ private let focusAccentColor = Color(
     blue: 0.64
 )
 
+private struct NativeStreakBadgeMark:
+    View
+{
+    let level: Int
+    let size: CGFloat
+
+    private var symbolName: String {
+        if level >= 2000 {
+            return "infinity"
+        }
+
+        if level >= 1500 {
+            return "trophy.fill"
+        }
+
+        if level >= 1000 {
+            return "crown.fill"
+        }
+
+        if level >= 750 {
+            return "eye.fill"
+        }
+
+        if level >= 600 {
+            return "diamond.fill"
+        }
+
+        if level >= 500 {
+            return "sun.max.fill"
+        }
+
+        if level >= 365 {
+            return "calendar"
+        }
+
+        if level >= 300 {
+            return "3.circle.fill"
+        }
+
+        if level >= 200 {
+            return "medal.fill"
+        }
+
+        if level >= 150 {
+            return "sparkles"
+        }
+
+        if level >= 100 {
+            return "star.fill"
+        }
+
+        if level >= 75 {
+            return "moon.stars.fill"
+        }
+
+        if level >= 50 {
+            return "rocket.fill"
+        }
+
+        if level >= 30 {
+            return "bolt.fill"
+        }
+
+        if level >= 14 {
+            return "heart.fill"
+        }
+
+        if level >= 7 {
+            return "flame.fill"
+        }
+
+        if level >= 3 {
+            return "leaf.fill"
+        }
+
+        return "drop.fill"
+    }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(
+                                0.16
+                            ),
+                            focusAccentColor
+                                .opacity(0.12),
+                            Color.black.opacity(
+                                0.34
+                            ),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Circle()
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(
+                                0.38
+                            ),
+                            focusAccentColor
+                                .opacity(0.55),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth:
+                        max(0.8, size * 0.045)
+                )
+
+            Circle()
+                .stroke(
+                    focusAccentColor
+                        .opacity(0.14),
+                    lineWidth:
+                        max(0.6, size * 0.025)
+                )
+                .padding(size * 0.13)
+
+            Image(
+                systemName: symbolName
+            )
+            .font(
+                .system(
+                    size: size * 0.42,
+                    weight: .semibold
+                )
+            )
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [
+                        .white,
+                        focusAccentColor,
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        }
+        .frame(
+            width: size,
+            height: size
+        )
+        .shadow(
+            color:
+                focusAccentColor
+                    .opacity(0.16),
+            radius: size * 0.16,
+            y: size * 0.08
+        )
+        .accessibilityHidden(true)
+    }
+}
+
 private extension FocusActivityAttributes.SessionType {
     var title: String {
         switch self {
@@ -126,19 +285,10 @@ private struct FocusProjectTitleView: View {
             !projectName.isEmpty
         {
             HStack(spacing: 6) {
-                if
-                    let badgeIcon = state.badgeIcon,
-                    !badgeIcon.isEmpty
-                {
-                    Text(badgeIcon)
-                        .font(
-                            .system(
-                                size: fontSize + 1
-                            )
-                        )
-                        .lineLimit(1)
-                        .fixedSize()
-                }
+                NativeStreakBadgeMark(
+                    level: state.badgeLevel,
+                    size: fontSize + 9
+                )
 
                 Text(projectName)
                     .font(
