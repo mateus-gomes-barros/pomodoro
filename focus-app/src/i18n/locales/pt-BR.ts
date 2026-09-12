@@ -378,6 +378,10 @@ const ptBR = {
       description: 'Descrição',
       descriptionPlaceholder:
         'Descrição opcional',
+      goal: 'Meta vinculada',
+      noGoal: 'Nenhuma meta',
+      goalHelp:
+        'O foco deste projeto contribuirá para a meta selecionada.',
       color: 'Cor',
       selectColor:
         'Selecionar cor do projeto {{color}}',
@@ -584,6 +588,15 @@ const ptBR = {
       reopen: 'Reabrir {{title}}',
       complete: 'Concluir {{title}}',
       delete: 'Excluir {{title}}',
+    },
+
+    progress: {
+      projects_one: '{{count}} projeto vinculado',
+      projects_other: '{{count}} projetos vinculados',
+      focus:
+        '{{duration}} de foco · {{sessions}} sessões',
+      tasks:
+        '{{completed}} de {{total}} tarefas concluídas',
     },
 
     achievements: {
