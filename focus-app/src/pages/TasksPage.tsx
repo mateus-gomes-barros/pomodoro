@@ -122,6 +122,8 @@ export function TasksPage() {
     useState<TaskCategory>('planned')
   const [projectId, setProjectId] =
     useState('')
+  const [plannedDate, setPlannedDate] =
+    useState('')
   const [dueDate, setDueDate] =
     useState('')
   const [
@@ -178,6 +180,7 @@ export function TasksPage() {
     setTitle('')
     setCategory('planned')
     setProjectId('')
+    setPlannedDate('')
     setDueDate('')
     setEstimatedPomodoros(1)
   }
@@ -197,6 +200,9 @@ export function TasksPage() {
     setTitle(task.title)
     setCategory(task.category)
     setProjectId(task.projectId ?? '')
+    setPlannedDate(
+      task.plannedDate ?? '',
+    )
     setDueDate(
       toLocalDateInput(task.dueAt),
     )
@@ -234,6 +240,8 @@ export function TasksPage() {
             title: trimmedTitle,
             category,
             projectId,
+            plannedDate:
+              plannedDate || null,
             dueAt: dueDate
               ? new Date(
                   dueDate +
@@ -248,6 +256,8 @@ export function TasksPage() {
           title: trimmedTitle,
           category,
           projectId,
+          plannedDate:
+            plannedDate || null,
           dueAt: dueDate
             ? new Date(
                 dueDate + 'T23:59:59',
@@ -661,6 +671,30 @@ export function TasksPage() {
                         )}
                       </span>
 
+                      {task.plannedDate && (
+                        <span className="flex items-center gap-1 text-emerald-200/65">
+                          <CalendarDays
+                            size={11}
+                          />
+                          {t(
+                            'tasksPage.plannedDateLabel',
+                            {
+                              date:
+                                new Date(
+                                  task.plannedDate +
+                                    'T12:00:00',
+                                ).toLocaleDateString(
+                                  i18n.language,
+                                  {
+                                    day: '2-digit',
+                                    month: 'short',
+                                  },
+                                ),
+                            },
+                          )}
+                        </span>
+                      )}
+
                       {task.dueAt && (
                         <span className="flex items-center gap-1 text-amber-200/70">
                           <CalendarDays
@@ -877,7 +911,45 @@ export function TasksPage() {
             </select>
           </div>
 
-          <div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label
+                  htmlFor="task-planned-date"
+                  className="block text-xs font-medium text-accent-subtle"
+                >
+                  {t(
+                    'tasksPage.form.plannedDate',
+                  )}
+                </label>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-accent-subtle/60">
+                  {t(
+                    'tasksPage.form.optional',
+                  )}
+                </span>
+              </div>
+
+              <input
+                id="task-planned-date"
+                type="date"
+                className="input"
+                value={plannedDate}
+                disabled={isSaving}
+                onChange={(event) =>
+                  setPlannedDate(
+                    event.target.value,
+                  )
+                }
+              />
+
+              <p className="mt-2 text-[11px] leading-relaxed text-accent-subtle">
+                {t(
+                  'tasksPage.form.plannedDateHelp',
+                )}
+              </p>
+            </div>
+
+            <div>
             <div className="mb-2 flex items-center justify-between gap-3">
               <label
                 htmlFor="task-due-date"
@@ -912,6 +984,7 @@ export function TasksPage() {
                 'tasksPage.form.dueDateHelp',
               )}
             </p>
+            </div>
           </div>
 
           <div>
