@@ -710,13 +710,6 @@ const en = {
       allComplete: 'All tasks complete 🎉',
     },
 
-    tasks: {
-      assign: 'Focus task',
-      clear: 'Clear',
-      progress: '{{completed}} of {{estimated}} sessions completed',
-      empty: 'Create a task to connect it to your focus.',
-      loadError: 'Unable to load tasks.',
-    },
     projects: {
       title: 'Projects',
       viewAll: 'View all',
@@ -755,6 +748,13 @@ const en = {
     sound: {
       mute: 'Mute sound',
       enable: 'Enable sound',
+    },
+    tasks: {
+      assign: 'Focus task',
+      clear: 'Clear',
+      progress: '{{completed}} of {{estimated}} sessions completed',
+      empty: 'Create a task to connect it to your focus.',
+      loadError: 'Unable to load tasks.',
     },
     projects: {
       title: 'Project',
