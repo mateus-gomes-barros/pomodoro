@@ -1359,6 +1359,14 @@ export function DashboardPage() {
                     }
                     disabled={
                       index === 0 ||
+                      Boolean(
+                        task.dailyPriority,
+                      ) ||
+                      Boolean(
+                        todayPlan[
+                          index - 1
+                        ]?.dailyPriority,
+                      ) ||
                       reorderDailyPlan.isPending
                     }
                     aria-label={t(
@@ -1383,6 +1391,9 @@ export function DashboardPage() {
                     disabled={
                       index ===
                         todayPlan.length - 1 ||
+                      Boolean(
+                        task.dailyPriority,
+                      ) ||
                       reorderDailyPlan.isPending
                     }
                     aria-label={t(
