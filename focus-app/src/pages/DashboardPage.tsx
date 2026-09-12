@@ -349,9 +349,7 @@ export function DashboardPage() {
 
   const urgentTask = tasks
     .filter(
-      (task) =>
-        !task.completed &&
-        task.id !== nextTask?.id,
+      (task) => !task.completed,
     )
     .find((task) => {
       if (task.category === 'urgent') {
@@ -369,6 +367,23 @@ export function DashboardPage() {
         isBefore(dueDate, new Date())
       )
     })
+
+  const urgentReasonKey =
+    urgentTask?.dueAt &&
+    isBefore(
+      new Date(urgentTask.dueAt),
+      new Date(),
+    )
+      ? 'urgentOverdueDescription'
+      : urgentTask?.dueAt &&
+          isToday(
+            new Date(urgentTask.dueAt),
+          )
+        ? 'urgentDueTodayDescription'
+        : 'urgentDescription'
+
+  const urgentTaskIsPlannedToday =
+    urgentTask?.plannedDate === today
 
   const dailyGoal =
     settings.dailyFocusGoalMinutes ??
@@ -590,23 +605,26 @@ export function DashboardPage() {
                 </p>
                 <p className="mt-1 text-xs text-white/35">
                   {t(
-                    'dashboard.today.urgentDescription',
+                    'dashboard.today.' +
+                      urgentReasonKey,
                   )}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  addToToday(urgentTask)
-                }
-                aria-label={t(
-                  'dashboard.today.addToToday',
-                )}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white"
-              >
-                <ChevronRight size={15} />
-              </button>
+              {!urgentTaskIsPlannedToday && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    addToToday(urgentTask)
+                  }
+                  aria-label={t(
+                    'dashboard.today.addToToday',
+                  )}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white"
+                >
+                  <ChevronRight size={15} />
+                </button>
+              )}
             </div>
           </motion.section>
         )}
