@@ -26,5 +26,10 @@ on public.projects (
 )
 where goal_id is not null;
 
+create index if not exists
+  projects_goal_id_idx
+on public.projects (goal_id)
+where goal_id is not null;
+
 comment on column public.projects.goal_id is
   'Optional annual goal advanced by this project.';
