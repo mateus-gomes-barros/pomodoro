@@ -646,6 +646,10 @@ const en = {
       urgentTitle: 'Needs attention',
       urgentDescription:
         'This task is marked as urgent.',
+      urgentDueTodayDescription:
+        'This task is due today.',
+      urgentOverdueDescription:
+        'This task is overdue.',
       insightTitle: "Today's rhythm",
       insightStart:
         'Your first session is the most important step right now.',
