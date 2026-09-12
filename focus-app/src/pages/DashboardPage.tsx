@@ -1103,33 +1103,34 @@ export function DashboardPage() {
 
             <div className="space-y-4">
               {earnedBadges.length > 0 ? (
-                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                <div className="grid grid-cols-9 gap-1.5">
                   {earnedBadges.map(
-                    (badge) => (
-                      <Link
-                        key={
-                          badge.minimumDays
-                        }
-                        to="/streaks"
-                        title={t(
-                          'streaksPage.badges.' +
-                            badge.minimumDays +
-                            '.name',
-                        )}
-                        className="flex w-[76px] shrink-0 flex-col items-center rounded-2xl border border-white/[0.05] bg-white/[0.025] px-2 py-3 text-center transition-colors hover:border-amber-300/20 hover:bg-amber-300/[0.04]"
-                      >
-                        <span className="text-2xl">
-                          {badge.icon}
-                        </span>
-                        <span className="mt-2 line-clamp-2 text-[10px] leading-tight text-white/45">
-                          {t(
-                            'streaksPage.badges.' +
-                              badge.minimumDays +
-                              '.name',
-                          )}
-                        </span>
-                      </Link>
-                    ),
+                    (badge) => {
+                      const badgeName = t(
+                        'streaksPage.badges.' +
+                          badge.minimumDays +
+                          '.name',
+                      )
+
+                      return (
+                        <Link
+                          key={
+                            badge.minimumDays
+                          }
+                          to="/streaks"
+                          title={badgeName}
+                          aria-label={badgeName}
+                          className="flex aspect-square min-w-0 items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.025] text-[clamp(0.8rem,4vw,1.15rem)] transition-colors hover:border-amber-300/20 hover:bg-amber-300/[0.04]"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="leading-none"
+                          >
+                            {badge.icon}
+                          </span>
+                        </Link>
+                      )
+                    },
                   )}
                 </div>
               ) : (
