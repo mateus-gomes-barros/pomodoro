@@ -504,6 +504,10 @@ const ptBR = {
         'Escolha o dia em que esta tarefa deve aparecer no seu plano.',
       dueDate: 'Prazo para conclusão',
       optional: 'Opcional',
+      selectDate: 'Selecionar uma data',
+      clearDate: 'Limpar',
+      today: 'Hoje',
+      closeCalendar: 'Fechar calendário',
       dueDateHelp:
         'O prazo é independente do dia em que você pretende trabalhar nesta tarefa.',
       estimate: 'Estimativa de foco',
