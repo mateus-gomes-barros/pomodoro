@@ -1087,15 +1087,15 @@ export function TimerPage() {
                           }
                           disabled={isRunning}
                           className={cn(
-                            'relative h-6 w-11 flex-shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                            'relative h-6 w-11 flex-shrink-0 rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-40',
                             enabled
-                              ? 'bg-emerald-400'
-                              : 'bg-white/10',
+                              ? 'border-emerald-300/50 bg-emerald-400'
+                              : 'border-white/10 bg-white/10',
                           )}
                         >
                           <span
                             className={cn(
-                              'absolute top-1 h-4 w-4 rounded-full bg-white transition-transform',
+                              'absolute left-0 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
                               enabled
                                 ? 'translate-x-5'
                                 : 'translate-x-1',
