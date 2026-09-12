@@ -94,12 +94,14 @@ const BADGE_COLORS: Record<
 
 function BadgeGlyph({
   minimumDays,
+  stroke,
 }: {
   minimumDays: number
+  stroke: string
 }): ReactNode {
   const common = {
     fill: 'none',
-    stroke: 'currentColor',
+    stroke,
     strokeWidth: 4,
     strokeLinecap:
       'round' as const,
@@ -182,7 +184,7 @@ function BadgeGlyph({
             cx="72"
             cy="38"
             r="3"
-            fill="currentColor"
+            fill={stroke}
             stroke="none"
           />
         </g>
@@ -280,7 +282,7 @@ function BadgeGlyph({
             cx="48"
             cy="51"
             r="3"
-            fill="currentColor"
+            fill={stroke}
             stroke="none"
           />
         </g>
@@ -295,7 +297,7 @@ function BadgeGlyph({
             cx="48"
             cy="46"
             r="3"
-            fill="currentColor"
+            fill={stroke}
             stroke="none"
           />
         </g>
@@ -452,14 +454,12 @@ export function StreakBadgeIcon({
         strokeOpacity="0.24"
       />
 
-      <g
-        color={`url(#badge-glyph-${id})`}
-        transform="translate(0 -1)"
-      >
+      <g transform="translate(0 -1)">
         <BadgeGlyph
           minimumDays={
             minimumDays
           }
+          stroke={`url(#badge-glyph-${id})`}
         />
       </g>
 
