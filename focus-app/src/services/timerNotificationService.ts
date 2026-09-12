@@ -9,7 +9,7 @@ interface PomodoroServicePlugin {
     title: string
     body: string
     endTime: number
-    badgeIcon?: string
+    badgeLevel?: number
   }): Promise<void>
 
   stopService(): Promise<void>
@@ -140,7 +140,7 @@ export async function showTimerNotification(
   title: string,
   body: string,
   endTime: number,
-  badgeIcon?: string,
+  badgeLevel?: number,
 ) {
   if (!Capacitor.isNativePlatform()) return
 
@@ -149,7 +149,7 @@ export async function showTimerNotification(
       title,
       body,
       endTime,
-      badgeIcon,
+      badgeLevel,
     })
   } catch (error) {
     console.error(
