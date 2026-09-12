@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useInvalidateQuery } from '@/hooks/useInvalidateQuery'
 
 import {
+  closeDailyPlan,
   createTask,
   deleteTask,
   deleteTaskPermanently,
@@ -16,6 +17,7 @@ import {
   toggleTask,
   updateTask,
   type CreateTaskInput,
+  type DailyPlanDecision,
   type UpdateTaskInput,
 } from '@/services/tasksService'
 
@@ -170,6 +172,28 @@ export function useSetDailyTaskPriority() {
         setDailyTaskPriority(
           task,
           priority,
+        ),
+    },
+  )
+}
+
+
+interface CloseDailyPlanVariables {
+  decisions: DailyPlanDecision[]
+  tomorrowDate: string
+}
+
+export function useCloseDailyPlan() {
+  return useInvalidateQuery(
+    tasksQueryKey,
+    {
+      mutationFn: ({
+        decisions,
+        tomorrowDate,
+      }: CloseDailyPlanVariables) =>
+        closeDailyPlan(
+          decisions,
+          tomorrowDate,
         ),
     },
   )
