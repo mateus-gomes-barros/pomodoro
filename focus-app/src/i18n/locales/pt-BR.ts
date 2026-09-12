@@ -454,6 +454,7 @@ const ptBR = {
     save: 'Salvar alterações',
     pomodoroCount_one: '{{count}} pomodoro',
     pomodoroCount_other: '{{count}} pomodoros',
+    dueDateLabel: 'Prazo: {{date}}',
 
     filters: {
       status: 'Filtrar por status',
@@ -497,6 +498,10 @@ const ptBR = {
       category: 'Categoria',
       project: 'Projeto',
       noProject: 'Sem projeto',
+      dueDate: 'Prazo para conclusão',
+      optional: 'Opcional',
+      dueDateHelp:
+        'O prazo é independente do dia em que você pretende trabalhar nesta tarefa.',
       estimate: 'Estimativa de foco',
     },
 
@@ -631,6 +636,11 @@ const ptBR = {
       suggestionsTitle: 'Sugestões para hoje',
       suggestionsDescription:
         'Escolhidas entre suas tarefas pendentes.',
+      suggestedTask: 'Sugestão para seu plano',
+      morePlannedTasks_one:
+        'Ver mais {{count}} tarefa planejada',
+      morePlannedTasks_other:
+        'Ver mais {{count}} tarefas planejadas',
       viewAllTasks: 'Ver todas',
       completed: 'Concluída',
       progressTitle: 'Seu progresso',
