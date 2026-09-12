@@ -21,6 +21,7 @@ export interface Project {
   color: string
   emoji: string
   description?: string
+  goalId?: string
   totalSessions: number
   completedSessions: number
   totalFocusMinutes: number
