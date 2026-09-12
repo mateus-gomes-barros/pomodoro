@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import {
   format,
@@ -102,10 +103,32 @@ export function useTimer() {
   }, [sessionsQuery.data])
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [sessionSyncRetry, setSessionSyncRetry] =
+    useState(0)
   const sessionSyncInProgressRef =
     useRef<string | null>(null)
   const liveActivityStateRef = useRef<string | null>(null)
   const hasSyncedLiveActivityRef = useRef(false)
+
+  useEffect(() => {
+    const retryPendingSessions = () => {
+      setSessionSyncRetry(
+        (current) => current + 1,
+      )
+    }
+
+    window.addEventListener(
+      'online',
+      retryPendingSessions,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'online',
+        retryPendingSessions,
+      )
+    }
+  }, [])
 
   // 1. Sincroniza a fila persistente de sessões concluídas.
   // A fila sobrevive a recargas, reinícios e períodos sem conexão.
@@ -229,6 +252,7 @@ export function useTimer() {
     void syncSession()
   }, [
     pendingSessionIds,
+    sessionSyncRetry,
     localSessions,
     settings.soundEnabled,
     tasksQuery.data,
