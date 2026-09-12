@@ -720,6 +720,13 @@ const ptBR = {
       allComplete: 'Todas as tarefas concluídas 🎉',
     },
 
+    tasks: {
+      assign: 'Tarefa em foco',
+      clear: 'Remover',
+      progress: '{{completed}} de {{estimated}} sessões realizadas',
+      empty: 'Crie uma tarefa para vinculá-la ao seu foco.',
+      loadError: 'Não foi possível carregar as tarefas.',
+    },
     projects: {
       title: 'Projetos',
       viewAll: 'Ver todos',
