@@ -369,8 +369,12 @@ export function DashboardPage() {
   )
 
   const recentFocusThreshold =
-    Date.now() -
-    14 * 24 * 60 * 60 * 1000
+    useMemo(
+      () =>
+        Date.now() -
+        14 * 24 * 60 * 60 * 1000,
+      [],
+    )
 
   const recentTaskIds = useMemo(
     () =>
