@@ -495,6 +495,10 @@ const en = {
         'Choose the day when this task should appear in your plan.',
       dueDate: 'Completion deadline',
       optional: 'Optional',
+      selectDate: 'Select a date',
+      clearDate: 'Clear',
+      today: 'Today',
+      closeCalendar: 'Close calendar',
       dueDateHelp:
         'The deadline is independent from the day you plan to work on this task.',
       estimate: 'Focus estimate',
