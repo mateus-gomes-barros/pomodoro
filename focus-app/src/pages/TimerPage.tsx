@@ -561,9 +561,9 @@ export function TimerPage() {
                   disabled={isRunning}
                   onClick={() => {
                     setActiveTask(task.id)
-                    if (task.projectId) {
-                      setActiveProject(task.projectId)
-                    }
+                    setActiveProject(
+                      task.projectId ?? null,
+                    )
                   }}
                   title={task.title}
                   className={cn(
@@ -610,8 +610,10 @@ export function TimerPage() {
                 onClick={() =>
                   setActiveProject(null)
                 }
+                disabled={isRunning}
                 className={cn(
                   'rounded-xl px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                  isRunning && 'cursor-not-allowed opacity-60',
                   activeProjectId ===
                     null
                     ? 'bg-white/10 text-white'
@@ -631,10 +633,12 @@ export function TimerPage() {
                         project.id,
                       )
                     }
+                    disabled={isRunning}
                     title={project.name}
                     className={cn(
                       'flex max-w-full items-center gap-1.5 rounded-xl px-3 py-1.5',
                       'text-xs font-medium transition-all duration-150',
+                      isRunning && 'cursor-not-allowed opacity-60',
                       activeProjectId ===
                         project.id
                         ? 'border border-white/10 bg-white/10 text-white'
