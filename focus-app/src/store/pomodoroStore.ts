@@ -9,6 +9,7 @@ import type {
 } from '../types'
 
 import {
+  formatLocalDate,
   generateId,
   getTodayString,
 } from '../utils'
@@ -332,7 +333,12 @@ export const usePomodoroStore =
             settings,
             activeProjectId,
             activeTaskId,
+            endsAt,
           } = get()
+
+          const completedAt = new Date(
+            endsAt ?? Date.now(),
+          )
 
           const session: PomodoroSession = {
             id: generateId(),
@@ -345,8 +351,10 @@ export const usePomodoroStore =
                 : sessionType === 'short_break'
                   ? settings.shortBreakDuration
                   : settings.longBreakDuration,
-            completedAt: new Date().toISOString(),
-            date: getTodayString(),
+            completedAt:
+              completedAt.toISOString(),
+            date:
+              formatLocalDate(completedAt),
           }
 
           const newCount =
