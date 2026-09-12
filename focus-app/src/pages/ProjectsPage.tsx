@@ -420,7 +420,7 @@ export function ProjectsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="label mb-2 block">
+            <label className="label mb-2 block font-semibold text-emerald-300">
               {t('projectsPage.form.icon')}
             </label>
 
@@ -465,7 +465,7 @@ export function ProjectsPage() {
           </div>
 
           <div>
-            <label className="label mb-2 block">
+            <label className="label mb-2 block font-semibold text-emerald-300">
               {t('projectsPage.form.name')}
             </label>
 
@@ -490,7 +490,7 @@ export function ProjectsPage() {
           </div>
 
           <div>
-            <label className="label mb-2 block">
+            <label className="label mb-2 block font-semibold text-emerald-300">
               {t('projectsPage.form.description')}
             </label>
 
@@ -517,7 +517,7 @@ export function ProjectsPage() {
           </div>
 
           <div>
-            <label className="label mb-2 block">
+            <label className="label mb-2 block font-semibold text-emerald-300">
               {t('projectsPage.form.color')}
             </label>
 
