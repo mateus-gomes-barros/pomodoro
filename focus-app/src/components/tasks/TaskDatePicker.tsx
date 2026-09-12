@@ -113,7 +113,7 @@ export function TaskDatePicker({
       <div className="mb-2 flex items-center justify-between gap-3">
         <label
           htmlFor={id}
-          className="block whitespace-nowrap text-xs font-medium text-accent-subtle"
+          className="block whitespace-nowrap text-xs font-semibold text-emerald-300"
         >
           {label}
         </label>
