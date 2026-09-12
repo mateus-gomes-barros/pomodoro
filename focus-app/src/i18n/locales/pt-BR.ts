@@ -657,6 +657,15 @@ const ptBR = {
       estimatedSessions: '{{count}} sessões estimadas',
       oneEstimatedSession: '1 sessão estimada',
       planTitle: 'Plano de hoje',
+      organize: 'Organizar',
+      organizeTitle: 'Organizar plano de hoje',
+      organizeDescription:
+        'Defina até três prioridades e ajuste manualmente a ordem do seu dia.',
+      priorityLabel: 'Prioridade do dia',
+      priorityHelp:
+        'As prioridades 1, 2 e 3 ficam no topo. Nenhuma tarefa será reorganizada automaticamente.',
+      moveUp: 'Mover {{title}} para cima',
+      moveDown: 'Mover {{title}} para baixo',
       planEmpty:
         'Nenhuma tarefa planejada para hoje.',
       addToToday: 'Adicionar ao dia',
