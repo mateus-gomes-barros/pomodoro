@@ -1,4 +1,8 @@
-import { useMemo } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { enUS, ptBR } from 'date-fns/locale'
 import {
   differenceInCalendarDays,
@@ -160,7 +164,35 @@ export function DashboardPage() {
   const projects =
     projectsQuery.data ?? []
 
-  const today = getTodayString()
+  const [today, setToday] = useState(
+    getTodayString,
+  )
+
+  useEffect(() => {
+    let timeoutId: number
+
+    function scheduleNextDay() {
+      const now = new Date()
+      const nextDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        0,
+        0,
+        1,
+      )
+
+      timeoutId = window.setTimeout(() => {
+        setToday(getTodayString())
+        scheduleNextDay()
+      }, nextDay.getTime() - now.getTime())
+    }
+
+    scheduleNextDay()
+
+    return () =>
+      window.clearTimeout(timeoutId)
+  }, [])
 
   const todaySessions = useMemo(
     () =>
