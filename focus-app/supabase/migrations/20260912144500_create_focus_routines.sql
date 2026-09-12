@@ -51,6 +51,11 @@ create index if not exists
   focus_routines_user_sort_order_idx
 on public.focus_routines (user_id, sort_order, created_at);
 
+create index if not exists
+  focus_routines_default_project_id_idx
+on public.focus_routines (default_project_id)
+where default_project_id is not null;
+
 alter table public.focus_routines enable row level security;
 
 drop policy if exists
