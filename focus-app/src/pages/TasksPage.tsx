@@ -13,6 +13,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
+import { TaskDatePicker } from '@/components/tasks/TaskDatePicker'
 import { useProjects } from '@/hooks/projects/useProjects'
 import {
   useCreateTask,
@@ -383,7 +384,7 @@ export function TasksPage() {
               <Trash2 size={17} />
 
               {trashTasks.length > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-green px-1 text-[10px] font-bold text-black">
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-accent-green/25 bg-[#10251d] px-1 text-[10px] font-bold text-accent-green shadow-[0_4px_12px_rgba(0,0,0,0.35)]">
                   {trashTasks.length > 99
                     ? '99+'
                     : trashTasks.length}
@@ -912,79 +913,63 @@ export function TasksPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <label
-                  htmlFor="task-planned-date"
-                  className="block text-xs font-medium text-accent-subtle"
-                >
-                  {t(
-                    'tasksPage.form.plannedDate',
-                  )}
-                </label>
-                <span className="text-[10px] uppercase tracking-[0.12em] text-accent-subtle/60">
-                  {t(
-                    'tasksPage.form.optional',
-                  )}
-                </span>
-              </div>
-
-              <input
-                id="task-planned-date"
-                type="date"
-                className="input"
-                value={plannedDate}
-                disabled={isSaving}
-                onChange={(event) =>
-                  setPlannedDate(
-                    event.target.value,
-                  )
-                }
-              />
-
-              <p className="mt-2 text-[11px] leading-relaxed text-accent-subtle">
-                {t(
-                  'tasksPage.form.plannedDateHelp',
-                )}
-              </p>
-            </div>
-
-            <div>
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <label
-                htmlFor="task-due-date"
-                className="block text-xs font-medium text-accent-subtle"
-              >
-                {t(
-                  'tasksPage.form.dueDate',
-                )}
-              </label>
-              <span className="text-[10px] uppercase tracking-[0.12em] text-accent-subtle/60">
-                {t(
-                  'tasksPage.form.optional',
-                )}
-              </span>
-            </div>
-
-            <input
-              id="task-due-date"
-              type="date"
-              className="input"
-              value={dueDate}
+            <TaskDatePicker
+              id="task-planned-date"
+              label={t(
+                'tasksPage.form.plannedDate',
+              )}
+              help={t(
+                'tasksPage.form.plannedDateHelp',
+              )}
+              value={plannedDate}
+              onChange={setPlannedDate}
               disabled={isSaving}
-              onChange={(event) =>
-                setDueDate(
-                  event.target.value,
-                )
-              }
+              language={i18n.language}
+              optionalLabel={t(
+                'tasksPage.form.optional',
+              )}
+              emptyLabel={t(
+                'tasksPage.form.selectDate',
+              )}
+              clearLabel={t(
+                'tasksPage.form.clearDate',
+              )}
+              todayLabel={t(
+                'tasksPage.form.today',
+              )}
+              closeLabel={t(
+                'tasksPage.form.closeCalendar',
+              )}
             />
 
-            <p className="mt-2 text-[11px] leading-relaxed text-accent-subtle">
-              {t(
+            <TaskDatePicker
+              id="task-due-date"
+              label={t(
+                'tasksPage.form.dueDate',
+              )}
+              help={t(
                 'tasksPage.form.dueDateHelp',
               )}
-            </p>
-            </div>
+              value={dueDate}
+              onChange={setDueDate}
+              disabled={isSaving}
+              language={i18n.language}
+              optionalLabel={t(
+                'tasksPage.form.optional',
+              )}
+              emptyLabel={t(
+                'tasksPage.form.selectDate',
+              )}
+              clearLabel={t(
+                'tasksPage.form.clearDate',
+              )}
+              todayLabel={t(
+                'tasksPage.form.today',
+              )}
+              closeLabel={t(
+                'tasksPage.form.closeCalendar',
+              )}
+            />
           </div>
 
           <div>
