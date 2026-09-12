@@ -656,6 +656,10 @@ const ptBR = {
       urgentTitle: 'Precisa de atenção',
       urgentDescription:
         'Esta tarefa está marcada como urgente.',
+      urgentDueTodayDescription:
+        'O prazo desta tarefa termina hoje.',
+      urgentOverdueDescription:
+        'O prazo desta tarefa já passou.',
       insightTitle: 'Ritmo de hoje',
       insightStart:
         'Sua primeira sessão é o passo mais importante agora.',
