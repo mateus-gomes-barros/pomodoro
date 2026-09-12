@@ -38,6 +38,7 @@ import {
 import {
   FocusMeIcon,
 } from '@/components/icons/FocusMeIcon'
+import { StreakBadgeIcon } from '@/components/streaks/StreakBadgeIcon'
 import {
   useFocusHomeAssessments,
   useFocusHomeProfile,
@@ -910,16 +911,13 @@ export function FocusMeShareCard({
                   '1px solid rgba(255, 255, 255, 0.075)',
               }}
             >
-              <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-[34px]"
-                style={{
-                  background:
-                    'rgba(52, 211, 153, 0.09)',
-                  border:
-                    '1px solid rgba(52, 211, 153, 0.16)',
-                }}
-              >
-                {currentBadge.icon}
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center">
+                <StreakBadgeIcon
+                  minimumDays={
+                    currentBadge.minimumDays
+                  }
+                  size={62}
+                />
               </div>
 
               <div className="min-w-0 flex-1">
