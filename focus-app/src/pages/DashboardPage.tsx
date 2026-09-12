@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Circle,
   Clock3,
+  Gauge,
   LoaderCircle,
   Play,
   Trophy,
@@ -413,6 +414,54 @@ export function DashboardPage() {
       ? completedToday.length /
         todayPlan.length
       : 0
+
+  const estimatedPlanMinutes =
+    pendingToday.reduce(
+      (total, task) =>
+        total +
+        Math.max(
+          0,
+          task.estimatedPomodoros -
+            task.completedPomodoros,
+        ) *
+          settings.workDuration,
+      0,
+    )
+
+  const remainingDailyCapacity =
+    Math.max(
+      0,
+      dailyGoal - todayFocus,
+    )
+
+  const dailyLoadRatio =
+    remainingDailyCapacity > 0
+      ? estimatedPlanMinutes /
+        remainingDailyCapacity
+      : estimatedPlanMinutes > 0
+        ? Number.POSITIVE_INFINITY
+        : 0
+
+  const dailyLoadStatus =
+    dailyLoadRatio > 1
+      ? 'overloaded'
+      : dailyLoadRatio > 0.6
+        ? 'balanced'
+        : 'light'
+
+  const dailyLoadColor =
+    dailyLoadStatus === 'overloaded'
+      ? 'text-amber-300'
+      : dailyLoadStatus === 'balanced'
+        ? 'text-emerald-300'
+        : 'text-sky-300'
+
+  const dailyLoadBarColor =
+    dailyLoadStatus === 'overloaded'
+      ? 'bg-amber-300'
+      : dailyLoadStatus === 'balanced'
+        ? 'bg-emerald-300'
+        : 'bg-sky-300'
 
   const projectById = useMemo(
     () =>
@@ -923,14 +972,26 @@ export function DashboardPage() {
                 )}
               </h2>
               {todayPlan.length > 0 && (
-                <p className="mt-1 text-xs text-white/35">
-                  {Math.round(
-                    taskRatio * 100,
-                  )}
-                  % {t(
-                    'dashboard.today.completed',
-                  ).toLowerCase()}
-                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                  <span className="text-white/35">
+                    {Math.round(
+                      taskRatio * 100,
+                    )}
+                    % {t(
+                      'dashboard.today.completed',
+                    ).toLowerCase()}
+                  </span>
+
+                  <span className="text/20">·</span>
+
+                  <span
+                    className={cnLoadColor}
+                  >
+                    {t(
+                      `dashboard.today.load.${dailyLoadStatus}`,
+                    )}
+                  </span>
+                </div>
               )}
             </div>
 
@@ -1337,6 +1398,69 @@ export function DashboardPage() {
               'dashboard.today.organizeDescription',
             )}
           </p>
+
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+            <div className="flex items-start gap-3">
+              <Gauge
+                size={17}
+                className={
+                  dailyLoadColor
+                }
+              />
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p
+                    className={cn(
+                      'text-sm font-semibold',
+                      dailyLoadColor,
+                    )}
+                  >
+                    {t(
+                      `dashboard.today.load.${dailyLoadStatus}`,
+                    )}
+                  </p>
+
+                  <span className="text-[11px] text-white/35">
+                    {t(
+                      'dashboard.today.load.comparison',
+                      {
+                        planned:
+                          formatDuration(
+                            estimatedPlanMinutes,
+                          ),
+                        available:
+                          formatDuration(
+                            remainingDailyCapacity,
+                          ),
+                      },
+                    )}
+                  </span>
+                </div>
+
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-[width] duration-300',
+                      dailyLoadBarColor,
+                    )}
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        dailyLoadRatio * 100,
+                      )}%`,
+                    }}
+                  />
+                </div>
+
+                <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+                  {t(
+                    `dashboard.today.load.${dailyLoadStatus}Description`,
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
 
           {todayPlan.map(
             (task, index) => (
