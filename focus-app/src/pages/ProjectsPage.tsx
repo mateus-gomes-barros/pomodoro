@@ -15,6 +15,8 @@ import {
   Trash2,
 } from 'lucide-react'
 
+import { useGoals } from '@/hooks/goals/useGoals'
+
 import {
   useCreateProject,
   useDeleteProject,
@@ -47,6 +49,7 @@ interface ProjectForm {
   description: string
   color: string
   emoji: string
+  goalId: string
 }
 
 const EMPTY_FORM: ProjectForm = {
@@ -54,6 +57,7 @@ const EMPTY_FORM: ProjectForm = {
   description: '',
   color: PROJECT_COLORS[0],
   emoji: PROJECT_EMOJIS[0],
+  goalId: '',
 }
 
 const STATUS_FILTERS: Array<
@@ -73,6 +77,14 @@ export function ProjectsPage() {
     isError,
     error,
   } = useProjects()
+
+  const currentYear =
+    new Date().getFullYear()
+
+  const {
+    data: goals = [],
+    isLoading: goalsLoading,
+  } = useGoals(currentYear)
 
   const createProjectMutation =
     useCreateProject()
@@ -165,6 +177,7 @@ export function ProjectsPage() {
         project.description || '',
       color: project.color,
       emoji: project.emoji,
+      goalId: project.goalId ?? '',
     })
 
     setModalOpen(true)
@@ -514,6 +527,56 @@ export function ProjectsPage() {
                 )
               }
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="project-goal"
+              className="label mb-2 block font-semibold text-emerald-300"
+            >
+              {t('projectsPage.form.goal')}
+            </label>
+
+            <select
+              id="project-goal"
+              className="input"
+              value={form.goalId}
+              disabled={isSaving || goalsLoading}
+              onChange={(event) =>
+                setForm(
+                  (currentForm) => ({
+                    ...currentForm,
+                    goalId:
+                      event.target.value,
+                  }),
+                )
+              }
+            >
+              <option value="">
+                {t('projectsPage.form.noGoal')}
+              </option>
+
+              {goals
+                .filter(
+                  (goal) =>
+                    !goal.completed ||
+                    goal.id === form.goalId,
+                )
+                .map((goal) => (
+                  <option
+                    key={goal.id}
+                    value={goal.id}
+                  >
+                    {goal.title}
+                  </option>
+                ))}
+            </select>
+
+            <p className="mt-2 text-[10px] text-white/25">
+              {t(
+                'projectsPage.form.goalHelp',
+              )}
+            </p>
           </div>
 
           <div>
