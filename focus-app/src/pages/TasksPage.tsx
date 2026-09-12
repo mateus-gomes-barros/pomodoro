@@ -975,7 +975,7 @@ export function TasksPage() {
           <div className="flex flex-col items-center pt-1">
             <label
               htmlFor="task-estimate"
-              className="mb-3 block text-center text-xs font-medium text-accent-subtle"
+              className="mb-3 block text-center text-xs font-semibold text-emerald-300"
             >
               {t(
                 'tasksPage.form.estimate',
