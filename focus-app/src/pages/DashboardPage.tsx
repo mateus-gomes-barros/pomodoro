@@ -13,7 +13,9 @@ import {
 } from 'date-fns'
 import { motion } from 'framer-motion'
 import {
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
   CalendarDays,
   Check,
   ChevronRight,
@@ -22,6 +24,7 @@ import {
   LoaderCircle,
   Play,
   Trophy,
+  SlidersHorizontal,
   Sparkles,
   TriangleAlert,
   X,
@@ -32,10 +35,13 @@ import {
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import { Modal } from '@/components/ui/Modal'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { useFocusHomeProfile } from '@/hooks/focusme/useFocusHomeProfile'
 import {
+  useReorderDailyPlan,
+  useSetDailyTaskPriority,
   useTasks,
   useToggleTask,
   useUpdateTask,
@@ -49,6 +55,7 @@ import {
 import { STREAK_BADGES } from '@/lib/streakBadges'
 import type { Task } from '@/types'
 import {
+  cn,
   formatDuration,
   formatTime,
   getTodayString,
@@ -137,6 +144,9 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
+  const [planEditorOpen, setPlanEditorOpen] =
+    useState(false)
+
   const {
     status,
     sessionType,
@@ -157,6 +167,10 @@ export function DashboardPage() {
   const projectsQuery = useProjects()
   const updateTask = useUpdateTask()
   const toggleTask = useToggleTask()
+  const reorderDailyPlan =
+    useReorderDailyPlan()
+  const setDailyPriority =
+    useSetDailyTaskPriority()
 
   const sessions =
     sessionsQuery.data ?? []
@@ -477,6 +491,46 @@ export function DashboardPage() {
         dailyOrder: null,
         dailyPriority: null,
       },
+    })
+  }
+
+  function moveTodayTask(
+    taskIndex: number,
+    direction: -1 | 1,
+  ) {
+    const targetIndex =
+      taskIndex + direction
+
+    if (
+      targetIndex < 0 ||
+      targetIndex >= todayPlan.length
+    ) {
+      return
+    }
+
+    const reordered = [...todayPlan]
+    const [movedTask] =
+      reordered.splice(taskIndex, 1)
+
+    reordered.splice(
+      targetIndex,
+      0,
+      movedTask,
+    )
+
+    reorderDailyPlan.mutate(reordered)
+  }
+
+  function changeDailyPriority(
+    task: Task,
+    priority: 1 | 2 | 3,
+  ) {
+    setDailyPriority.mutate({
+      task,
+      priority:
+        task.dailyPriority === priority
+          ? null
+          : priority,
     })
   }
 
@@ -880,15 +934,32 @@ export function DashboardPage() {
               )}
             </div>
 
-            <Link
-              to="/tasks"
-              className="flex items-center gap-1 text-xs text-white/35 transition-colors hover:text-white/70"
-            >
-              {t(
-                'dashboard.today.viewAllTasks',
+            <div className="flex items-center gap-3">
+              {todayPlan.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPlanEditorOpen(true)
+                  }
+                  className="flex items-center gap-1.5 text-xs text-emerald-300/65 transition-colors hover:text-emerald-300"
+                >
+                  <SlidersHorizontal size={12} />
+                  {t(
+                    'dashboard.today.organize',
+                  )}
+                </button>
               )}
-              <ArrowRight size={12} />
-            </Link>
+
+              <Link
+                to="/tasks"
+                className="flex items-center gap-1 text-xs text-white/35 transition-colors hover:text-white/70"
+              >
+                {t(
+                  'dashboard.today.viewAllTasks',
+                )}
+                <ArrowRight size={12} />
+              </Link>
+            </div>
           </div>
 
           {todayPlan.length === 0 ? (
@@ -1251,6 +1322,132 @@ export function DashboardPage() {
       </div>
 
 
+      <Modal
+        isOpen={planEditorOpen}
+        onClose={() =>
+          setPlanEditorOpen(false)
+        }
+        title={t(
+          'dashboard.today.organizeTitle',
+        )}
+      >
+        <div className="space-y-3">
+          <p className="text-xs leading-relaxed text-white/40">
+            {t(
+              'dashboard.today.organizeDescription',
+            )}
+          </p>
+
+          {todayPlan.map(
+            (task, index) => (
+              <div
+                key={task.id}
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="min-w-0 flex-1 truncate text-sm text-white/75">
+                    {task.title}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      moveTodayTask(
+                        index,
+                        -1,
+                      )
+                    }
+                    disabled={
+                      index === 0 ||
+                      reorderDailyPlan.isPending
+                    }
+                    aria-label={t(
+                      'dashboard.today.moveUp',
+                      {
+                        title: task.title,
+                      },
+                    )}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 transition-colors hover:text-white disabled:opacity-20"
+                  >
+                    <ArrowUp size={13} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      moveTodayTask(
+                        index,
+                        1,
+                      )
+                    }
+                    disabled={
+                      index ===
+                        todayPlan.length - 1 ||
+                      reorderDailyPlan.isPending
+                    }
+                    aria-label={t(
+                      'dashboard.today.moveDown',
+                      {
+                        title: task.title,
+                      },
+                    )}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 transition-colors hover:text-white disabled:opacity-20"
+                  >
+                    <ArrowDown size={13} />
+                  </button>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-white/25">
+                    {t(
+                      'dashboard.today.priorityLabel',
+                    )}
+                  </span>
+
+                  <div className="flex gap-1.5">
+                    {([1, 2, 3] as const).map(
+                      (priority) => (
+                        <button
+                          key={priority}
+                          type="button"
+                          onClick={() =>
+                            changeDailyPriority(
+                              task,
+                              priority,
+                            )
+                          }
+                          disabled={
+                            setDailyPriority.isPending
+                          }
+                          aria-pressed={
+                            task.dailyPriority ===
+                            priority
+                          }
+                          className={cn(
+                            'flex h-7 w-7 items-center justify-center rounded-lg text-xs font-semibold transition-colors',
+                            task.dailyPriority ===
+                              priority
+                              ? 'bg-emerald-300 text-black'
+                              : 'bg-white/[0.04] text-white/35 hover:text-white/70',
+                          )}
+                        >
+                          {priority}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
+            ),
+          )}
+
+          <p className="text-[11px] leading-relaxed text-white/30">
+            {t(
+              'dashboard.today.priorityHelp',
+            )}
+          </p>
+        </div>
+      </Modal>
     </div>
   )
 }
