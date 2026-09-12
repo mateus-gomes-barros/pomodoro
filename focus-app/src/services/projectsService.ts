@@ -11,6 +11,7 @@ interface ProjectRow {
   description: string | null
   color: string | null
   emoji: string
+  goal_id: string | null
   total_sessions: number
   completed_sessions: number
   total_focus_minutes: number
@@ -25,6 +26,7 @@ export interface CreateProjectInput {
   description: string
   color: string
   emoji: string
+  goalId?: string
 }
 
 export interface UpdateProjectInput {
@@ -32,6 +34,7 @@ export interface UpdateProjectInput {
   description?: string
   color?: string
   emoji?: string
+  goalId?: string | null
   totalSessions?: number
   completedSessions?: number
   totalFocusMinutes?: number
@@ -45,6 +48,7 @@ const PROJECT_SELECT = `
   description,
   color,
   emoji,
+  goal_id,
   total_sessions,
   completed_sessions,
   total_focus_minutes,
@@ -65,6 +69,7 @@ function mapProjectRow(
     color:
       row.color ?? '#10b981',
     emoji: row.emoji,
+    goalId: row.goal_id ?? undefined,
     totalSessions:
       row.total_sessions,
     completedSessions:
@@ -126,6 +131,7 @@ export async function createProject(
         null,
       color: input.color,
       emoji: input.emoji,
+      goal_id: input.goalId || null,
       status: 'active',
       completed_at: null,
     })
@@ -168,6 +174,10 @@ export async function updateProject(
 
   if (input.emoji !== undefined) {
     updates.emoji = input.emoji
+  }
+
+  if (input.goalId !== undefined) {
+    updates.goal_id = input.goalId || null
   }
 
   if (
