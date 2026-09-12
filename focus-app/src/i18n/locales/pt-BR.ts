@@ -609,6 +609,49 @@ const ptBR = {
     startMomentum:
       'Inicie sua primeira sessão para ganhar ritmo.',
 
+    today: {
+      summaryEmpty:
+        'Escolha o que merece sua atenção hoje.',
+      summaryWithPlan:
+        '{{count}} tarefas fazem parte do seu plano de hoje.',
+      primaryEyebrow: 'Próxima ação',
+      activeEyebrow: 'Em foco agora',
+      noTaskTitle: 'Seu dia ainda está em aberto',
+      noTaskDescription:
+        'Adicione uma tarefa ao plano e transforme intenção em progresso.',
+      planDay: 'Planejar meu dia',
+      startFocus: 'Iniciar foco',
+      continueFocus: 'Continuar sessão',
+      estimatedSessions: '{{count}} sessões estimadas',
+      oneEstimatedSession: '1 sessão estimada',
+      planTitle: 'Plano de hoje',
+      planEmpty:
+        'Nenhuma tarefa planejada para hoje.',
+      addToToday: 'Adicionar ao dia',
+      suggestionsTitle: 'Sugestões para hoje',
+      suggestionsDescription:
+        'Escolhidas entre suas tarefas pendentes.',
+      viewAllTasks: 'Ver todas',
+      completed: 'Concluída',
+      progressTitle: 'Seu progresso',
+      plannedTasks: 'Tarefas',
+      focusTime: 'Tempo focado',
+      sessions: 'Sessões',
+      dailyGoal: 'da meta diária',
+      urgentTitle: 'Precisa de atenção',
+      urgentDescription:
+        'Esta tarefa está marcada como urgente.',
+      insightTitle: 'Ritmo de hoje',
+      insightStart:
+        'Sua primeira sessão é o passo mais importante agora.',
+      insightBuilding:
+        'Você já criou ritmo. Continue na próxima tarefa planejada.',
+      insightHalfway:
+        'Você já ultrapassou metade da sua meta diária de foco.',
+      insightComplete:
+        'Meta diária alcançada. O restante do dia pode ser mais leve.',
+    },
+
     stats: {
       todayFocus: 'Foco de hoje',
       goal: 'Meta: {{duration}}',
