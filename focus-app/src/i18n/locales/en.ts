@@ -751,10 +751,12 @@ const en = {
     },
     projects: {
       title: 'Project',
+      assign: 'Assign to a project',
       none: 'No project',
       loadError: 'Unable to load projects.',
     },
     settings: {
+      title: 'Timer settings',
       dailyGoal:
         'Daily focus goal',
       dailyGoalDescription:
