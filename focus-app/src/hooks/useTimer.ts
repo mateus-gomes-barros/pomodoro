@@ -265,7 +265,28 @@ export function useTimer() {
     markSessionSynced,
   ])
 
-  // 2. Hook para sincronizar atividades nativas (Live Activity iOS + Notification Android)
+  // 2. Reconcilia a transição automática após suspensão ou reidratação.
+  useEffect(() => {
+    if (status !== 'completed') {
+      return
+    }
+
+    const shouldAutoStart =
+      sessionType === 'work'
+        ? settings.autoStartWork
+        : settings.autoStartBreaks
+
+    if (shouldAutoStart) {
+      usePomodoroStore.getState().start()
+    }
+  }, [
+    status,
+    sessionType,
+    settings.autoStartBreaks,
+    settings.autoStartWork,
+  ])
+
+  // 3. Hook para sincronizar atividades nativas (Live Activity iOS + Notification Android)
   useEffect(() => {
     if (status !== 'running' && status !== 'paused') {
       const needsToEndActivity =
@@ -363,7 +384,7 @@ void showTimerNotification(
     currentBadge.icon,
   ])
 
-  // 3. Hook para ouvir ações da notificação (Android)
+  // 4. Hook para ouvir ações da notificação (Android)
   useEffect(() => {
     const handleAction = (action: string) => {
       const { status, start, pause, reset } = usePomodoroStore.getState()
@@ -389,7 +410,7 @@ void showTimerNotification(
     }
   }, [])
 
-  // 4. Hook para o Ticking interval
+  // 5. Hook para o Ticking interval
   useEffect(() => {
     if (status === 'running') {
       intervalRef.current = setInterval(() => {
