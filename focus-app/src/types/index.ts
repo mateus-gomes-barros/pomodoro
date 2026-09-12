@@ -45,6 +45,10 @@ export interface Task {
   completedAt?: string
   deletedAt?: string
   scheduledDeletionAt?: string
+  plannedDate?: string
+  dueAt?: string
+  dailyOrder?: number
+  dailyPriority?: 1 | 2 | 3
   order: number
 }
 
