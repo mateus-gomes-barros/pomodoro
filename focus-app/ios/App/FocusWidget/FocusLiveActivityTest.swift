@@ -50,7 +50,7 @@ enum FocusLiveActivityTest {
                     projectName: "Focus App",
                     taskName:
                         "Testing Dynamic Island",
-                    badgeIcon: "🔥"
+                    badgeLevel: 7
                 )
 
         let content = ActivityContent(
