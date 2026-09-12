@@ -687,6 +687,16 @@ const ptBR = {
       suggestionsDescription:
         'Escolhidas entre suas tarefas pendentes.',
       suggestedTask: 'Sugestão para seu plano',
+      suggestionReasons: {
+        overdue: 'Prazo vencido',
+        dueToday: 'Prazo termina hoje',
+        dueSoon: 'Prazo próximo',
+        urgent: 'Marcada como urgente',
+        continue: 'Continue o progresso recente',
+        fits: 'Cabe no tempo disponível',
+        projectMomentum: 'Projeto em andamento recente',
+        recommended: 'Recomendada para seu plano',
+      },
       morePlannedTasks_one:
         'Ver mais {{count}} tarefa planejada',
       morePlannedTasks_other:
