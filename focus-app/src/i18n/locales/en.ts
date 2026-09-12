@@ -764,6 +764,13 @@ const en = {
     },
     settings: {
       title: 'Timer settings',
+      automation: 'Automation',
+      autoStartBreaks: 'Start breaks automatically',
+      autoStartBreaksDescription:
+        'Starts a break as soon as a focus session ends.',
+      autoStartWork: 'Start focus automatically',
+      autoStartWorkDescription:
+        'Starts the next session with the same task and project.',
       dailyGoal:
         'Daily focus goal',
       dailyGoalDescription:
@@ -774,6 +781,17 @@ const en = {
       sessionsUntilLongBreak:
         'Sessions until long break',
       minutes: 'min',
+    },
+    completion: {
+      focusFinished: 'Focus session completed',
+      breakFinished: 'Break completed',
+      taskContext: 'You were focusing on “{{task}}”.',
+      noTaskContext: 'Choose how you want to continue.',
+      continueFocus: 'Continue focusing',
+      startBreak: 'Start break',
+      completeTask: 'Complete task',
+      chooseTask: 'Choose another task',
+      selectTask: 'Select a task',
     },
     sessionNumber: 'Session {{current}} of {{total}}',
   },
