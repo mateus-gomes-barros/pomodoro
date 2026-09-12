@@ -7,6 +7,9 @@ import {
   Check,
   CheckCircle2,
   Circle,
+  Clock3,
+  FolderKanban,
+  ListChecks,
   LoaderCircle,
   Plus,
   Sparkles,
@@ -15,6 +18,9 @@ import {
   Trophy,
 } from 'lucide-react'
 import { format } from 'date-fns'
+
+import { useProjects } from '@/hooks/projects/useProjects'
+import { useTasks } from '@/hooks/tasks/useTasks'
 
 import {
   useCreateGoal,
@@ -39,6 +45,14 @@ export function GoalsPage() {
     isError,
     error,
   } = useGoals(currentYear)
+
+  const {
+    data: projects = [],
+  } = useProjects()
+
+  const {
+    data: tasks = [],
+  } = useTasks()
 
   const createGoalMutation =
     useCreateGoal(currentYear)
@@ -420,6 +434,52 @@ export function GoalsPage() {
             </div>
           ) : (
             goals.map((goal, index) => {
+              const linkedProjects =
+                projects.filter(
+                  (project) =>
+                    project.goalId ===
+                    goal.id,
+                )
+
+              const linkedProjectIds =
+                new Set(
+                  linkedProjects.map(
+                    (project) =>
+                      project.id,
+                  ),
+                )
+
+              const linkedTasks =
+                tasks.filter(
+                  (task) =>
+                    task.projectId &&
+                    linkedProjectIds.has(
+                      task.projectId,
+                    ),
+                )
+
+              const totalFocusMinutes =
+                linkedProjects.reduce(
+                  (total, project) =>
+                    total +
+                    project.totalFocusMinutes,
+                  0,
+                )
+
+              const totalSessions =
+                linkedProjects.reduce(
+                  (total, project) =>
+                    total +
+                    project.completedSessions,
+                  0,
+                )
+
+              const completedTasks =
+                linkedTasks.filter(
+                  (task) =>
+                    task.completed,
+                ).length
+
               const isToggling =
                 toggleGoalMutation.isPending &&
                 toggleGoalMutation.variables
@@ -575,6 +635,47 @@ export function GoalsPage() {
                           },
                         )}
                       </p>
+                    )}
+
+                    {linkedProjects.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-white/40">
+                        <span className="flex items-center gap-1.5">
+                          <FolderKanban size={12} />
+                          {t(
+                            'goalsPage.progress.projects',
+                            {
+                              count:
+                                linkedProjects.length,
+                            },
+                          )}
+                        </span>
+
+                        <span className="flex items-center gap-1.5">
+                          <Clock3 size={12} />
+                          {t(
+                            'goalsPage.progress.focus',
+                            {
+                              minutes:
+                                totalFocusMinutes,
+                              sessions:
+                                totalSessions,
+                            },
+                          )}
+                        </span>
+
+                        <span className="flex items-center gap-1.5">
+                          <ListChecks size={12} />
+                          {t(
+                            'goalsPage.progress.tasks',
+                            {
+                              completed:
+                                completedTasks,
+                              total:
+                                linkedTasks.length,
+                            },
+                          )}
+                        </span>
+                      </div>
                     )}
                   </div>
 
