@@ -19,7 +19,7 @@ import {
     remainingSeconds: number
     projectName?: string
     taskName?: string
-    badgeIcon?: string
+    badgeLevel?: number
   }
   
   interface StartResult {
