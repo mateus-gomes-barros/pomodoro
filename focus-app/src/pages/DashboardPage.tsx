@@ -1,6 +1,12 @@
 import { useMemo } from 'react'
 import { enUS, ptBR } from 'date-fns/locale'
-import { format, isBefore, isToday } from 'date-fns'
+import {
+  differenceInCalendarDays,
+  format,
+  isBefore,
+  isToday,
+  parseISO,
+} from 'date-fns'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -11,6 +17,7 @@ import {
   Clock3,
   LoaderCircle,
   Play,
+  Trophy,
   Sparkles,
   Timer,
   TriangleAlert,
@@ -23,6 +30,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
+import { useFocusHomeProfile } from '@/hooks/focusme/useFocusHomeProfile'
 import {
   useTasks,
   useToggleTask,
@@ -30,6 +38,11 @@ import {
 } from '@/hooks/tasks/useTasks'
 import { useProjects } from '@/hooks/projects/useProjects'
 import { usePomodoroStore } from '@/store/pomodoroStore'
+import {
+  FOCUS_HOME_COLORS,
+  FocusHomeSymbol,
+} from '@/components/focusme/FocusHomeSymbol'
+import { STREAK_BADGES } from '@/lib/streakBadges'
 import type { Task } from '@/types'
 import {
   formatDuration,
@@ -62,6 +75,37 @@ function sortPlanTasks(a: Task, b: Task) {
   const orderB = b.dailyOrder ?? b.order
 
   return orderA - orderB
+}
+
+function getLongestStreak(activeDates: string[]) {
+  const dates = [...new Set(activeDates)]
+    .sort()
+
+  if (dates.length === 0) {
+    return 0
+  }
+
+  let longest = 1
+  let running = 1
+
+  for (
+    let index = 1;
+    index < dates.length;
+    index += 1
+  ) {
+    const isConsecutive =
+      differenceInCalendarDays(
+        parseISO(dates[index]),
+        parseISO(dates[index - 1]),
+      ) === 1
+
+    running = isConsecutive
+      ? running + 1
+      : 1
+    longest = Math.max(longest, running)
+  }
+
+  return longest
 }
 
 function sortSuggestions(a: Task, b: Task) {
@@ -103,6 +147,8 @@ export function DashboardPage() {
 
   const sessionsQuery =
     usePomodoroSessions()
+  const focusHomeQuery =
+    useFocusHomeProfile()
   const tasksQuery = useTasks()
   const projectsQuery = useProjects()
   const updateTask = useUpdateTask()
@@ -125,6 +171,39 @@ export function DashboardPage() {
       ),
     [sessions, today],
   )
+
+  const longestStreak = useMemo(
+    () =>
+      getLongestStreak(
+        sessions
+          .filter(
+            (session) =>
+              session.type === 'work',
+          )
+          .map(
+            (session) => session.date,
+          ),
+      ),
+    [sessions],
+  )
+
+  const earnedBadges = useMemo(
+    () =>
+      sessions.some(
+        (session) =>
+          session.type === 'work',
+      )
+        ? STREAK_BADGES.filter(
+            (badge) =>
+              badge.minimumDays <=
+              longestStreak,
+          )
+        : [],
+    [longestStreak, sessions],
+  )
+
+  const focusHome =
+    focusHomeQuery.data
 
   const todayFocus = useMemo(
     () =>
@@ -809,6 +888,137 @@ export function DashboardPage() {
                   )}
                 </p>
               </div>
+            </div>
+          </motion.section>
+
+          <motion.section
+            initial={{
+              opacity: 0,
+              y: 8,
+            }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.24 }}
+            className="card overflow-hidden p-5"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold leading-snug text-white">
+                  {t(
+                    'dashboard.today.achievementsTitle',
+                  )}
+                </h2>
+                <p className="mt-1 text-xs text-white/35">
+                  {t(
+                    'dashboard.today.badgeCount',
+                    {
+                      count:
+                        earnedBadges.length,
+                    },
+                  )}
+                </p>
+              </div>
+
+              <Trophy
+                size={17}
+                className="shrink-0 text-amber-300/60"
+              />
+            </div>
+
+            {earnedBadges.length > 0 ? (
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
+                {earnedBadges.map(
+                  (badge) => (
+                    <Link
+                      key={
+                        badge.minimumDays
+                      }
+                      to="/streaks"
+                      title={t(
+                        'streaksPage.badges.' +
+                          badge.minimumDays +
+                          '.name',
+                      )}
+                      className="flex w-[76px] shrink-0 flex-col items-center rounded-2xl border border-white/[0.05] bg-white/[0.025] px-2 py-3 text-center transition-colors hover:border-amber-300/20 hover:bg-amber-300/[0.04]"
+                    >
+                      <span className="text-2xl">
+                        {badge.icon}
+                      </span>
+                      <span className="mt-2 line-clamp-2 text-[10px] leading-tight text-white/45">
+                        {t(
+                          'streaksPage.badges.' +
+                            badge.minimumDays +
+                            '.name',
+                        )}
+                      </span>
+                    </Link>
+                  ),
+                )}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-white/[0.08] px-3 py-4 text-center text-xs text-white/30">
+                {t(
+                  'dashboard.today.noBadgesYet',
+                )}
+              </p>
+            )}
+
+            <div className="mt-3 border-t border-white/[0.06] pt-3">
+              <Link
+                to="/focusme"
+                className="group flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-white/[0.035]"
+              >
+                {focusHome ? (
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border bg-white/[0.025]"
+                    style={{
+                      color:
+                        FOCUS_HOME_COLORS[
+                          focusHome.focusHome
+                        ],
+                      borderColor:
+                        FOCUS_HOME_COLORS[
+                          focusHome.focusHome
+                        ] + '35',
+                    }}
+                  >
+                    <FocusHomeSymbol
+                      type={
+                        focusHome.focusHome
+                      }
+                      size={34}
+                      compact
+                      colored
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.025] text-white/20">
+                    <Sparkles size={17} />
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                    {t(
+                      'dashboard.today.focusHomeLabel',
+                    )}
+                  </p>
+                  <p className="mt-1 truncate text-sm font-medium text-white/70">
+                    {focusHome
+                      ? t(
+                          'focusHomeIdentity.archetypes.' +
+                            focusHome.archetype,
+                        )
+                      : t(
+                          'dashboard.today.focusHomeLocked',
+                        )}
+                  </p>
+                </div>
+
+                <ChevronRight
+                  size={14}
+                  className="text-white/20 transition-transform group-hover:translate-x-0.5 group-hover:text-white/50"
+                />
+              </Link>
             </div>
           </motion.section>
         </div>
