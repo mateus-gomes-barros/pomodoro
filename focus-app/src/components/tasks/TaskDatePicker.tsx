@@ -226,15 +226,32 @@ export function TaskDatePicker({
                 duration: 0.18,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="glass-modal fixed left-1/2 top-1/2 z-[9999] w-[min(360px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[30px] border border-white/[0.14] bg-[#07100d]/95 p-5 shadow-[0_32px_100px_rgba(0,0,0,0.82),inset_0_1px_0_rgba(255,255,255,0.10),0_0_40px_rgba(52,211,153,0.08)] backdrop-blur-3xl"
+              className="glass-modal fixed left-1/2 top-1/2 z-[9999] h-[min(380px,calc(100vw-2rem))] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border border-white/[0.16] bg-[#07100d]/95 p-0 shadow-[0_32px_100px_rgba(0,0,0,0.82),inset_0_1px_0_rgba(255,255,255,0.10),0_0_40px_rgba(52,211,153,0.08)] backdrop-blur-3xl"
             >
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-accent-green/[0.10] blur-3xl"
               />
 
-              <div className="relative">
-                <div className="mb-5 grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-3 rounded-full border border-white/[0.07] shadow-[inset_0_1px_16px_rgba(255,255,255,0.025)]"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-[34px] rounded-full border border-white/[0.055] bg-white/[0.012]"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-[82px] rounded-full border border-accent-green/[0.08] bg-black/10 shadow-[0_0_30px_rgba(52,211,153,0.04)]"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-[14%] top-[5%] h-[24%] w-[52%] -rotate-[18deg] rounded-full bg-white/[0.035] blur-xl"
+              />
+
+              <div className="relative flex h-full w-full flex-col px-[10%] pb-[8%] pt-[9%]">
+                <div className="mb-2 grid grid-cols-[2rem_1fr_2rem] items-center gap-2">
                   <button
                     type="button"
                     onClick={() =>
@@ -243,7 +260,7 @@ export function TaskDatePicker({
                           addMonths(month, -1),
                       )
                     }
-                    className="glass-control flex h-10 w-10 items-center justify-center rounded-xl text-white/55 transition hover:text-white"
+                    className="glass-control flex h-8 w-8 items-center justify-center rounded-full text-white/55 transition hover:text-white"
                   >
                     <ChevronLeft size={17} />
                   </button>
@@ -264,13 +281,13 @@ export function TaskDatePicker({
                           addMonths(month, 1),
                       )
                     }
-                    className="glass-control flex h-10 w-10 items-center justify-center rounded-xl text-white/55 transition hover:text-white"
+                    className="glass-control flex h-8 w-8 items-center justify-center rounded-full text-white/55 transition hover:text-white"
                   >
                     <ChevronRight size={17} />
                   </button>
                 </div>
 
-                <div className="mb-2 grid grid-cols-7 gap-1">
+                <div className="mb-1 grid grid-cols-7 gap-1">
                   {weekdayLabels.map(
                     (weekday, index) => (
                       <span
@@ -316,7 +333,7 @@ export function TaskDatePicker({
                           selectDate(date)
                         }
                         className={cn(
-                          'relative flex aspect-square items-center justify-center rounded-xl text-xs transition',
+                          'relative flex aspect-square items-center justify-center rounded-full text-[11px] transition',
                           outsideMonth
                             ? 'text-white/15'
                             : 'text-white/60 hover:bg-white/[0.06] hover:text-white',
@@ -332,7 +349,7 @@ export function TaskDatePicker({
                   })}
                 </div>
 
-                <div className="mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
+                <div className="mt-2 flex items-center justify-between border-t border-white/[0.06] pt-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -347,7 +364,7 @@ export function TaskDatePicker({
                   <button
                     type="button"
                     onClick={selectToday}
-                    className="rounded-xl border border-accent-green/20 bg-accent-green/[0.08] px-3 py-2 text-xs font-medium text-accent-green transition hover:bg-accent-green/[0.13]"
+                    className="rounded-full border border-accent-green/20 bg-accent-green/[0.08] px-3 py-1.5 text-xs font-medium text-accent-green transition hover:bg-accent-green/[0.13]"
                   >
                     {todayLabel}
                   </button>
