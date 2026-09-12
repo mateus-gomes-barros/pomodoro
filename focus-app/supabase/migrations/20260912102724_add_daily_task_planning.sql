@@ -7,16 +7,21 @@ alter table public.tasks
 do $$
 begin
   if not exists (
-    select 1 from pg_constraint
+    select 1
+    from pg_constraint
     where conname = 'tasks_daily_order_check'
   ) then
     alter table public.tasks
       add constraint tasks_daily_order_check
-      check (daily_order is null or daily_order >= 0);
+      check (
+        daily_order is null
+        or daily_order >= 0
+      );
   end if;
 
   if not exists (
-    select 1 from pg_constraint
+    select 1
+    from pg_constraint
     where conname = 'tasks_daily_priority_check'
   ) then
     alter table public.tasks
@@ -31,17 +36,30 @@ $$;
 
 create index if not exists
   tasks_user_planned_date_order_idx
-on public.tasks (user_id, planned_date, daily_order)
+on public.tasks (
+  user_id,
+  planned_date,
+  daily_order
+)
 where deleted_at is null;
 
 create index if not exists
   tasks_user_due_at_idx
-on public.tasks (user_id, due_at)
-where deleted_at is null and completed = false;
+on public.tasks (
+  user_id,
+  due_at
+)
+where
+  deleted_at is null
+  and completed = false;
 
 create unique index if not exists
   tasks_daily_priority_unique_idx
-on public.tasks (user_id, planned_date, daily_priority)
+on public.tasks (
+  user_id,
+  planned_date,
+  daily_priority
+)
 where
   deleted_at is null
   and daily_priority is not null;
