@@ -27,6 +27,7 @@ interface PomodoroState {
   currentSessionCount: number
   activeProjectId: string | null
   activeTaskId: string | null
+  activeRoutineId: string | null
 
   // Settings
   settings: TimerSettings
@@ -51,6 +52,9 @@ interface PomodoroState {
     id: string | null,
   ) => void
   setActiveTask: (
+    id: string | null,
+  ) => void
+  setActiveRoutine: (
     id: string | null,
   ) => void
   updateSettings: (
@@ -115,6 +119,7 @@ export const usePomodoroStore =
         currentSessionCount: 0,
         activeProjectId: null,
         activeTaskId: null,
+        activeRoutineId: null,
         settings: DEFAULT_SETTINGS,
         sessions: [],
         pendingSessionIds: [],
@@ -456,6 +461,12 @@ export const usePomodoroStore =
           })
         },
 
+        setActiveRoutine: (id) => {
+          set({
+            activeRoutineId: id,
+          })
+        },
+
         updateSettings: (
           newSettings,
         ) => {
@@ -520,6 +531,8 @@ export const usePomodoroStore =
             state.activeProjectId,
           activeTaskId:
             state.activeTaskId,
+          activeRoutineId:
+            state.activeRoutineId,
           sessions: state.sessions,
           pendingSessionIds:
             state.pendingSessionIds,
