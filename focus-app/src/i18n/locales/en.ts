@@ -1801,7 +1801,7 @@ const en = {
     about: {
       title: 'About',
       description:
-        'Focus v4.0 — A minimalist Pomodoro and productivity app. Guest data is stored locally on your device.',
+        'Focus v5.0.1 — A minimalist Pomodoro and productivity app. Guest data is stored locally on your device.',
     },
   },
 }
