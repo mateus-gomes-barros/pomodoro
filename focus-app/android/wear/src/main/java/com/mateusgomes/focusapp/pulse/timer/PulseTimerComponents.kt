@@ -181,7 +181,6 @@ fun TimerControlButton(
             .clip(shape)
             .background(background)
             .clickable(
-                enabled = enabled,
                 role = Role.Button,
                 onClick = onClick,
             ),
