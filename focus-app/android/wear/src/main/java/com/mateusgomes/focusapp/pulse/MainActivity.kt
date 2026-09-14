@@ -194,7 +194,7 @@ private fun FocusPulseTimer() {
                     glyph = Glyph.RESET,
                     accent = accent,
                     prominent = false,
-                    size = face * 0.145f,
+                    buttonSize = face * 0.145f,
                     onClick = {
                         statusName = TimerStatus.IDLE.name
                         remaining = total
@@ -205,7 +205,7 @@ private fun FocusPulseTimer() {
                     glyph = if (status == TimerStatus.RUNNING) Glyph.PAUSE else Glyph.PLAY,
                     accent = accent,
                     prominent = true,
-                    size = face * 0.205f,
+                    buttonSize = face * 0.205f,
                     onClick = {
                         if (status == TimerStatus.RUNNING) {
                             remaining = ceil((endsAt - System.currentTimeMillis()).coerceAtLeast(0L) / 1000.0).toInt()
@@ -220,7 +220,7 @@ private fun FocusPulseTimer() {
                     glyph = Glyph.SOUND,
                     accent = accent,
                     prominent = false,
-                    size = face * 0.145f,
+                    buttonSize = face * 0.145f,
                     enabled = soundOn,
                     onClick = { soundOn = !soundOn }
                 )
@@ -339,11 +339,11 @@ private fun ControlButton(
     glyph: Glyph,
     accent: Color,
     prominent: Boolean,
-    size: androidx.compose.ui.unit.Dp,
+    buttonSize: androidx.compose.ui.unit.Dp,
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    val shape = if (prominent) RoundedCornerShape(size * 0.28f) else CircleShape
+    val shape = if (prominent) RoundedCornerShape(buttonSize * 0.28f) else CircleShape
     val background = if (prominent) {
         Brush.linearGradient(listOf(accent, accent.copy(alpha = 0.72f)))
     } else {
@@ -351,13 +351,13 @@ private fun ControlButton(
     }
     Box(
         modifier = Modifier
-            .size(size)
+            .size(buttonSize)
             .clip(shape)
             .background(background)
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(Modifier.size(if (prominent) size * 0.40f else size * 0.43f)) {
+        Canvas(Modifier.size(if (prominent) buttonSize * 0.40f else buttonSize * 0.43f)) {
             val c = if (prominent) Ink.copy(alpha = 0.92f) else Color.White.copy(alpha = if (enabled) 0.78f else 0.28f)
             when (glyph) {
                 Glyph.PLAY -> {
