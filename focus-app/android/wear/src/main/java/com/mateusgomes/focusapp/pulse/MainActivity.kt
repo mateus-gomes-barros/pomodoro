@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -92,6 +91,7 @@ private fun FocusPulseTimer() {
     var focusCount by rememberSaveable { mutableIntStateOf(0) }
     var completionPulse by rememberSaveable { mutableIntStateOf(0) }
     var soundOn by rememberSaveable { mutableStateOf(true) }
+    var controlsVisible by rememberSaveable { mutableStateOf(true) }
     val haptics = LocalHapticFeedback.current
     val total = session.minutes * 60
     val accent = if (session == Session.FOCUS) FocusGreen else BreakBlue
@@ -138,8 +138,8 @@ private fun FocusPulseTimer() {
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             val face = min(maxWidth.value, maxHeight.value).dp
-            val timerSize = face * 0.90f
-            val ringSize = timerSize * 0.82f
+            val timerSize = if (status == TimerStatus.RUNNING && !controlsVisible) face * 0.98f else face * 0.92f
+            val ringSize = timerSize * 0.88f
 
             GlassTimerFace(
                 modifier = Modifier.size(timerSize),
@@ -147,17 +147,6 @@ private fun FocusPulseTimer() {
                 progress = progress,
                 accent = accent,
                 running = status == TimerStatus.RUNNING
-            )
-
-            Text(
-                text = "FOCUS — PULSE",
-                color = Color.White.copy(alpha = 0.38f),
-                fontSize = (face.value * 0.040f).sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = face * 0.105f)
             )
 
             Text(
@@ -183,46 +172,59 @@ private fun FocusPulseTimer() {
                 modifier = Modifier.offset(y = face * 0.132f)
             )
 
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = -face * 0.072f),
-                horizontalArrangement = Arrangement.spacedBy(face * 0.045f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ControlButton(
-                    glyph = Glyph.RESET,
-                    accent = accent,
-                    prominent = false,
-                    buttonSize = face * 0.145f,
-                    onClick = {
-                        statusName = TimerStatus.IDLE.name
-                        remaining = total
-                        endsAt = 0L
-                    }
-                )
-                ControlButton(
-                    glyph = if (status == TimerStatus.RUNNING) Glyph.PAUSE else Glyph.PLAY,
-                    accent = accent,
-                    prominent = true,
-                    buttonSize = face * 0.205f,
-                    onClick = {
-                        if (status == TimerStatus.RUNNING) {
-                            remaining = ceil((endsAt - System.currentTimeMillis()).coerceAtLeast(0L) / 1000.0).toInt()
-                            statusName = TimerStatus.PAUSED.name
-                        } else {
-                            endsAt = System.currentTimeMillis() + remaining * 1000L
-                            statusName = TimerStatus.RUNNING.name
+            if (controlsVisible || status != TimerStatus.RUNNING) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(y = -face * 0.060f),
+                    horizontalArrangement = Arrangement.spacedBy(face * 0.045f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ControlButton(
+                        glyph = Glyph.RESET,
+                        accent = accent,
+                        prominent = false,
+                        buttonSize = face * 0.145f,
+                        onClick = {
+                            statusName = TimerStatus.IDLE.name
+                            remaining = total
+                            endsAt = 0L
+                            controlsVisible = true
                         }
-                    }
-                )
-                ControlButton(
-                    glyph = Glyph.SOUND,
-                    accent = accent,
-                    prominent = false,
-                    buttonSize = face * 0.145f,
-                    enabled = soundOn,
-                    onClick = { soundOn = !soundOn }
+                    )
+                    ControlButton(
+                        glyph = if (status == TimerStatus.RUNNING) Glyph.PAUSE else Glyph.PLAY,
+                        accent = accent,
+                        prominent = true,
+                        buttonSize = face * 0.205f,
+                        onClick = {
+                            if (status == TimerStatus.RUNNING) {
+                                remaining = ceil((endsAt - System.currentTimeMillis()).coerceAtLeast(0L) / 1000.0).toInt()
+                                statusName = TimerStatus.PAUSED.name
+                                controlsVisible = true
+                            } else {
+                                endsAt = System.currentTimeMillis() + remaining * 1000L
+                                statusName = TimerStatus.RUNNING.name
+                                controlsVisible = false
+                            }
+                        }
+                    )
+                    ControlButton(
+                        glyph = Glyph.SOUND,
+                        accent = accent,
+                        prominent = false,
+                        buttonSize = face * 0.145f,
+                        enabled = soundOn,
+                        onClick = { soundOn = !soundOn }
+                    )
+                }
+            } else {
+                RevealControlsChevron(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(y = -face * 0.035f)
+                        .size(face * 0.115f),
+                    onClick = { controlsVisible = true }
                 )
             }
         }
@@ -241,7 +243,7 @@ private fun GlassTimerFace(
     val breath by transition.animateFloat(
         initialValue = 0.97f,
         targetValue = 1.035f,
-        animationSpec = infiniteRepeatable(tween(1800), RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(tween(2600), RepeatMode.Reverse),
         label = "identity-breath"
     )
 
@@ -263,7 +265,7 @@ private fun GlassTimerFace(
         FocusIdentity(
             color = accent,
             modifier = Modifier
-                .size(ringSize * 0.67f)
+                .size(ringSize * 0.79f)
                 .alpha(if (running) 0.20f else 0.15f)
                 .graphicsLayer {
                     scaleX = if (running) breath else 1f
@@ -272,7 +274,7 @@ private fun GlassTimerFace(
         )
 
         Canvas(modifier = Modifier.size(ringSize)) {
-            val stroke = size.minDimension * 0.025f
+            val stroke = size.minDimension * 0.019f
             val inset = stroke / 2f
             val arcSize = Size(size.width - stroke, size.height - stroke)
             drawArc(
@@ -316,6 +318,34 @@ private fun FocusIdentity(color: Color, modifier: Modifier = Modifier) {
             drawPath(paths[0], color, style = Stroke(2.2f, cap = StrokeCap.Round))
             drawPath(paths[1], color.copy(alpha = 0.82f), style = Stroke(1.8f, cap = StrokeCap.Round))
             drawPath(paths[2], color.copy(alpha = 0.58f), style = Stroke(1.7f, cap = StrokeCap.Round))
+        }
+    }
+}
+
+@Composable
+private fun RevealControlsChevron(modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.size(14.dp)) {
+            val stroke = size.width * 0.10f
+            drawLine(
+                color = Color.White.copy(alpha = 0.22f),
+                start = Offset(size.width * 0.22f, size.height * 0.62f),
+                end = Offset(size.width * 0.50f, size.height * 0.36f),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = Color.White.copy(alpha = 0.22f),
+                start = Offset(size.width * 0.50f, size.height * 0.36f),
+                end = Offset(size.width * 0.78f, size.height * 0.62f),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round
+            )
         }
     }
 }
