@@ -3,4 +3,7 @@
     <string name="app_name">Focus — Pulse</string>
     <string name="timer_ready">Seu foco, no seu ritmo.</string>
     <string name="timer_running">Foco em andamento</string>
+    <string name="session_focus">FOCO</string>
+    <string name="session_short_break">PAUSA CURTA</string>
+    <string name="session_long_break">PAUSA LONGA</string>
 </resources>
