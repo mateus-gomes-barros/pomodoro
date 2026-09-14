@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Focus — Pulse</string>
+    <string name="timer_ready">Seu foco, no seu ritmo.</string>
+    <string name="timer_running">Foco em andamento</string>
+</resources>
