@@ -3,4 +3,7 @@
     <string name="app_name">Focus — Pulse</string>
     <string name="timer_ready">Your focus, at your rhythm.</string>
     <string name="timer_running">Focus in progress</string>
+    <string name="session_focus">FOCUS</string>
+    <string name="session_short_break">SHORT BREAK</string>
+    <string name="session_long_break">LONG BREAK</string>
 </resources>
