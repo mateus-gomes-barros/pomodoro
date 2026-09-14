@@ -37,6 +37,10 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
 
+    env:
+      VITE_SUPABASE_URL: https://fjixvpdfbvfwgzzjlphb.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_BQ7Ye1rKarT8z3ZztLBQog_TQVc8XUg
+
     defaults:
       run:
         working-directory: focus-app
@@ -67,8 +71,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         with:
           projectPath: focus-app
           args: ${{ matrix.args }}
