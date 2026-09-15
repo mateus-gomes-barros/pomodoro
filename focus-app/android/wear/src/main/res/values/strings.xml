@@ -18,4 +18,7 @@
     <string name="notification_focus_complete">Focus complete. Time to take a break.</string>
     <string name="notification_short_break_complete">Short break complete. Ready to focus?</string>
     <string name="notification_long_break_complete">Long break complete. Ready to focus?</string>
+    <string name="ongoing_timer_title">Focus — Pulse</string>
+    <string name="ongoing_timer_channel">Active timer</string>
+    <string name="ongoing_timer_channel_description">Shows the active Focus timer on the watch</string>
 </resources>
