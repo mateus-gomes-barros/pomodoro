@@ -1,5 +1,6 @@
 package com.mateusgomes.focusapp.pulse.tile
 
+import android.content.Context
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders
 import androidx.wear.protolayout.DimensionBuilders
@@ -328,5 +329,11 @@ class PulseTimerTileService : TileService() {
         private const val RESOURCES_VERSION = "1"
         private const val ACTION_TOGGLE = "pulse_timer_toggle"
         private const val ACTION_OPEN = "pulse_timer_open"
+
+        fun requestUpdate(context: Context) {
+            runCatching {
+                getUpdater(context).requestUpdate(PulseTimerTileService::class.java)
+            }
+        }
     }
 }
