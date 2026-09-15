@@ -126,8 +126,10 @@ fun PulseTimerScreen(
             endsAtEpochMillis > System.currentTimeMillis()
         ) {
             alarmScheduler.schedule(endsAtEpochMillis, session)
+            PulseTimerOngoingService.start(context, endsAtEpochMillis, session)
         } else {
             alarmScheduler.cancel()
+            PulseTimerOngoingService.stop(context)
         }
     }
 
