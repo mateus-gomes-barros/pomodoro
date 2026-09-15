@@ -30,6 +30,8 @@ import {
   showTimerNotification,
   addNotificationActionListener,
   addWearTimerStateListener,
+  consumeWearTimerState,
+  type WearTimerState,
 } from '@/services/timerNotificationService'
 import { usePomodoroStore } from '@/store/pomodoroStore'
 
@@ -333,7 +335,14 @@ void showTimerNotification(
 
   // 4. Recebe os controles executados no Focus — Pulse.
   useEffect(() => {
-    const listener = addWearTimerStateListener((wearState) => {
+    let lastAppliedVersion = 0
+
+    const applyWearState = (wearState: WearTimerState) => {
+      if (wearState.version <= lastAppliedVersion) {
+        return
+      }
+      lastAppliedVersion = wearState.version
+
       const sessionType =
         wearState.sessionType === 'focus'
           ? 'work'
@@ -353,9 +362,32 @@ void showTimerNotification(
             ? Date.now() + remainingSeconds * 1000
             : null,
       })
-    })
+    }
+
+    const listener = addWearTimerStateListener(applyWearState)
+
+    const consumePendingState = async () => {
+      try {
+        const pendingState = await consumeWearTimerState()
+        if (pendingState.pending) {
+          applyWearState(pendingState)
+        }
+      } catch (error) {
+        console.error(
+          'Failed to consume Pulse timer state:',
+          error,
+        )
+      }
+    }
+
+    void consumePendingState()
+    const pollingInterval = setInterval(
+      () => void consumePendingState(),
+      500,
+    )
 
     return () => {
+      clearInterval(pollingInterval)
       if (listener && 'then' in listener) {
         void listener.then((handle) => handle.remove())
       } else {
