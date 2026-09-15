@@ -88,8 +88,7 @@ public final class FocusWearDataLayer {
         request.getDataMap().putLong(FocusWearContract.KEY_STARTED_AT, now);
         request.getDataMap().putLong(FocusWearContract.KEY_ENDS_AT, endTime);
         request.getDataMap().putInt(FocusWearContract.KEY_DURATION_SECONDS, safeDuration);
-        request.getDataMap().putInt(FocusWearContract.KEY_DURATION_SECONDS, safeDuration)
-                .putInt(FocusWearContract.KEY_REMAINING_SECONDS, safeRemaining);
+        request.getDataMap().putInt(FocusWearContract.KEY_REMAINING_SECONDS, safeRemaining);
         request.getDataMap().putString(
                 FocusWearContract.KEY_TASK_ID,
                 taskId == null ? "" : taskId
@@ -121,6 +120,7 @@ public final class FocusWearDataLayer {
                 .putString(FocusWearContract.KEY_SESSION_ID, sessionId)
                 .putString(FocusWearContract.KEY_STATUS, safeStatus)
                 .putString(FocusWearContract.KEY_SESSION_TYPE, safeSessionType)
+                .putInt(FocusWearContract.KEY_DURATION_SECONDS, safeDuration)
                 .putInt(FocusWearContract.KEY_REMAINING_SECONDS, safeRemaining)
                 .putLong(FocusWearContract.KEY_ENDS_AT, endTime)
                 .putString(FocusWearContract.KEY_TASK_ID, taskId == null ? "" : taskId)
