@@ -12,6 +12,7 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.mateusgomes.focusapp.wear.FocusWearDataLayer;
 
 @CapacitorPlugin(name = "PomodoroService")
 public class PomodoroServicePlugin extends Plugin {
@@ -114,6 +115,13 @@ public class PomodoroServicePlugin extends Plugin {
             }
 
             Log.d(TAG, "Service start request SUCCESS");
+
+            FocusWearDataLayer.publishRunningTimer(
+                    getContext(),
+                    title,
+                    endTime,
+                    badgeIcon
+            );
 
             call.resolve();
 
@@ -278,6 +286,8 @@ public class PomodoroServicePlugin extends Plugin {
         MediumTimerWidgetProvider.updateAll(
             getContext()
         );
+
+        FocusWearDataLayer.publishIdleTimer(getContext());
 
         call.resolve();
     }
