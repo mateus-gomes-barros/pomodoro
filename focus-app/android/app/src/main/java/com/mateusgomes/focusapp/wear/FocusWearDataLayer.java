@@ -31,6 +31,7 @@ public final class FocusWearDataLayer {
                 "running",
                 inferSessionType(title),
                 remainingSeconds,
+                remainingSeconds,
                 endTime,
                 title,
                 "",
@@ -43,7 +44,7 @@ public final class FocusWearDataLayer {
 
     public static void publishIdleTimer(Context context) {
         publishTimerState(
-                context, "idle", "focus", 0, 0L,
+                context, "idle", "focus", 1, 0, 0L,
                 "", "", "", "", "", ""
         );
     }
@@ -52,6 +53,7 @@ public final class FocusWearDataLayer {
             Context context,
             String status,
             String sessionType,
+            int durationSeconds,
             int remainingSeconds,
             long endTime,
             String title,
@@ -68,6 +70,7 @@ public final class FocusWearDataLayer {
         long now = System.currentTimeMillis();
         long lastVersion = delivery.getLong(KEY_LAST_SENT_VERSION, 0L);
         long version = Math.max(now, lastVersion + 1L);
+        int safeDuration = Math.max(1, durationSeconds);
         int safeRemaining = Math.max(0, remainingSeconds);
         String safeStatus = status == null ? "idle" : status;
         String safeSessionType =
@@ -84,8 +87,9 @@ public final class FocusWearDataLayer {
         request.getDataMap().putString(FocusWearContract.KEY_SESSION_TYPE, safeSessionType);
         request.getDataMap().putLong(FocusWearContract.KEY_STARTED_AT, now);
         request.getDataMap().putLong(FocusWearContract.KEY_ENDS_AT, endTime);
-        request.getDataMap().putInt(FocusWearContract.KEY_DURATION_SECONDS, safeRemaining);
-        request.getDataMap().putInt(FocusWearContract.KEY_REMAINING_SECONDS, safeRemaining);
+        request.getDataMap().putInt(FocusWearContract.KEY_DURATION_SECONDS, safeDuration);
+        request.getDataMap().putInt(FocusWearContract.KEY_DURATION_SECONDS, safeDuration)
+                .putInt(FocusWearContract.KEY_REMAINING_SECONDS, safeRemaining);
         request.getDataMap().putString(
                 FocusWearContract.KEY_TASK_ID,
                 taskId == null ? "" : taskId
@@ -147,6 +151,7 @@ public final class FocusWearDataLayer {
                 context,
                 status,
                 delivery.getString(FocusWearContract.KEY_SESSION_TYPE, "focus"),
+                delivery.getInt(FocusWearContract.KEY_DURATION_SECONDS, 1),
                 delivery.getInt(FocusWearContract.KEY_REMAINING_SECONDS, 0),
                 delivery.getLong(FocusWearContract.KEY_ENDS_AT, 0L),
                 delivery.getString(FocusWearContract.KEY_TASK_NAME, ""),
