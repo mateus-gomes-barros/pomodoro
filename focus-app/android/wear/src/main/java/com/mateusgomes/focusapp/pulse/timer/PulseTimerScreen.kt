@@ -1,5 +1,9 @@
 package com.mateusgomes.focusapp.pulse.timer
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -29,8 +34,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.wear.compose.material3.Text
 import com.mateusgomes.focusapp.pulse.R
+import com.mateusgomes.focusapp.pulse.sync.PulseRemoteTimerStore
+import com.mateusgomes.focusapp.pulse.sync.PulseWearListenerService
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
 import kotlin.math.min
@@ -82,10 +90,69 @@ fun PulseTimerScreen(
         mutableStateOf(restored.status != PulseTimerStatus.RUNNING)
     }
     var setupVisible by rememberSaveable { mutableStateOf(false) }
+    val remoteStore = remember(context) { PulseRemoteTimerStore(context) }
+    var remoteState by remember { mutableStateOf(remoteStore.load()) }
+    var remoteFocusHome by rememberSaveable {
+        mutableStateOf(remoteState?.focusHome.orEmpty())
+    }
+
+    DisposableEffect(context, remoteStore) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(receiverContext: Context?, intent: Intent?) {
+                remoteState = remoteStore.load()
+            }
+        }
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(PulseWearListenerService.ACTION_REMOTE_TIMER_UPDATED),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        onDispose {
+            runCatching { context.unregisterReceiver(receiver) }
+        }
+    }
+
+    LaunchedEffect(remoteState?.version) {
+        val received = remoteState ?: return@LaunchedEffect
+        sessionName = when (received.sessionType) {
+            "short_break" -> PulseSession.SHORT_BREAK.name
+            "long_break" -> PulseSession.LONG_BREAK.name
+            else -> PulseSession.FOCUS.name
+        }
+        statusName = when (received.status) {
+            "running" -> PulseTimerStatus.RUNNING.name
+            "paused" -> PulseTimerStatus.PAUSED.name
+            "completed" -> PulseTimerStatus.COMPLETED.name
+            else -> PulseTimerStatus.IDLE.name
+        }
+        val receivedDuration = received.durationSeconds.coerceAtLeast(1)
+        val receivedMinutes = ceil(receivedDuration / 60.0).toInt()
+        when (sessionName) {
+            PulseSession.SHORT_BREAK.name ->
+                shortBreakDurationMinutes = receivedMinutes.coerceIn(1, 30)
+            PulseSession.LONG_BREAK.name ->
+                longBreakDurationMinutes = receivedMinutes.coerceIn(5, 60)
+            else -> workDurationMinutes = receivedMinutes.coerceIn(5, 90)
+        }
+        remainingSeconds = if (received.status == "running" && received.endsAt > 0L) {
+            ceil(
+                (received.endsAt - System.currentTimeMillis()).coerceAtLeast(0L) / 1000.0,
+            ).toInt()
+        } else {
+            received.remainingSeconds.coerceAtLeast(0)
+        }
+        endsAtEpochMillis = received.endsAt
+        remoteFocusHome = received.focusHome
+        controlsVisible = received.status != "running"
+        setupVisible = false
+    }
 
     val haptics = LocalHapticFeedback.current
     val totalSeconds = durationSecondsFor(session)
-    val identityColor = activeFocusHome?.color
+    val effectiveFocusHome =
+        activeFocusHome ?: FocusHomeKey.fromWireValue(remoteFocusHome)
+    val identityColor = effectiveFocusHome?.color
     val accent = identityColor ?: if (session == PulseSession.FOCUS) {
         DefaultFocusGreen
     } else {
@@ -260,7 +327,7 @@ fun PulseTimerScreen(
                 ringSize = ringSize,
                 progress = progress,
                 accent = accent,
-                focusHome = activeFocusHome,
+                focusHome = effectiveFocusHome,
                 running = status == PulseTimerStatus.RUNNING,
             )
 
