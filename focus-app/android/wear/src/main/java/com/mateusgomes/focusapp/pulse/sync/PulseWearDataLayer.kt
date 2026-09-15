@@ -52,6 +52,26 @@ class PulseWearDataLayer(private val context: Context) {
             }
     }
 
+    fun acknowledgeTimer(
+        sessionId: String,
+        version: Long,
+        status: String,
+    ) {
+        val request = PutDataMapRequest.create(PulseWearContract.TIMER_ACK_PATH)
+        request.dataMap.apply {
+            putString(PulseWearContract.KEY_SESSION_ID, sessionId)
+            putLong(PulseWearContract.KEY_ACK_VERSION, version)
+            putString(PulseWearContract.KEY_ACK_STATUS, status)
+            putString(PulseWearContract.KEY_SOURCE_DEVICE, PulseWearContract.SOURCE_WATCH)
+            putLong(PulseWearContract.KEY_UPDATED_AT, System.currentTimeMillis())
+        }
+        Wearable.getDataClient(context)
+            .putDataItem(request.asPutDataRequest().setUrgent())
+            .addOnFailureListener { error ->
+                Log.e(TAG, "Unable to acknowledge Pulse timer", error)
+            }
+    }
+
     private companion object {
         const val TAG = "PulseWearDataLayer"
     }
