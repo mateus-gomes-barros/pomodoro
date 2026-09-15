@@ -13,6 +13,7 @@ interface PomodoroServicePlugin {
     status: 'running' | 'paused'
     sessionType: 'focus' | 'short_break' | 'long_break'
     remainingSeconds: number
+    syncToWear: boolean
   }): Promise<void>
 
   stopService(): Promise<void>
@@ -184,6 +185,32 @@ export async function requestTimerNotificationPermission():
   }
 }
 
+const FOCUS_PULSE_MODE_KEY = 'focus_pulse_timer_mode'
+
+export function isFocusPulseAvailable() {
+  return (
+    Capacitor.isNativePlatform() &&
+    Capacitor.getPlatform() === 'android'
+  )
+}
+
+export function isFocusPulseModeEnabled() {
+  return (
+    isFocusPulseAvailable() &&
+    globalThis.localStorage?.getItem(
+      FOCUS_PULSE_MODE_KEY,
+    ) === 'true'
+  )
+}
+
+export function setFocusPulseModeEnabled(enabled: boolean) {
+  if (!isFocusPulseAvailable()) return
+  globalThis.localStorage?.setItem(
+    FOCUS_PULSE_MODE_KEY,
+    String(enabled),
+  )
+}
+
 export async function showTimerNotification(
   title: string,
   body: string,
@@ -204,6 +231,7 @@ export async function showTimerNotification(
       status,
       sessionType,
       remainingSeconds,
+      syncToWear: isFocusPulseModeEnabled(),
     })
   } catch (error) {
     console.error(
