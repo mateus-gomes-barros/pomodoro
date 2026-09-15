@@ -294,6 +294,9 @@ void showTimerNotification(
   notificationBody,
   status === 'running' ? (endsAt ?? 0) : 0,
   currentBadge.icon,
+  status,
+  sessionType === 'work' ? 'focus' : sessionType,
+  remainingSeconds,
 )
   }, [
     status,
