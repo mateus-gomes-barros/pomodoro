@@ -46,13 +46,22 @@ fun TimerFace(
 ) {
     val transition = rememberInfiniteTransition(label = "focus-home-breath")
     val breath by transition.animateFloat(
-        initialValue = 0.97f,
-        targetValue = 1.035f,
+        initialValue = 0.96f,
+        targetValue = 1.045f,
         animationSpec = infiniteRepeatable(
             animation = tween(2600),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "focus-home-scale",
+    )
+    val breathOpacity by transition.animateFloat(
+        initialValue = 0.13f,
+        targetValue = 0.24f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2600),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "focus-home-opacity",
     )
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -86,7 +95,7 @@ fun TimerFace(
             color = accent,
             modifier = Modifier
                 .size(ringSize * 0.88f)
-                .alpha(if (running) 0.42f else 0.34f)
+                .alpha(if (running) breathOpacity else 0.16f)
                 .graphicsLayer {
                     scaleX = if (running) breath else 1f
                     scaleY = if (running) breath else 1f
