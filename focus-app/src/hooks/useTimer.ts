@@ -241,6 +241,14 @@ export function useTimer() {
     const resolvedProjectId = activeProjectId ?? activeTask?.projectId ?? null
     const activeProject = projectsQuery.data?.find((p) => p.id === resolvedProjectId)
 
+    const durationSeconds = (
+      sessionType === 'work'
+        ? settings.workDuration
+        : sessionType === 'short_break'
+          ? settings.shortBreakDuration
+          : settings.longBreakDuration
+    ) * 60
+
     const remainingSeconds = getLiveActivityRemainingSeconds(
       status === 'running' ? endsAt : null,
       secondsLeft,
@@ -307,6 +315,7 @@ void showTimerNotification(
   currentBadge.icon,
   status,
   sessionType === 'work' ? 'focus' : sessionType,
+  durationSeconds,
   remainingSeconds,
   activeTask?.id,
   activeTask?.title,
@@ -325,6 +334,9 @@ void showTimerNotification(
     projectsQuery.data,
     currentBadge.icon,
     focusHome,
+    settings.workDuration,
+    settings.shortBreakDuration,
+    settings.longBreakDuration,
   ])
 
   // 3. Hook para ouvir ações da notificação (Android)
