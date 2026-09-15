@@ -2,6 +2,7 @@ package com.mateusgomes.focusapp.wear;
 
 import android.content.Intent;
 
+import com.mateusgomes.focusapp.PomodoroServicePlugin;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataMap;
@@ -36,6 +37,7 @@ public class FocusWearListenerService extends WearableListenerService {
                     .putLong(FocusWearContract.KEY_UPDATED_AT, state.getLong(FocusWearContract.KEY_UPDATED_AT, 0L))
                     .apply();
 
+            PomodoroServicePlugin.onWearTimerStateReceived(state);
             sendBroadcast(new Intent(ACTION_TIMER_STATE_CHANGED).setPackage(getPackageName()));
         }
     }
