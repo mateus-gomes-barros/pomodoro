@@ -85,8 +85,8 @@ fun TimerFace(
             focusHome = focusHome,
             color = accent,
             modifier = Modifier
-                .size(ringSize * 0.79f)
-                .alpha(if (running) 0.20f else 0.15f)
+                .size(ringSize * 0.88f)
+                .alpha(if (running) 0.42f else 0.34f)
                 .graphicsLayer {
                     scaleX = if (running) breath else 1f
                     scaleY = if (running) breath else 1f
