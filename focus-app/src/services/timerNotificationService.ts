@@ -30,6 +30,19 @@ interface PomodoroServicePlugin {
     eventName: 'onNotificationAction',
     listenerFunc: (data: { action: string }) => void,
   ): Promise<import('@capacitor/core').PluginListenerHandle>
+
+  addListener(
+    eventName: 'onWearTimerState',
+    listenerFunc: (data: WearTimerState) => void,
+  ): Promise<import('@capacitor/core').PluginListenerHandle>
+}
+
+export interface WearTimerState {
+  status: 'idle' | 'running' | 'paused' | 'completed'
+  sessionType: 'focus' | 'short_break' | 'long_break'
+  remainingSeconds: number
+  endsAt: number
+  version: number
 }
 
 const PomodoroService =
@@ -94,6 +107,22 @@ export function addNotificationActionListener(
     (data) => {
       callback(data.action)
     },
+  )
+}
+
+export function addWearTimerStateListener(
+  callback: (state: WearTimerState) => void,
+) {
+  if (
+    !Capacitor.isNativePlatform() ||
+    Capacitor.getPlatform() !== 'android'
+  ) {
+    return { remove: () => {} }
+  }
+
+  return PomodoroService.addListener(
+    'onWearTimerState',
+    callback,
   )
 }
 
