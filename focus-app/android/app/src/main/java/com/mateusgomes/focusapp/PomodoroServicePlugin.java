@@ -227,6 +227,7 @@ public class PomodoroServicePlugin extends Plugin {
         String badgeIcon = call.getString("badgeIcon", "");
         String timerStatus = call.getString("status", "running");
         String sessionType = call.getString("sessionType", "focus");
+        int durationSeconds = call.getInt("durationSeconds", Math.max(1, call.getInt("remainingSeconds", 0)));
         int remainingSeconds = call.getInt("remainingSeconds", 0);
         String taskId = call.getString("taskId", "");
         String taskName = call.getString("taskName", "");
@@ -308,6 +309,7 @@ public class PomodoroServicePlugin extends Plugin {
                         getContext(),
                         timerStatus,
                         sessionType,
+                        durationSeconds,
                         remainingSeconds,
                         endTime,
                         title,
