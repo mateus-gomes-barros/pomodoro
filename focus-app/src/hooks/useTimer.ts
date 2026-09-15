@@ -330,12 +330,14 @@ void showTimerNotification(
     }
   }, [])
 
-  // 4. Hook para o Ticking interval
+  // 4. Mantém a exibição alinhada ao mesmo endsAt usado pelo Wear OS.
+  // O store só atualiza a tela quando o segundo calculado realmente muda.
   useEffect(() => {
     if (status === 'running') {
+      tick()
       intervalRef.current = setInterval(() => {
         tick()
-      }, 1000)
+      }, 250)
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
