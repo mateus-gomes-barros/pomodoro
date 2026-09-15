@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -319,6 +320,10 @@ fun PulseTimerScreen(
             PulseSession.LONG_BREAK -> R.string.session_long_break
         },
     )
+    val timerContextLabel = listOfNotNull(
+        remoteState?.taskName?.takeIf { it.isNotBlank() },
+        remoteState?.projectName?.takeIf { it.isNotBlank() },
+    ).joinToString(" • ").ifBlank { sessionLabel }
 
     Box(
         modifier = Modifier
@@ -367,12 +372,19 @@ fun PulseTimerScreen(
             )
 
             Text(
-                text = sessionLabel,
+                text = timerContextLabel,
                 color = Color.White.copy(alpha = 0.52f),
-                fontSize = (face.value * 0.041f).sp,
+                fontSize = (
+                    face.value *
+                        if (timerContextLabel == sessionLabel) 0.041f else 0.034f
+                ).sp,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.7.sp,
-                modifier = Modifier.offset(y = face * 0.075f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .offset(y = face * 0.075f)
+                    .size(width = face * 0.68f, height = face * 0.07f),
             )
 
             SessionDots(
