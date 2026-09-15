@@ -43,7 +43,6 @@ data class PulseTimerSettings(
     val shortBreakDurationMinutes: Int = 5,
     val longBreakDurationMinutes: Int = 15,
     val sessionsUntilLongBreak: Int = 4,
-    val soundEnabled: Boolean = true,
     val autoStartBreaks: Boolean = false,
     val autoStartWork: Boolean = false,
 ) {
