@@ -29,6 +29,7 @@ import {
   clearTimerNotification,
   showTimerNotification,
   addNotificationActionListener,
+  addWearTimerStateListener,
 } from '@/services/timerNotificationService'
 import { usePomodoroStore } from '@/store/pomodoroStore'
 
@@ -330,7 +331,40 @@ void showTimerNotification(
     }
   }, [])
 
-  // 4. Mantém a exibição alinhada ao mesmo endsAt usado pelo Wear OS.
+  // 4. Recebe os controles executados no Focus — Pulse.
+  useEffect(() => {
+    const listener = addWearTimerStateListener((wearState) => {
+      const sessionType =
+        wearState.sessionType === 'focus'
+          ? 'work'
+          : wearState.sessionType
+
+      const remainingSeconds = Math.max(
+        0,
+        Math.floor(wearState.remainingSeconds),
+      )
+
+      usePomodoroStore.setState({
+        status: wearState.status,
+        sessionType,
+        secondsLeft: remainingSeconds,
+        endsAt:
+          wearState.status === 'running'
+            ? Date.now() + remainingSeconds * 1000
+            : null,
+      })
+    })
+
+    return () => {
+      if (listener && 'then' in listener) {
+        void listener.then((handle) => handle.remove())
+      } else {
+        listener.remove()
+      }
+    }
+  }, [])
+
+  // 5. Mantém a exibição alinhada ao mesmo endsAt usado pelo Wear OS.
   // O store só atualiza a tela quando o segundo calculado realmente muda.
   useEffect(() => {
     if (status === 'running') {
