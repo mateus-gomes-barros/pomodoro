@@ -135,14 +135,21 @@ fun PulseTimerScreen(
                 longBreakDurationMinutes = receivedMinutes.coerceIn(5, 60)
             else -> workDurationMinutes = receivedMinutes.coerceIn(5, 90)
         }
-        remainingSeconds = if (received.status == "running" && received.endsAt > 0L) {
-            ceil(
-                (received.endsAt - System.currentTimeMillis()).coerceAtLeast(0L) / 1000.0,
-            ).toInt()
+        if (received.status == "running" && received.endsAt > 0L) {
+            // O relógio do sistema do celular pode estar alguns milissegundos
+            // adiantado ou atrasado em relação ao Watch. Normalizamos o fim
+            // da sessão na linha do tempo local usando o valor enviado.
+            val normalizedRemaining = received.remainingSeconds.coerceIn(
+                0,
+                receivedDuration,
+            )
+            remainingSeconds = normalizedRemaining
+            endsAtEpochMillis =
+                System.currentTimeMillis() + normalizedRemaining * 1000L
         } else {
-            received.remainingSeconds.coerceAtLeast(0)
+            remainingSeconds = received.remainingSeconds.coerceAtLeast(0)
+            endsAtEpochMillis = 0L
         }
-        endsAtEpochMillis = received.endsAt
         remoteFocusHome = received.focusHome
         controlsVisible = received.status != "running"
         setupVisible = false
