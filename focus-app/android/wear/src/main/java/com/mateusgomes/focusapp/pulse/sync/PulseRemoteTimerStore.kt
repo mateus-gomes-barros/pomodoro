@@ -21,6 +21,25 @@ data class PulseRemoteTimerState(
 class PulseRemoteTimerStore(context: Context) {
     private val preferences = context.getSharedPreferences("focus_pulse_sync", Context.MODE_PRIVATE)
 
+    fun load(): PulseRemoteTimerState? {
+        val version = preferences.getLong(PulseWearContract.KEY_VERSION, 0L)
+        if (version <= 0L) return null
+        return PulseRemoteTimerState(
+            sessionId = preferences.getString(PulseWearContract.KEY_SESSION_ID, "").orEmpty(),
+            status = preferences.getString(PulseWearContract.KEY_STATUS, "idle").orEmpty(),
+            sessionType = preferences.getString(PulseWearContract.KEY_SESSION_TYPE, "focus").orEmpty(),
+            endsAt = preferences.getLong(PulseWearContract.KEY_ENDS_AT, 0L),
+            durationSeconds = preferences.getInt(PulseWearContract.KEY_DURATION_SECONDS, 0),
+            remainingSeconds = preferences.getInt(PulseWearContract.KEY_REMAINING_SECONDS, 0),
+            taskName = preferences.getString(PulseWearContract.KEY_TASK_NAME, "").orEmpty(),
+            projectName = preferences.getString(PulseWearContract.KEY_PROJECT_NAME, "").orEmpty(),
+            focusHome = preferences.getString(PulseWearContract.KEY_FOCUS_HOME, "").orEmpty(),
+            sourceDevice = preferences.getString(PulseWearContract.KEY_SOURCE_DEVICE, "").orEmpty(),
+            version = version,
+            updatedAt = preferences.getLong(PulseWearContract.KEY_UPDATED_AT, 0L),
+        )
+    }
+
     fun save(data: DataMap): PulseRemoteTimerState {
         val state = PulseRemoteTimerState(
             sessionId = data.getString(PulseWearContract.KEY_SESSION_ID, ""),
