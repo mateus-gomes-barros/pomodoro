@@ -8,6 +8,7 @@ import com.mateusgomes.focusapp.pulse.timer.FocusHomeKey
 import com.mateusgomes.focusapp.pulse.timer.PulseSession
 import com.mateusgomes.focusapp.pulse.timer.PulseTimerStatus
 import java.util.UUID
+import kotlin.math.max
 
 class PulseWearDataLayer(private val context: Context) {
     fun publishTimer(
@@ -18,10 +19,23 @@ class PulseWearDataLayer(private val context: Context) {
         endsAt: Long,
         focusHome: FocusHomeKey?,
     ) {
+        val preferences = context.getSharedPreferences(
+            SYNC_PREFERENCES,
+            Context.MODE_PRIVATE,
+        )
         val now = System.currentTimeMillis()
+        val version = max(
+            now,
+            preferences.getLong(KEY_LAST_VERSION, 0L) + 1L,
+        )
+        val remoteState = PulseRemoteTimerStore(context).load()
+        val sessionId =
+            remoteState?.sessionId?.takeIf { it.isNotBlank() }
+                ?: preferences.getString(KEY_SESSION_ID, null)
+                ?: UUID.randomUUID().toString()
         val request = PutDataMapRequest.create(PulseWearContract.TIMER_STATE_PATH)
         request.dataMap.apply {
-            putString(PulseWearContract.KEY_SESSION_ID, UUID.randomUUID().toString())
+            putString(PulseWearContract.KEY_SESSION_ID, sessionId)
             putString(PulseWearContract.KEY_STATUS, status.name.lowercase())
             putString(
                 PulseWearContract.KEY_SESSION_TYPE,
@@ -36,18 +50,38 @@ class PulseWearDataLayer(private val context: Context) {
             putInt(PulseWearContract.KEY_DURATION_SECONDS, durationSeconds)
             putInt(PulseWearContract.KEY_REMAINING_SECONDS, remainingSeconds)
             putString(PulseWearContract.KEY_TASK_ID, "")
-            putString(PulseWearContract.KEY_TASK_NAME, "")
+            putString(
+                PulseWearContract.KEY_TASK_NAME,
+                remoteState?.taskName.orEmpty(),
+            )
             putString(PulseWearContract.KEY_PROJECT_ID, "")
-            putString(PulseWearContract.KEY_PROJECT_NAME, "")
+            putString(
+                PulseWearContract.KEY_PROJECT_NAME,
+                remoteState?.projectName.orEmpty(),
+            )
             putString(PulseWearContract.KEY_FOCUS_HOME, focusHome?.wireValue.orEmpty())
             putString(PulseWearContract.KEY_SOURCE_DEVICE, PulseWearContract.SOURCE_WATCH)
-            putLong(PulseWearContract.KEY_VERSION, now)
+            putLong(PulseWearContract.KEY_VERSION, version)
             putLong(PulseWearContract.KEY_UPDATED_AT, now)
         }
 
+        preferences.edit()
+            .putString(KEY_SESSION_ID, sessionId)
+            .putLong(KEY_LAST_VERSION, version)
+            .putBoolean(KEY_PENDING_SYNC, true)
+            .apply()
+
         Wearable.getDataClient(context)
             .putDataItem(request.asPutDataRequest().setUrgent())
+            .addOnSuccessListener {
+                preferences.edit()
+                    .putBoolean(KEY_PENDING_SYNC, false)
+                    .apply()
+            }
             .addOnFailureListener { error ->
+                preferences.edit()
+                    .putBoolean(KEY_PENDING_SYNC, true)
+                    .apply()
                 Log.e(TAG, "Unable to publish Pulse timer", error)
             }
     }
@@ -74,5 +108,9 @@ class PulseWearDataLayer(private val context: Context) {
 
     private companion object {
         const val TAG = "PulseWearDataLayer"
+        const val SYNC_PREFERENCES = "focus_pulse_outbox"
+        const val KEY_SESSION_ID = "session_id"
+        const val KEY_LAST_VERSION = "last_version"
+        const val KEY_PENDING_SYNC = "pending_sync"
     }
 }
