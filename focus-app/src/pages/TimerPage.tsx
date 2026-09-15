@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AnimatePresence,
   motion,
@@ -41,6 +41,9 @@ import {
   isFocusPulseAvailable,
   isFocusPulseModeEnabled,
   setFocusPulseModeEnabled,
+  getFocusPulseStatus,
+  retryFocusPulse,
+  type FocusPulseStatus,
 } from '@/services/timerNotificationService'
 
 const SESSION_LABEL_KEYS: Record<
@@ -107,6 +110,58 @@ export function TimerPage() {
     )
   const isPortuguese =
     i18n.language.startsWith('pt')
+  const [pulseStatus, setPulseStatus] =
+    useState<FocusPulseStatus | null>(null)
+  const [retryingPulse, setRetryingPulse] =
+    useState(false)
+
+  useEffect(() => {
+    if (!pulseAvailable) return
+
+    let active = true
+    const refreshStatus = async () => {
+      try {
+        const nextStatus =
+          await getFocusPulseStatus()
+        if (active) {
+          setPulseStatus(nextStatus)
+        }
+      } catch {
+        if (active) {
+          setPulseStatus({
+            connected: false,
+            sentVersion: 0,
+            acknowledgedVersion: 0,
+            acknowledged: false,
+            acknowledgedStatus: '',
+          })
+        }
+      }
+    }
+
+    void refreshStatus()
+    const interval = setInterval(
+      () => void refreshStatus(),
+      1000,
+    )
+
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [pulseAvailable])
+
+  const handleRetryPulse = async () => {
+    setRetryingPulse(true)
+    try {
+      await retryFocusPulse()
+      setPulseStatus(
+        await getFocusPulseStatus(),
+      )
+    } finally {
+      setRetryingPulse(false)
+    }
+  }
 
   const selectLocalSession = (
     type: SessionType,
@@ -257,6 +312,100 @@ export function TimerPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {pulseMode && (
+        <div className="card w-full space-y-4 border border-white/[0.06] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-white/80">
+                Focus Pulse
+              </p>
+              <p className="mt-1 truncate text-xs text-white/40">
+                {!pulseStatus
+                  ? (isPortuguese
+                      ? 'Verificando relógio…'
+                      : 'Checking watch…')
+                  : !pulseStatus.connected
+                    ? (isPortuguese
+                        ? 'Relógio indisponível'
+                        : 'Watch unavailable')
+                    : status === 'running' &&
+                        !pulseStatus.acknowledged
+                      ? (isPortuguese
+                          ? 'Enviando ao relógio…'
+                          : 'Sending to watch…')
+                      : status === 'running'
+                        ? (isPortuguese
+                            ? 'Em andamento no Pulse'
+                            : 'Running on Pulse')
+                        : status === 'paused' &&
+                            pulseStatus.acknowledged
+                          ? (isPortuguese
+                              ? 'Pausado no Pulse'
+                              : 'Paused on Pulse')
+                          : (isPortuguese
+                              ? 'Pronto para iniciar'
+                              : 'Ready to start')}
+              </p>
+            </div>
+            <span
+              className={cn(
+                'h-2.5 w-2.5 flex-shrink-0 rounded-full',
+                pulseStatus?.connected
+                  ? pulseStatus.acknowledged &&
+                    (status === 'running' ||
+                      status === 'paused')
+                    ? 'bg-emerald-300'
+                    : 'bg-emerald-300/55'
+                  : 'bg-white/20',
+              )}
+            />
+          </div>
+
+          <div className="segment grid w-full grid-cols-3">
+            {SESSION_TYPES.map((type) => (
+              <button
+                key={`pulse-${type}`}
+                type="button"
+                onClick={() => switchSession(type)}
+                disabled={isRunning}
+                className={cn(
+                  'segment-item min-w-0 whitespace-nowrap',
+                  sessionType === type
+                    ? 'active'
+                    : 'inactive',
+                  isRunning &&
+                    'cursor-not-allowed opacity-60',
+                )}
+              >
+                {t(SESSION_LABEL_KEYS[type])}
+              </button>
+            ))}
+          </div>
+
+          {pulseStatus?.connected &&
+            (status === 'running' ||
+              status === 'paused') &&
+            !pulseStatus.acknowledged && (
+              <button
+                type="button"
+                onClick={() =>
+                  void handleRetryPulse()
+                }
+                disabled={retryingPulse}
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-white/65 transition-colors hover:bg-white/[0.07] disabled:opacity-50"
+              >
+                {retryingPulse
+                  ? (isPortuguese
+                      ? 'Tentando novamente…'
+                      : 'Trying again…')
+                  : (isPortuguese
+                      ? 'Tentar novamente'
+                      : 'Try again')}
+              </button>
+            )}
+        </div>
+      )}
 
       {/* Timer ring */}
 
