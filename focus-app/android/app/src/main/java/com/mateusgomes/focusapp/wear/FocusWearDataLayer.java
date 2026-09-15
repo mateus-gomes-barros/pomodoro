@@ -33,12 +33,19 @@ public final class FocusWearDataLayer {
                 remainingSeconds,
                 endTime,
                 title,
+                "",
+                title,
+                "",
+                "",
                 focusHome
         );
     }
 
     public static void publishIdleTimer(Context context) {
-        publishTimerState(context, "idle", "focus", 0, 0L, "", "");
+        publishTimerState(
+                context, "idle", "focus", 0, 0L,
+                "", "", "", "", "", ""
+        );
     }
 
     public static void publishTimerState(
@@ -48,6 +55,10 @@ public final class FocusWearDataLayer {
             int remainingSeconds,
             long endTime,
             String title,
+            String taskId,
+            String taskName,
+            String projectId,
+            String projectName,
             String focusHome
     ) {
         SharedPreferences delivery = context.getSharedPreferences(
@@ -75,13 +86,22 @@ public final class FocusWearDataLayer {
         request.getDataMap().putLong(FocusWearContract.KEY_ENDS_AT, endTime);
         request.getDataMap().putInt(FocusWearContract.KEY_DURATION_SECONDS, safeRemaining);
         request.getDataMap().putInt(FocusWearContract.KEY_REMAINING_SECONDS, safeRemaining);
-        request.getDataMap().putString(FocusWearContract.KEY_TASK_ID, "");
+        request.getDataMap().putString(
+                FocusWearContract.KEY_TASK_ID,
+                taskId == null ? "" : taskId
+        );
         request.getDataMap().putString(
                 FocusWearContract.KEY_TASK_NAME,
-                title == null ? "" : title
+                taskName == null ? "" : taskName
         );
-        request.getDataMap().putString(FocusWearContract.KEY_PROJECT_ID, "");
-        request.getDataMap().putString(FocusWearContract.KEY_PROJECT_NAME, "");
+        request.getDataMap().putString(
+                FocusWearContract.KEY_PROJECT_ID,
+                projectId == null ? "" : projectId
+        );
+        request.getDataMap().putString(
+                FocusWearContract.KEY_PROJECT_NAME,
+                projectName == null ? "" : projectName
+        );
         request.getDataMap().putString(
                 FocusWearContract.KEY_FOCUS_HOME,
                 focusHome == null ? "" : focusHome
@@ -99,7 +119,10 @@ public final class FocusWearDataLayer {
                 .putString(FocusWearContract.KEY_SESSION_TYPE, safeSessionType)
                 .putInt(FocusWearContract.KEY_REMAINING_SECONDS, safeRemaining)
                 .putLong(FocusWearContract.KEY_ENDS_AT, endTime)
-                .putString(FocusWearContract.KEY_TASK_NAME, title == null ? "" : title)
+                .putString(FocusWearContract.KEY_TASK_ID, taskId == null ? "" : taskId)
+                .putString(FocusWearContract.KEY_TASK_NAME, taskName == null ? "" : taskName)
+                .putString(FocusWearContract.KEY_PROJECT_ID, projectId == null ? "" : projectId)
+                .putString(FocusWearContract.KEY_PROJECT_NAME, projectName == null ? "" : projectName)
                 .putString(FocusWearContract.KEY_FOCUS_HOME, focusHome == null ? "" : focusHome)
                 .putLong(KEY_LAST_SENT_VERSION, version)
                 .apply();
@@ -127,6 +150,10 @@ public final class FocusWearDataLayer {
                 delivery.getInt(FocusWearContract.KEY_REMAINING_SECONDS, 0),
                 delivery.getLong(FocusWearContract.KEY_ENDS_AT, 0L),
                 delivery.getString(FocusWearContract.KEY_TASK_NAME, ""),
+                delivery.getString(FocusWearContract.KEY_TASK_ID, ""),
+                delivery.getString(FocusWearContract.KEY_TASK_NAME, ""),
+                delivery.getString(FocusWearContract.KEY_PROJECT_ID, ""),
+                delivery.getString(FocusWearContract.KEY_PROJECT_NAME, ""),
                 delivery.getString(FocusWearContract.KEY_FOCUS_HOME, "")
         );
         return true;
