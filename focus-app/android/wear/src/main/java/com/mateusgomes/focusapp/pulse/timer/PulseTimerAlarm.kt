@@ -15,6 +15,9 @@ import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.mateusgomes.focusapp.pulse.MainActivity
 import com.mateusgomes.focusapp.pulse.R
+import com.mateusgomes.focusapp.pulse.sync.PulseRemoteTimerStore
+import com.mateusgomes.focusapp.pulse.sync.PulseWearDataLayer
+import com.mateusgomes.focusapp.pulse.tile.PulseTimerTileService
 
 class PulseTimerAlarmScheduler(private val context: Context) {
     private val alarmManager =
@@ -74,6 +77,35 @@ class PulseTimerAlarmReceiver : BroadcastReceiver() {
                 intent.getStringExtra(PulseTimerAlarmScheduler.EXTRA_SESSION).orEmpty(),
             )
         }.getOrDefault(PulseSession.FOCUS)
+
+        val persistence = PulseTimerPersistence(context)
+        val snapshot = persistence.load(PulseTimerSettings())
+        val completed = snapshot.copy(
+            session = session,
+            status = PulseTimerStatus.COMPLETED,
+            remainingSeconds = 0,
+            endsAtEpochMillis = 0L,
+        )
+        persistence.save(completed)
+        PulseTimerOngoingService.stop(context)
+        PulseTimerTileService.requestUpdate(context)
+
+        val totalSeconds = when (session) {
+            PulseSession.FOCUS -> completed.workDurationMinutes * 60
+            PulseSession.SHORT_BREAK -> completed.shortBreakDurationMinutes * 60
+            PulseSession.LONG_BREAK -> completed.longBreakDurationMinutes * 60
+        }
+        val focusHome = FocusHomeKey.fromWireValue(
+            PulseRemoteTimerStore(context).load()?.focusHome,
+        )
+        PulseWearDataLayer(context).publishTimer(
+            session = session,
+            status = PulseTimerStatus.COMPLETED,
+            durationSeconds = totalSeconds,
+            remainingSeconds = 0,
+            endsAt = 0L,
+            focusHome = focusHome,
+        )
 
         createNotificationChannel(context)
         vibrate(context)
