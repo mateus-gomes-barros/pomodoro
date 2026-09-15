@@ -33,7 +33,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-enum class TimerControlGlyph { PLAY, PAUSE, RESET, SOUND }
+enum class TimerControlGlyph { PLAY, PAUSE, RESET, SETTINGS }
 
 @Composable
 fun TimerFace(
@@ -243,34 +243,26 @@ fun TimerControlButton(
                     }
                     drawPath(path, glyphColor)
                 }
-                TimerControlGlyph.SOUND -> {
-                    val path = Path().apply {
-                        moveTo(size.width * 0.14f, size.height * 0.40f)
-                        lineTo(size.width * 0.34f, size.height * 0.40f)
-                        lineTo(size.width * 0.57f, size.height * 0.20f)
-                        lineTo(size.width * 0.57f, size.height * 0.80f)
-                        lineTo(size.width * 0.34f, size.height * 0.60f)
-                        lineTo(size.width * 0.14f, size.height * 0.60f)
-                        close()
-                    }
-                    drawPath(path, glyphColor)
-                    if (enabled) {
-                        drawArc(
-                            color = glyphColor,
-                            startAngle = -48f,
-                            sweepAngle = 96f,
-                            useCenter = false,
-                            topLeft = Offset(size.width * 0.46f, size.height * 0.28f),
-                            size = Size(size.width * 0.40f, size.height * 0.44f),
-                            style = Stroke(size.width * 0.08f, cap = StrokeCap.Round),
-                        )
-                    } else {
+                TimerControlGlyph.SETTINGS -> {
+                    val stroke = size.width * 0.085f
+                    val starts = listOf(0.24f, 0.50f, 0.76f)
+                    starts.forEachIndexed { index, y ->
                         drawLine(
                             color = glyphColor,
-                            start = Offset(size.width * 0.68f, size.height * 0.30f),
-                            end = Offset(size.width * 0.90f, size.height * 0.70f),
-                            strokeWidth = size.width * 0.08f,
+                            start = Offset(size.width * 0.14f, size.height * y),
+                            end = Offset(size.width * 0.86f, size.height * y),
+                            strokeWidth = stroke,
                             cap = StrokeCap.Round,
+                        )
+                        val knobX = when (index) {
+                            0 -> 0.38f
+                            1 -> 0.66f
+                            else -> 0.46f
+                        }
+                        drawCircle(
+                            color = glyphColor,
+                            radius = size.width * 0.10f,
+                            center = Offset(size.width * knobX, size.height * y),
                         )
                     }
                 }
