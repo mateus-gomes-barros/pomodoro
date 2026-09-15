@@ -38,6 +38,7 @@ import androidx.core.content.ContextCompat
 import androidx.wear.compose.material3.Text
 import com.mateusgomes.focusapp.pulse.R
 import com.mateusgomes.focusapp.pulse.sync.PulseRemoteTimerStore
+import com.mateusgomes.focusapp.pulse.sync.PulseWearDataLayer
 import com.mateusgomes.focusapp.pulse.sync.PulseWearListenerService
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
@@ -55,6 +56,7 @@ fun PulseTimerScreen(
     val context = LocalContext.current
     val persistence = remember(context) { PulseTimerPersistence(context) }
     val alarmScheduler = remember(context) { PulseTimerAlarmScheduler(context) }
+    val wearDataLayer = remember(context) { PulseWearDataLayer(context) }
     val restored = remember(persistence, settings) { persistence.load(settings) }
 
     var sessionName by rememberSaveable { mutableStateOf(restored.session.name) }
@@ -381,6 +383,14 @@ fun PulseTimerScreen(
                             remainingSeconds = totalSeconds
                             endsAtEpochMillis = 0L
                             controlsVisible = true
+                            wearDataLayer.publishTimer(
+                                session = session,
+                                status = PulseTimerStatus.IDLE,
+                                durationSeconds = totalSeconds,
+                                remainingSeconds = totalSeconds,
+                                endsAt = 0L,
+                                focusHome = effectiveFocusHome,
+                            )
                         },
                     )
                     TimerControlButton(
@@ -394,17 +404,36 @@ fun PulseTimerScreen(
                         buttonSize = face * 0.205f,
                         onClick = {
                             if (status == PulseTimerStatus.RUNNING) {
-                                remainingSeconds = ceil(
+                                val pausedRemaining = ceil(
                                     (endsAtEpochMillis - System.currentTimeMillis())
                                         .coerceAtLeast(0L) / 1000.0,
                                 ).toInt()
+                                remainingSeconds = pausedRemaining
+                                endsAtEpochMillis = 0L
                                 statusName = PulseTimerStatus.PAUSED.name
                                 controlsVisible = true
+                                wearDataLayer.publishTimer(
+                                    session = session,
+                                    status = PulseTimerStatus.PAUSED,
+                                    durationSeconds = totalSeconds,
+                                    remainingSeconds = pausedRemaining,
+                                    endsAt = 0L,
+                                    focusHome = effectiveFocusHome,
+                                )
                             } else {
-                                endsAtEpochMillis =
+                                val localEndsAt =
                                     System.currentTimeMillis() + remainingSeconds * 1000L
+                                endsAtEpochMillis = localEndsAt
                                 statusName = PulseTimerStatus.RUNNING.name
                                 controlsVisible = false
+                                wearDataLayer.publishTimer(
+                                    session = session,
+                                    status = PulseTimerStatus.RUNNING,
+                                    durationSeconds = totalSeconds,
+                                    remainingSeconds = remainingSeconds,
+                                    endsAt = localEndsAt,
+                                    focusHome = effectiveFocusHome,
+                                )
                             }
                         },
                     )
