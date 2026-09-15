@@ -22,6 +22,12 @@ import {
 } from '@/hooks/tasks/useTasks'
 import { getStreakBadge } from '@/lib/streakBadges'
 import {
+  useFocusHomeProfile,
+} from '@/hooks/focusme/useFocusHomeProfile'
+import {
+  FOCUS_HOME_PREVIEW,
+} from '@/config/focusHomePreview'
+import {
   endFocusLiveActivity,
   startFocusLiveActivity,
 } from '@/services/focusLiveActivityService'
@@ -88,6 +94,11 @@ export function useTimer() {
   const tasksQuery = useTasks()
   const projectsQuery = useProjects()
   const sessionsQuery = usePomodoroSessions()
+  const focusHomeProfileQuery =
+    useFocusHomeProfile()
+  const focusHome =
+    FOCUS_HOME_PREVIEW ??
+    focusHomeProfileQuery.data?.focusHome
 
   const createPomodoroSessionMutation = useCreatePomodoroSession()
   const incrementTaskPomodoroMutation = useIncrementTaskPomodoro()
@@ -297,6 +308,11 @@ void showTimerNotification(
   status,
   sessionType === 'work' ? 'focus' : sessionType,
   remainingSeconds,
+  activeTask?.id,
+  activeTask?.title,
+  activeProject?.id,
+  activeProject?.name,
+  focusHome,
 )
   }, [
     status,
@@ -308,6 +324,7 @@ void showTimerNotification(
     tasksQuery.data,
     projectsQuery.data,
     currentBadge.icon,
+    focusHome,
   ])
 
   // 3. Hook para ouvir ações da notificação (Android)
