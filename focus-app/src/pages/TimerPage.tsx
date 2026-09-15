@@ -37,6 +37,11 @@ import {
 
 import type { SessionType } from '@/types'
 import { useTranslation } from 'react-i18next'
+import {
+  isFocusPulseAvailable,
+  isFocusPulseModeEnabled,
+  setFocusPulseModeEnabled,
+} from '@/services/timerNotificationService'
 
 const SESSION_LABEL_KEYS: Record<
   SessionType,
@@ -54,7 +59,7 @@ const SESSION_TYPES: SessionType[] = [
 ]
 
 export function TimerPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const shouldReduceMotion =
     useReducedMotion()
 
@@ -87,6 +92,42 @@ export function TimerPage() {
 
   const [showSettings, setShowSettings] =
     useState(false)
+  const pulseAvailable =
+    isFocusPulseAvailable()
+  const [pulseMode, setPulseMode] =
+    useState(() =>
+      isFocusPulseModeEnabled(),
+    )
+  const [showPulseIntroduction, setShowPulseIntroduction] =
+    useState(() =>
+      pulseAvailable &&
+      globalThis.localStorage?.getItem(
+        'focus_pulse_introduction_seen',
+      ) !== 'true',
+    )
+  const isPortuguese =
+    i18n.language.startsWith('pt')
+
+  const selectLocalSession = (
+    type: SessionType,
+  ) => {
+    setPulseMode(false)
+    setFocusPulseModeEnabled(false)
+    switchSession(type)
+  }
+
+  const selectPulseMode = () => {
+    setPulseMode(true)
+    setFocusPulseModeEnabled(true)
+  }
+
+  const dismissPulseIntroduction = () => {
+    globalThis.localStorage?.setItem(
+      'focus_pulse_introduction_seen',
+      'true',
+    )
+    setShowPulseIntroduction(false)
+  }
 
   const totalSeconds =
     sessionType === 'work'
@@ -143,19 +184,25 @@ export function TimerPage() {
           opacity: 1,
           y: 0,
         }}
-        className="segment grid w-full grid-cols-3 sm:w-auto"
+        className={cn(
+          'segment grid w-full sm:w-auto',
+          pulseAvailable
+            ? 'grid-cols-4'
+            : 'grid-cols-3',
+        )}
       >
         {SESSION_TYPES.map((type) => (
           <button
             key={type}
             type="button"
             onClick={() =>
-              switchSession(type)
+              selectLocalSession(type)
             }
             disabled={isRunning}
             className={cn(
               'segment-item min-w-0 whitespace-nowrap',
-              sessionType === type
+              sessionType === type &&
+              !pulseMode
                 ? 'active'
                 : 'inactive',
               isRunning &&
@@ -165,7 +212,52 @@ export function TimerPage() {
             {t(SESSION_LABEL_KEYS[type])}
           </button>
         ))}
+
+        {pulseAvailable && (
+          <button
+            type="button"
+            onClick={selectPulseMode}
+            disabled={isRunning}
+            className={cn(
+              'segment-item min-w-0 whitespace-nowrap',
+              pulseMode
+                ? 'active'
+                : 'inactive',
+              isRunning &&
+                'cursor-not-allowed opacity-60',
+            )}
+          >
+            Focus Pulse
+          </button>
+        )}
       </motion.div>
+
+      <AnimatePresence initial={false}>
+        {pulseMode && showPulseIntroduction && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="card w-full border border-emerald-400/15 p-5"
+          >
+            <p className="text-sm font-semibold text-emerald-300">
+              Focus Pulse
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-white/55">
+              {isPortuguese
+                ? 'Este modo é integrado ao seu relógio. Configure a sessão, tarefa e projeto no celular; ao apertar Play, o timer será iniciado no Focus Pulse.'
+                : 'This mode is connected to your watch. Configure the session, task, and project on your phone; pressing Play starts the timer in Focus Pulse.'}
+            </p>
+            <button
+              type="button"
+              onClick={dismissPulseIntroduction}
+              className="mt-4 rounded-xl bg-emerald-400 px-4 py-2 text-xs font-semibold text-black transition-opacity hover:opacity-90"
+            >
+              {isPortuguese ? 'Entendi' : 'Got it'}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Timer ring */}
 
