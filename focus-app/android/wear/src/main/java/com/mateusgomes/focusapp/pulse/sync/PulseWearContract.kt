@@ -3,6 +3,7 @@ package com.mateusgomes.focusapp.pulse.sync
 object PulseWearContract {
     const val TIMER_STATE_PATH = "/focus/timer/state"
     const val TIMER_COMMAND_PATH = "/focus/timer/command"
+    const val TIMER_ACK_PATH = "/focus/timer/ack"
     const val CAPABILITY_PHONE = "focus_phone"
     const val CAPABILITY_WATCH = "focus_watch"
 
@@ -21,6 +22,8 @@ object PulseWearContract {
     const val KEY_SOURCE_DEVICE = "source_device"
     const val KEY_VERSION = "version"
     const val KEY_UPDATED_AT = "updated_at"
+    const val KEY_ACK_VERSION = "ack_version"
+    const val KEY_ACK_STATUS = "ack_status"
 
     const val SOURCE_PHONE = "phone"
     const val SOURCE_WATCH = "watch"
