@@ -5,6 +5,7 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.WearableListenerService
+import com.mateusgomes.focusapp.pulse.tile.PulseTimerTileService
 import com.mateusgomes.focusapp.pulse.timer.PulseSession
 import com.mateusgomes.focusapp.pulse.timer.PulseTimerAlarmScheduler
 import com.mateusgomes.focusapp.pulse.timer.PulseTimerOngoingService
@@ -37,6 +38,7 @@ class PulseWearListenerService : WearableListenerService() {
             if (incomingVersion > currentVersion) {
                 store.save(data)
                 applyTimerInBackground(data)
+                PulseTimerTileService.requestUpdate(this)
                 sendBroadcast(
                     Intent(ACTION_REMOTE_TIMER_UPDATED).setPackage(packageName),
                 )
