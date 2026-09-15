@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -42,18 +44,22 @@ fun PulseTimerScreen(
     activeFocusHome: FocusHomeKey? = null,
     settings: PulseTimerSettings = PulseTimerSettings(),
 ) {
-    var sessionName by rememberSaveable { mutableStateOf(PulseSession.FOCUS.name) }
+    val context = LocalContext.current
+    val persistence = remember(context) { PulseTimerPersistence(context) }
+    val restored = remember(persistence, settings) { persistence.load(settings) }
+
+    var sessionName by rememberSaveable { mutableStateOf(restored.session.name) }
     val session = PulseSession.valueOf(sessionName)
-    var statusName by rememberSaveable { mutableStateOf(PulseTimerStatus.IDLE.name) }
+    var statusName by rememberSaveable { mutableStateOf(restored.status.name) }
     val status = PulseTimerStatus.valueOf(statusName)
     var workDurationMinutes by rememberSaveable {
-        mutableIntStateOf(settings.workDurationMinutes)
+        mutableIntStateOf(restored.workDurationMinutes)
     }
     var shortBreakDurationMinutes by rememberSaveable {
-        mutableIntStateOf(settings.shortBreakDurationMinutes)
+        mutableIntStateOf(restored.shortBreakDurationMinutes)
     }
     var longBreakDurationMinutes by rememberSaveable {
-        mutableIntStateOf(settings.longBreakDurationMinutes)
+        mutableIntStateOf(restored.longBreakDurationMinutes)
     }
     fun durationSecondsFor(target: PulseSession): Int =
         when (target) {
@@ -62,12 +68,18 @@ fun PulseTimerScreen(
             PulseSession.LONG_BREAK -> longBreakDurationMinutes * 60
         }
     var remainingSeconds by rememberSaveable {
-        mutableIntStateOf(durationSecondsFor(session))
+        mutableIntStateOf(restored.remainingSeconds)
     }
-    var endsAtEpochMillis by rememberSaveable { mutableLongStateOf(0L) }
-    var completedFocusSessions by rememberSaveable { mutableIntStateOf(0) }
+    var endsAtEpochMillis by rememberSaveable {
+        mutableLongStateOf(restored.endsAtEpochMillis)
+    }
+    var completedFocusSessions by rememberSaveable {
+        mutableIntStateOf(restored.completedFocusSessions)
+    }
     var completionPulse by rememberSaveable { mutableIntStateOf(0) }
-    var controlsVisible by rememberSaveable { mutableStateOf(true) }
+    var controlsVisible by rememberSaveable {
+        mutableStateOf(restored.status != PulseTimerStatus.RUNNING)
+    }
     var setupVisible by rememberSaveable { mutableStateOf(false) }
 
     val haptics = LocalHapticFeedback.current
@@ -82,6 +94,29 @@ fun PulseTimerScreen(
         0f
     } else {
         (1f - remainingSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f)
+    }
+
+    LaunchedEffect(
+        sessionName,
+        statusName,
+        endsAtEpochMillis,
+        completedFocusSessions,
+        workDurationMinutes,
+        shortBreakDurationMinutes,
+        longBreakDurationMinutes,
+    ) {
+        persistence.save(
+            PulseTimerSnapshot(
+                session = session,
+                status = status,
+                remainingSeconds = remainingSeconds,
+                endsAtEpochMillis = endsAtEpochMillis,
+                completedFocusSessions = completedFocusSessions,
+                workDurationMinutes = workDurationMinutes,
+                shortBreakDurationMinutes = shortBreakDurationMinutes,
+                longBreakDurationMinutes = longBreakDurationMinutes,
+            ),
+        )
     }
 
     LaunchedEffect(statusName, endsAtEpochMillis) {
