@@ -93,6 +93,61 @@ public class PomodoroServicePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void consumeWearTimerState(PluginCall call) {
+        android.content.SharedPreferences preferences =
+                getContext().getSharedPreferences(
+                        "focus_wear_sync",
+                        android.content.Context.MODE_PRIVATE
+                );
+
+        long version = preferences.getLong(
+                com.mateusgomes.focusapp.wear.FocusWearContract.KEY_VERSION,
+                0L
+        );
+
+        com.getcapacitor.JSObject result = new com.getcapacitor.JSObject();
+        result.put("pending", version > 0L);
+
+        if (version > 0L) {
+            result.put(
+                    "status",
+                    preferences.getString(
+                            com.mateusgomes.focusapp.wear.FocusWearContract.KEY_STATUS,
+                            "idle"
+                    )
+            );
+            result.put(
+                    "sessionType",
+                    preferences.getString(
+                            com.mateusgomes.focusapp.wear.FocusWearContract.KEY_SESSION_TYPE,
+                            "focus"
+                    )
+            );
+            result.put(
+                    "remainingSeconds",
+                    preferences.getInt(
+                            com.mateusgomes.focusapp.wear.FocusWearContract.KEY_REMAINING_SECONDS,
+                            0
+                    )
+            );
+            result.put(
+                    "endsAt",
+                    preferences.getLong(
+                            com.mateusgomes.focusapp.wear.FocusWearContract.KEY_ENDS_AT,
+                            0L
+                    )
+            );
+            result.put("version", version);
+
+            preferences.edit()
+                    .remove(com.mateusgomes.focusapp.wear.FocusWearContract.KEY_VERSION)
+                    .apply();
+        }
+
+        call.resolve(result);
+    }
+
+    @PluginMethod
     public void startService(PluginCall call) {
 
         Log.d(TAG, "startService() called");
