@@ -93,6 +93,75 @@ public class PomodoroServicePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void getFocusPulseStatus(PluginCall call) {
+        android.content.SharedPreferences delivery =
+                getContext().getSharedPreferences(
+                        FocusWearDataLayer.DELIVERY_PREFERENCES,
+                        android.content.Context.MODE_PRIVATE
+                );
+
+        long sentVersion = delivery.getLong(
+                FocusWearDataLayer.KEY_LAST_SENT_VERSION,
+                0L
+        );
+        long acknowledgedVersion = delivery.getLong(
+                FocusWearDataLayer.KEY_LAST_ACK_VERSION,
+                0L
+        );
+        String acknowledgedStatus = delivery.getString(
+                FocusWearDataLayer.KEY_LAST_ACK_STATUS,
+                ""
+        );
+
+        com.google.android.gms.wearable.Wearable
+                .getCapabilityClient(getContext())
+                .getCapability(
+                        com.mateusgomes.focusapp.wear.FocusWearContract.CAPABILITY_WATCH,
+                        com.google.android.gms.wearable.CapabilityClient.FILTER_REACHABLE
+                )
+                .addOnSuccessListener(capability -> {
+                    com.getcapacitor.JSObject result =
+                            new com.getcapacitor.JSObject();
+                    boolean connected = !capability.getNodes().isEmpty();
+                    result.put("connected", connected);
+                    result.put("sentVersion", sentVersion);
+                    result.put("acknowledgedVersion", acknowledgedVersion);
+                    result.put(
+                            "acknowledged",
+                            sentVersion > 0L &&
+                            acknowledgedVersion >= sentVersion
+                    );
+                    result.put(
+                            "acknowledgedStatus",
+                            acknowledgedStatus == null ? "" : acknowledgedStatus
+                    );
+                    if (connected && !capability.getNodes().isEmpty()) {
+                        result.put(
+                                "watchName",
+                                capability.getNodes().iterator().next().getDisplayName()
+                        );
+                    }
+                    call.resolve(result);
+                })
+                .addOnFailureListener(error ->
+                        call.reject(
+                                "Unable to check Focus Pulse connection",
+                                error
+                        )
+                );
+    }
+
+    @PluginMethod
+    public void retryFocusPulse(PluginCall call) {
+        boolean retried =
+                FocusWearDataLayer.retryLastTimerState(getContext());
+        com.getcapacitor.JSObject result =
+                new com.getcapacitor.JSObject();
+        result.put("retried", retried);
+        call.resolve(result);
+    }
+
+    @PluginMethod
     public void consumeWearTimerState(PluginCall call) {
         android.content.SharedPreferences preferences =
                 getContext().getSharedPreferences(
