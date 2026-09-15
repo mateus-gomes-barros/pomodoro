@@ -14,6 +14,11 @@ interface PomodoroServicePlugin {
 
   stopService(): Promise<void>
 
+  consumeWearTimerState(): Promise<
+    | ({ pending: false } & Partial<WearTimerState>)
+    | ({ pending: true } & WearTimerState)
+  >
+
   checkNotificationSetup(): Promise<{
     notificationsEnabled: boolean
     liveNotificationsSupported: boolean
@@ -124,6 +129,17 @@ export function addWearTimerStateListener(
     'onWearTimerState',
     callback,
   )
+}
+
+export async function consumeWearTimerState() {
+  if (
+    !Capacitor.isNativePlatform() ||
+    Capacitor.getPlatform() !== 'android'
+  ) {
+    return { pending: false } as const
+  }
+
+  return PomodoroService.consumeWearTimerState()
 }
 
 export async function requestTimerNotificationPermission():
