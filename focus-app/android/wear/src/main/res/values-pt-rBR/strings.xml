@@ -6,4 +6,10 @@
     <string name="session_focus">FOCO</string>
     <string name="session_short_break">PAUSA CURTA</string>
     <string name="session_long_break">PAUSA LONGA</string>
+    <string name="timer_setup_title">Configurar timer</string>
+    <string name="session_focus_short">Foco</string>
+    <string name="session_short_break_short">Curta</string>
+    <string name="session_long_break_short">Longa</string>
+    <string name="timer_minutes_value">%1$d min</string>
+    <string name="timer_setup_done">Concluir</string>
 </resources>
