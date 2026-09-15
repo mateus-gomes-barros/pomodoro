@@ -332,7 +332,8 @@ class PulseTimerTileService : TileService() {
 
         fun requestUpdate(context: Context) {
             runCatching {
-                getUpdater(context).requestUpdate(PulseTimerTileService::class.java)
+                TileService.getUpdater(context.applicationContext)
+                    .requestUpdate(PulseTimerTileService::class.java)
             }
         }
     }
