@@ -78,6 +78,7 @@ class PulseTimerOngoingService : Service() {
 
         completionRunnable?.let(handler::removeCallbacks)
         completionRunnable = Runnable {
+            PulseTimerAlarmScheduler(this).cancel()
             sendBroadcast(
                 Intent(this, PulseTimerAlarmReceiver::class.java).apply {
                     action = PulseTimerAlarmScheduler.ACTION_TIMER_FINISHED
