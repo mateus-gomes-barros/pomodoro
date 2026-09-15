@@ -6,4 +6,10 @@
     <string name="session_focus">FOCUS</string>
     <string name="session_short_break">SHORT BREAK</string>
     <string name="session_long_break">LONG BREAK</string>
+    <string name="timer_setup_title">Timer settings</string>
+    <string name="session_focus_short">Focus</string>
+    <string name="session_short_break_short">Short</string>
+    <string name="session_long_break_short">Long</string>
+    <string name="timer_minutes_value">%1$d min</string>
+    <string name="timer_setup_done">Done</string>
 </resources>
