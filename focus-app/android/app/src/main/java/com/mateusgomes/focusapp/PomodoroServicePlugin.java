@@ -46,6 +46,52 @@ public class PomodoroServicePlugin extends Plugin {
         }
     }
 
+    public static void onWearTimerStateReceived(
+            com.google.android.gms.wearable.DataMap state
+    ) {
+        if (instance == null) {
+            return;
+        }
+
+        com.getcapacitor.JSObject ret = new com.getcapacitor.JSObject();
+        ret.put(
+                "status",
+                state.getString(
+                        com.mateusgomes.focusapp.wear.FocusWearContract.KEY_STATUS,
+                        "idle"
+                )
+        );
+        ret.put(
+                "sessionType",
+                state.getString(
+                        com.mateusgomes.focusapp.wear.FocusWearContract.KEY_SESSION_TYPE,
+                        "focus"
+                )
+        );
+        ret.put(
+                "remainingSeconds",
+                state.getInt(
+                        com.mateusgomes.focusapp.wear.FocusWearContract.KEY_REMAINING_SECONDS,
+                        0
+                )
+        );
+        ret.put(
+                "endsAt",
+                state.getLong(
+                        com.mateusgomes.focusapp.wear.FocusWearContract.KEY_ENDS_AT,
+                        0L
+                )
+        );
+        ret.put(
+                "version",
+                state.getLong(
+                        com.mateusgomes.focusapp.wear.FocusWearContract.KEY_VERSION,
+                        0L
+                )
+        );
+        instance.notifyListeners("onWearTimerState", ret);
+    }
+
     @PluginMethod
     public void startService(PluginCall call) {
 
