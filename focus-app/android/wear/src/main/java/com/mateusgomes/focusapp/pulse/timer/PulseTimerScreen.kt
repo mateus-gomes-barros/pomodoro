@@ -46,6 +46,7 @@ fun PulseTimerScreen(
 ) {
     val context = LocalContext.current
     val persistence = remember(context) { PulseTimerPersistence(context) }
+    val alarmScheduler = remember(context) { PulseTimerAlarmScheduler(context) }
     val restored = remember(persistence, settings) { persistence.load(settings) }
 
     var sessionName by rememberSaveable { mutableStateOf(restored.session.name) }
@@ -117,6 +118,17 @@ fun PulseTimerScreen(
                 longBreakDurationMinutes = longBreakDurationMinutes,
             ),
         )
+    }
+
+    LaunchedEffect(statusName, endsAtEpochMillis, sessionName) {
+        if (
+            statusName == PulseTimerStatus.RUNNING.name &&
+            endsAtEpochMillis > System.currentTimeMillis()
+        ) {
+            alarmScheduler.schedule(endsAtEpochMillis, session)
+        } else {
+            alarmScheduler.cancel()
+        }
     }
 
     LaunchedEffect(statusName, endsAtEpochMillis) {
