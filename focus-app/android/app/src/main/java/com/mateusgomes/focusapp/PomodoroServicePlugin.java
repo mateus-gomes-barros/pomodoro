@@ -156,6 +156,9 @@ public class PomodoroServicePlugin extends Plugin {
         String body = call.getString("body", "Focando...");
         long endTime = call.getLong("endTime", 0L);
         String badgeIcon = call.getString("badgeIcon", "");
+        String timerStatus = call.getString("status", "running");
+        String sessionType = call.getString("sessionType", "focus");
+        int remainingSeconds = call.getInt("remainingSeconds", 0);
 
         getContext()
             .getSharedPreferences(
@@ -217,10 +220,13 @@ public class PomodoroServicePlugin extends Plugin {
 
             Log.d(TAG, "Service start request SUCCESS");
 
-            FocusWearDataLayer.publishRunningTimer(
+            FocusWearDataLayer.publishTimerState(
                     getContext(),
-                    title,
+                    timerStatus,
+                    sessionType,
+                    remainingSeconds,
                     endTime,
+                    title,
                     badgeIcon
             );
 
