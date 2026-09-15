@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
+import com.mateusgomes.focusapp.pulse.tile.PulseTimerTileService
 import com.mateusgomes.focusapp.pulse.timer.FocusHomeKey
 import com.mateusgomes.focusapp.pulse.timer.PulseSession
 import com.mateusgomes.focusapp.pulse.timer.PulseTimerStatus
@@ -49,12 +50,18 @@ class PulseWearDataLayer(private val context: Context) {
             putLong(PulseWearContract.KEY_ENDS_AT, endsAt)
             putInt(PulseWearContract.KEY_DURATION_SECONDS, durationSeconds)
             putInt(PulseWearContract.KEY_REMAINING_SECONDS, remainingSeconds)
-            putString(PulseWearContract.KEY_TASK_ID, "")
+            putString(
+                PulseWearContract.KEY_TASK_ID,
+                remoteState?.taskId.orEmpty(),
+            )
             putString(
                 PulseWearContract.KEY_TASK_NAME,
                 remoteState?.taskName.orEmpty(),
             )
-            putString(PulseWearContract.KEY_PROJECT_ID, "")
+            putString(
+                PulseWearContract.KEY_PROJECT_ID,
+                remoteState?.projectId.orEmpty(),
+            )
             putString(
                 PulseWearContract.KEY_PROJECT_NAME,
                 remoteState?.projectName.orEmpty(),
@@ -64,6 +71,8 @@ class PulseWearDataLayer(private val context: Context) {
             putLong(PulseWearContract.KEY_VERSION, version)
             putLong(PulseWearContract.KEY_UPDATED_AT, now)
         }
+
+        PulseTimerTileService.requestUpdate(context)
 
         preferences.edit()
             .putString(KEY_SESSION_ID, sessionId)
