@@ -46,17 +46,32 @@ fun PulseTimerScreen(
     val session = PulseSession.valueOf(sessionName)
     var statusName by rememberSaveable { mutableStateOf(PulseTimerStatus.IDLE.name) }
     val status = PulseTimerStatus.valueOf(statusName)
+    var workDurationMinutes by rememberSaveable {
+        mutableIntStateOf(settings.workDurationMinutes)
+    }
+    var shortBreakDurationMinutes by rememberSaveable {
+        mutableIntStateOf(settings.shortBreakDurationMinutes)
+    }
+    var longBreakDurationMinutes by rememberSaveable {
+        mutableIntStateOf(settings.longBreakDurationMinutes)
+    }
+    fun durationSecondsFor(target: PulseSession): Int =
+        when (target) {
+            PulseSession.FOCUS -> workDurationMinutes * 60
+            PulseSession.SHORT_BREAK -> shortBreakDurationMinutes * 60
+            PulseSession.LONG_BREAK -> longBreakDurationMinutes * 60
+        }
     var remainingSeconds by rememberSaveable {
-        mutableIntStateOf(settings.durationSecondsFor(session))
+        mutableIntStateOf(durationSecondsFor(session))
     }
     var endsAtEpochMillis by rememberSaveable { mutableLongStateOf(0L) }
     var completedFocusSessions by rememberSaveable { mutableIntStateOf(0) }
     var completionPulse by rememberSaveable { mutableIntStateOf(0) }
-    var soundEnabled by rememberSaveable { mutableStateOf(settings.soundEnabled) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
+    var setupVisible by rememberSaveable { mutableStateOf(false) }
 
     val haptics = LocalHapticFeedback.current
-    val totalSeconds = settings.durationSecondsFor(session)
+    val totalSeconds = durationSecondsFor(session)
     val identityColor = activeFocusHome?.color
     val accent = identityColor ?: if (session == PulseSession.FOCUS) {
         DefaultFocusGreen
@@ -89,7 +104,7 @@ fun PulseTimerScreen(
                 }
 
                 sessionName = nextSession.name
-                remainingSeconds = settings.durationSecondsFor(nextSession)
+                remainingSeconds = durationSecondsFor(nextSession)
                 completionPulse += 1
 
                 val shouldAutoStart =
@@ -116,6 +131,43 @@ fun PulseTimerScreen(
         if (completionPulse > 0) {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         }
+    }
+
+    if (setupVisible) {
+        val currentMinutes = when (session) {
+            PulseSession.FOCUS -> workDurationMinutes
+            PulseSession.SHORT_BREAK -> shortBreakDurationMinutes
+            PulseSession.LONG_BREAK -> longBreakDurationMinutes
+        }
+        PulseTimerSetupScreen(
+            session = session,
+            durationMinutes = currentMinutes,
+            accent = accent,
+            onSessionChange = { nextSession ->
+                sessionName = nextSession.name
+                statusName = PulseTimerStatus.IDLE.name
+                endsAtEpochMillis = 0L
+                remainingSeconds = durationSecondsFor(nextSession)
+            },
+            onDurationChange = { minutes ->
+                when (session) {
+                    PulseSession.FOCUS -> workDurationMinutes = minutes
+                    PulseSession.SHORT_BREAK -> shortBreakDurationMinutes = minutes
+                    PulseSession.LONG_BREAK -> longBreakDurationMinutes = minutes
+                }
+                remainingSeconds = minutes * 60
+                statusName = PulseTimerStatus.IDLE.name
+                endsAtEpochMillis = 0L
+            },
+            onDone = {
+                remainingSeconds = durationSecondsFor(session)
+                statusName = PulseTimerStatus.IDLE.name
+                endsAtEpochMillis = 0L
+                controlsVisible = true
+                setupVisible = false
+            },
+        )
+        return
     }
 
     val sessionLabel = stringResource(
@@ -234,12 +286,11 @@ fun PulseTimerScreen(
                         },
                     )
                     TimerControlButton(
-                        glyph = TimerControlGlyph.SOUND,
+                        glyph = TimerControlGlyph.SETTINGS,
                         accent = accent,
                         prominent = false,
                         buttonSize = face * 0.145f,
-                        enabled = soundEnabled,
-                        onClick = { soundEnabled = !soundEnabled },
+                        onClick = { setupVisible = true },
                     )
                 }
             } else {
