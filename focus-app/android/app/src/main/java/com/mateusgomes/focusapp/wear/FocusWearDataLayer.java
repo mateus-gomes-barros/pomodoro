@@ -62,6 +62,42 @@ public final class FocusWearDataLayer {
                 .addOnFailureListener(error -> Log.e(TAG, "Unable to clear timer", error));
     }
 
+    public static void publishTimerState(
+            Context context,
+            String status,
+            String sessionType,
+            int remainingSeconds,
+            long endTime,
+            String title,
+            String focusHome
+    ) {
+        long now = System.currentTimeMillis();
+        int safeRemaining = Math.max(0, remainingSeconds);
+        PutDataMapRequest request = PutDataMapRequest.create(FocusWearContract.TIMER_STATE_PATH);
+        request.getDataMap().putString(FocusWearContract.KEY_SESSION_ID, UUID.randomUUID().toString());
+        request.getDataMap().putString(FocusWearContract.KEY_STATUS, status == null ? "idle" : status);
+        request.getDataMap().putString(
+                FocusWearContract.KEY_SESSION_TYPE,
+                sessionType == null ? inferSessionType(title) : sessionType
+        );
+        request.getDataMap().putLong(FocusWearContract.KEY_STARTED_AT, now);
+        request.getDataMap().putLong(FocusWearContract.KEY_ENDS_AT, endTime);
+        request.getDataMap().putInt(FocusWearContract.KEY_DURATION_SECONDS, safeRemaining);
+        request.getDataMap().putInt(FocusWearContract.KEY_REMAINING_SECONDS, safeRemaining);
+        request.getDataMap().putString(FocusWearContract.KEY_TASK_ID, "");
+        request.getDataMap().putString(FocusWearContract.KEY_TASK_NAME, title == null ? "" : title);
+        request.getDataMap().putString(FocusWearContract.KEY_PROJECT_ID, "");
+        request.getDataMap().putString(FocusWearContract.KEY_PROJECT_NAME, "");
+        request.getDataMap().putString(FocusWearContract.KEY_FOCUS_HOME, focusHome == null ? "" : focusHome);
+        request.getDataMap().putString(FocusWearContract.KEY_SOURCE_DEVICE, FocusWearContract.SOURCE_PHONE);
+        request.getDataMap().putLong(FocusWearContract.KEY_VERSION, now);
+        request.getDataMap().putLong(FocusWearContract.KEY_UPDATED_AT, now);
+
+        Wearable.getDataClient(context)
+                .putDataItem(request.asPutDataRequest().setUrgent())
+                .addOnFailureListener(error -> Log.e(TAG, "Unable to publish timer state", error));
+    }
+
     private static String inferSessionType(String title) {
         if (title == null) return "focus";
         String normalized = title.toLowerCase();
