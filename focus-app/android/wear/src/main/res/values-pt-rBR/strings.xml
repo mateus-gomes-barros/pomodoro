@@ -18,4 +18,7 @@
     <string name="notification_focus_complete">Foco concluído. Hora de fazer uma pausa.</string>
     <string name="notification_short_break_complete">Pausa curta concluída. Vamos focar?</string>
     <string name="notification_long_break_complete">Pausa longa concluída. Vamos focar?</string>
+    <string name="ongoing_timer_title">Focus — Pulse</string>
+    <string name="ongoing_timer_channel">Timer ativo</string>
+    <string name="ongoing_timer_channel_description">Mostra o timer ativo do Focus no relógio</string>
 </resources>
