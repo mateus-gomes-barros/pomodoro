@@ -19,9 +19,30 @@ class PulseWearListenerService : WearableListenerService() {
                 ) == PulseWearContract.SOURCE_WATCH
             ) return@forEach
 
-            PulseRemoteTimerStore(this).save(data)
-            sendBroadcast(
-                Intent(ACTION_REMOTE_TIMER_UPDATED).setPackage(packageName),
+            val incomingVersion = data.getLong(
+                PulseWearContract.KEY_VERSION,
+                0L,
+            )
+            val store = PulseRemoteTimerStore(this)
+            val currentVersion = store.load()?.version ?: 0L
+
+            if (incomingVersion > currentVersion) {
+                store.save(data)
+                sendBroadcast(
+                    Intent(ACTION_REMOTE_TIMER_UPDATED).setPackage(packageName),
+                )
+            }
+
+            PulseWearDataLayer(this).acknowledgeTimer(
+                sessionId = data.getString(
+                    PulseWearContract.KEY_SESSION_ID,
+                    "",
+                ),
+                version = incomingVersion,
+                status = data.getString(
+                    PulseWearContract.KEY_STATUS,
+                    "idle",
+                ),
             )
         }
     }
