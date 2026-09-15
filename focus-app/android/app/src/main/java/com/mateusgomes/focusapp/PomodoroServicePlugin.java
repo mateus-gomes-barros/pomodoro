@@ -228,6 +228,11 @@ public class PomodoroServicePlugin extends Plugin {
         String timerStatus = call.getString("status", "running");
         String sessionType = call.getString("sessionType", "focus");
         int remainingSeconds = call.getInt("remainingSeconds", 0);
+        String taskId = call.getString("taskId", "");
+        String taskName = call.getString("taskName", "");
+        String projectId = call.getString("projectId", "");
+        String projectName = call.getString("projectName", "");
+        String focusHome = call.getString("focusHome", "");
         boolean syncToWear = call.getBoolean("syncToWear", false);
 
         getContext()
@@ -306,7 +311,11 @@ public class PomodoroServicePlugin extends Plugin {
                         remainingSeconds,
                         endTime,
                         title,
-                        badgeIcon
+                        taskId,
+                        taskName,
+                        projectId,
+                        projectName,
+                        focusHome
                 );
                 wearMode.edit()
                         .putBoolean("pulse_session_active", true)
