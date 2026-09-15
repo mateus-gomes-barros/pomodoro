@@ -346,6 +346,18 @@ void showTimerNotification(
       }
       lastAppliedVersion = wearState.version
 
+      if (wearState.status === 'completed') {
+        const currentState =
+          usePomodoroStore.getState()
+        if (
+          currentState.status === 'running' ||
+          currentState.status === 'paused'
+        ) {
+          currentState.completeSession()
+          return
+        }
+      }
+
       const sessionType =
         wearState.sessionType === 'focus'
           ? 'work'
