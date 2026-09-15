@@ -18,6 +18,9 @@ interface PomodoroServicePlugin {
 
   stopService(): Promise<void>
 
+  getFocusPulseStatus(): Promise<FocusPulseStatus>
+  retryFocusPulse(): Promise<{ retried: boolean }>
+
   consumeWearTimerState(): Promise<
     | ({ pending: false } & Partial<WearTimerState>)
     | ({ pending: true } & WearTimerState)
@@ -44,6 +47,15 @@ interface PomodoroServicePlugin {
     eventName: 'onWearTimerState',
     listenerFunc: (data: WearTimerState) => void,
   ): Promise<import('@capacitor/core').PluginListenerHandle>
+}
+
+export interface FocusPulseStatus {
+  connected: boolean
+  watchName?: string
+  sentVersion: number
+  acknowledgedVersion: number
+  acknowledged: boolean
+  acknowledgedStatus: string
 }
 
 export interface WearTimerState {
@@ -209,6 +221,31 @@ export function setFocusPulseModeEnabled(enabled: boolean) {
     FOCUS_PULSE_MODE_KEY,
     String(enabled),
   )
+}
+
+export async function getFocusPulseStatus():
+  Promise<FocusPulseStatus> {
+  if (!isFocusPulseAvailable()) {
+    return {
+      connected: false,
+      sentVersion: 0,
+      acknowledgedVersion: 0,
+      acknowledged: false,
+      acknowledgedStatus: '',
+    }
+  }
+
+  return PomodoroService.getFocusPulseStatus()
+}
+
+export async function retryFocusPulse() {
+  if (!isFocusPulseAvailable()) {
+    return false
+  }
+
+  const result =
+    await PomodoroService.retryFocusPulse()
+  return result.retried
 }
 
 export async function showTimerNotification(
