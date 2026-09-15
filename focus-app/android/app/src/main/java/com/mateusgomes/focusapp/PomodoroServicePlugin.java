@@ -159,6 +159,7 @@ public class PomodoroServicePlugin extends Plugin {
         String timerStatus = call.getString("status", "running");
         String sessionType = call.getString("sessionType", "focus");
         int remainingSeconds = call.getInt("remainingSeconds", 0);
+        boolean syncToWear = call.getBoolean("syncToWear", false);
 
         getContext()
             .getSharedPreferences(
@@ -220,15 +221,33 @@ public class PomodoroServicePlugin extends Plugin {
 
             Log.d(TAG, "Service start request SUCCESS");
 
-            FocusWearDataLayer.publishTimerState(
-                    getContext(),
-                    timerStatus,
-                    sessionType,
-                    remainingSeconds,
-                    endTime,
-                    title,
-                    badgeIcon
-            );
+            android.content.SharedPreferences wearMode =
+                    getContext().getSharedPreferences(
+                            "focus_wear_mode",
+                            android.content.Context.MODE_PRIVATE
+                    );
+            boolean wasWearActive =
+                    wearMode.getBoolean("pulse_session_active", false);
+
+            if (syncToWear) {
+                FocusWearDataLayer.publishTimerState(
+                        getContext(),
+                        timerStatus,
+                        sessionType,
+                        remainingSeconds,
+                        endTime,
+                        title,
+                        badgeIcon
+                );
+                wearMode.edit()
+                        .putBoolean("pulse_session_active", true)
+                        .apply();
+            } else if (wasWearActive) {
+                FocusWearDataLayer.publishIdleTimer(getContext());
+                wearMode.edit()
+                        .putBoolean("pulse_session_active", false)
+                        .apply();
+            }
 
             call.resolve();
 
@@ -394,7 +413,17 @@ public class PomodoroServicePlugin extends Plugin {
             getContext()
         );
 
-        FocusWearDataLayer.publishIdleTimer(getContext());
+        android.content.SharedPreferences wearMode =
+                getContext().getSharedPreferences(
+                        "focus_wear_mode",
+                        android.content.Context.MODE_PRIVATE
+                );
+        if (wearMode.getBoolean("pulse_session_active", false)) {
+            FocusWearDataLayer.publishIdleTimer(getContext());
+            wearMode.edit()
+                    .putBoolean("pulse_session_active", false)
+                    .apply();
+        }
 
         call.resolve();
     }
