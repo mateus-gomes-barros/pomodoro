@@ -10,6 +10,9 @@ interface PomodoroServicePlugin {
     body: string
     endTime: number
     badgeIcon?: string
+    status: 'running' | 'paused'
+    sessionType: 'focus' | 'short_break' | 'long_break'
+    remainingSeconds: number
   }): Promise<void>
 
   stopService(): Promise<void>
@@ -185,7 +188,10 @@ export async function showTimerNotification(
   title: string,
   body: string,
   endTime: number,
-  badgeIcon?: string,
+  badgeIcon: string | undefined,
+  status: 'running' | 'paused',
+  sessionType: 'focus' | 'short_break' | 'long_break',
+  remainingSeconds: number,
 ) {
   if (!Capacitor.isNativePlatform()) return
 
@@ -195,6 +201,9 @@ export async function showTimerNotification(
       body,
       endTime,
       badgeIcon,
+      status,
+      sessionType,
+      remainingSeconds,
     })
   } catch (error) {
     console.error(
