@@ -10,7 +10,9 @@ data class PulseRemoteTimerState(
     val endsAt: Long,
     val durationSeconds: Int,
     val remainingSeconds: Int,
+    val taskId: String,
     val taskName: String,
+    val projectId: String,
     val projectName: String,
     val focusHome: String,
     val sourceDevice: String,
@@ -31,7 +33,9 @@ class PulseRemoteTimerStore(context: Context) {
             endsAt = preferences.getLong(PulseWearContract.KEY_ENDS_AT, 0L),
             durationSeconds = preferences.getInt(PulseWearContract.KEY_DURATION_SECONDS, 0),
             remainingSeconds = preferences.getInt(PulseWearContract.KEY_REMAINING_SECONDS, 0),
+            taskId = preferences.getString(PulseWearContract.KEY_TASK_ID, "").orEmpty(),
             taskName = preferences.getString(PulseWearContract.KEY_TASK_NAME, "").orEmpty(),
+            projectId = preferences.getString(PulseWearContract.KEY_PROJECT_ID, "").orEmpty(),
             projectName = preferences.getString(PulseWearContract.KEY_PROJECT_NAME, "").orEmpty(),
             focusHome = preferences.getString(PulseWearContract.KEY_FOCUS_HOME, "").orEmpty(),
             sourceDevice = preferences.getString(PulseWearContract.KEY_SOURCE_DEVICE, "").orEmpty(),
@@ -48,7 +52,9 @@ class PulseRemoteTimerStore(context: Context) {
             endsAt = data.getLong(PulseWearContract.KEY_ENDS_AT, 0L),
             durationSeconds = data.getInt(PulseWearContract.KEY_DURATION_SECONDS, 0),
             remainingSeconds = data.getInt(PulseWearContract.KEY_REMAINING_SECONDS, 0),
+            taskId = data.getString(PulseWearContract.KEY_TASK_ID, ""),
             taskName = data.getString(PulseWearContract.KEY_TASK_NAME, ""),
+            projectId = data.getString(PulseWearContract.KEY_PROJECT_ID, ""),
             projectName = data.getString(PulseWearContract.KEY_PROJECT_NAME, ""),
             focusHome = data.getString(PulseWearContract.KEY_FOCUS_HOME, ""),
             sourceDevice = data.getString(PulseWearContract.KEY_SOURCE_DEVICE, ""),
@@ -62,7 +68,9 @@ class PulseRemoteTimerStore(context: Context) {
             .putLong(PulseWearContract.KEY_ENDS_AT, state.endsAt)
             .putInt(PulseWearContract.KEY_DURATION_SECONDS, state.durationSeconds)
             .putInt(PulseWearContract.KEY_REMAINING_SECONDS, state.remainingSeconds)
+            .putString(PulseWearContract.KEY_TASK_ID, state.taskId)
             .putString(PulseWearContract.KEY_TASK_NAME, state.taskName)
+            .putString(PulseWearContract.KEY_PROJECT_ID, state.projectId)
             .putString(PulseWearContract.KEY_PROJECT_NAME, state.projectName)
             .putString(PulseWearContract.KEY_FOCUS_HOME, state.focusHome)
             .putString(PulseWearContract.KEY_SOURCE_DEVICE, state.sourceDevice)
