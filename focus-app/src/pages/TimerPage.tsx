@@ -184,51 +184,50 @@ export function TimerPage() {
           opacity: 1,
           y: 0,
         }}
-        className={cn(
-          'segment grid w-full sm:w-auto',
-          pulseAvailable
-            ? 'grid-cols-4'
-            : 'grid-cols-3',
-        )}
+        className="flex w-full flex-col items-center gap-2"
       >
-        {SESSION_TYPES.map((type) => (
-          <button
-            key={type}
-            type="button"
-            onClick={() =>
-              selectLocalSession(type)
-            }
-            disabled={isRunning}
-            className={cn(
-              'segment-item min-w-0 whitespace-nowrap',
-              sessionType === type &&
-              !pulseMode
-                ? 'active'
-                : 'inactive',
-              isRunning &&
-                'cursor-not-allowed opacity-60',
-            )}
-          >
-            {t(SESSION_LABEL_KEYS[type])}
-          </button>
-        ))}
+        <div className="segment grid w-full grid-cols-3 sm:w-auto">
+          {SESSION_TYPES.map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() =>
+                selectLocalSession(type)
+              }
+              disabled={isRunning}
+              className={cn(
+                'segment-item min-w-0 whitespace-nowrap',
+                sessionType === type &&
+                !pulseMode
+                  ? 'active'
+                  : 'inactive',
+                isRunning &&
+                  'cursor-not-allowed opacity-60',
+              )}
+            >
+              {t(SESSION_LABEL_KEYS[type])}
+            </button>
+          ))}
+        </div>
 
         {pulseAvailable && (
-          <button
-            type="button"
-            onClick={selectPulseMode}
-            disabled={isRunning}
-            className={cn(
-              'segment-item min-w-0 whitespace-nowrap',
-              pulseMode
-                ? 'active'
-                : 'inactive',
-              isRunning &&
-                'cursor-not-allowed opacity-60',
-            )}
-          >
-            Focus Pulse
-          </button>
+          <div className="segment grid w-full grid-cols-1 sm:w-auto">
+            <button
+              type="button"
+              onClick={selectPulseMode}
+              disabled={isRunning}
+              className={cn(
+                'segment-item min-w-0 whitespace-nowrap px-6',
+                pulseMode
+                  ? 'active'
+                  : 'inactive',
+                isRunning &&
+                  'cursor-not-allowed opacity-60',
+              )}
+            >
+              Focus Pulse
+            </button>
+          </div>
         )}
       </motion.div>
 
