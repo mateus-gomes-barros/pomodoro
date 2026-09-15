@@ -109,7 +109,7 @@ fun FocusHomeEmblem(
 
     Canvas(modifier = modifier) {
         val factor = size.minDimension / 64f
-        withTransform({ scale(factor, factor) }) {
+        withTransform({ scale(factor, factor, pivot = Offset.Zero) }) {
             if (focusHome == null) {
                 drawPath(paths.standardOuter, color, style = line(2.2f))
                 drawPath(paths.fallbackMiddle, color.copy(alpha = 0.82f), style = line(1.8f))
