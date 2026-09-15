@@ -237,14 +237,31 @@ fun PulseTimerScreen(
                     else settings.autoStartBreaks
 
                 if (shouldAutoStart) {
-                    endsAtEpochMillis =
+                    val nextEndsAt =
                         System.currentTimeMillis() + remainingSeconds * 1000L
+                    endsAtEpochMillis = nextEndsAt
                     statusName = PulseTimerStatus.RUNNING.name
                     controlsVisible = false
+                    wearDataLayer.publishTimer(
+                        session = nextSession,
+                        status = PulseTimerStatus.RUNNING,
+                        durationSeconds = durationSecondsFor(nextSession),
+                        remainingSeconds = remainingSeconds,
+                        endsAt = nextEndsAt,
+                        focusHome = effectiveFocusHome,
+                    )
                 } else {
                     endsAtEpochMillis = 0L
                     statusName = PulseTimerStatus.COMPLETED.name
                     controlsVisible = true
+                    wearDataLayer.publishTimer(
+                        session = nextSession,
+                        status = PulseTimerStatus.COMPLETED,
+                        durationSeconds = durationSecondsFor(nextSession),
+                        remainingSeconds = remainingSeconds,
+                        endsAt = 0L,
+                        focusHome = effectiveFocusHome,
+                    )
                 }
                 break
             }
