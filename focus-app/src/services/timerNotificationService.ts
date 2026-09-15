@@ -13,6 +13,11 @@ interface PomodoroServicePlugin {
     status: 'running' | 'paused'
     sessionType: 'focus' | 'short_break' | 'long_break'
     remainingSeconds: number
+    taskId?: string
+    taskName?: string
+    projectId?: string
+    projectName?: string
+    focusHome?: string
     syncToWear: boolean
   }): Promise<void>
 
@@ -256,6 +261,11 @@ export async function showTimerNotification(
   status: 'running' | 'paused',
   sessionType: 'focus' | 'short_break' | 'long_break',
   remainingSeconds: number,
+  taskId?: string,
+  taskName?: string,
+  projectId?: string,
+  projectName?: string,
+  focusHome?: string,
 ) {
   if (!Capacitor.isNativePlatform()) return
 
@@ -268,6 +278,11 @@ export async function showTimerNotification(
       status,
       sessionType,
       remainingSeconds,
+      taskId,
+      taskName,
+      projectId,
+      projectName,
+      focusHome,
       syncToWear: isFocusPulseModeEnabled(),
     })
   } catch (error) {
