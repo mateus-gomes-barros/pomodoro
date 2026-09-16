@@ -22,4 +22,22 @@
     <string name="ongoing_timer_title">Focus — Pulse</string>
     <string name="ongoing_timer_channel">Active timer</string>
     <string name="ongoing_timer_channel_description">Shows the active Focus timer on the watch</string>
+    <string name="pulse_home_title">Today</string>
+    <string name="pulse_start_focus">Start focus</string>
+    <string name="pulse_today_title">Today plan</string>
+    <string name="pulse_today_empty">Your priorities will appear here after syncing with Focus.</string>
+    <string name="pulse_tasks_title">Tasks</string>
+    <string name="pulse_tasks_empty">Your pending and planned tasks will appear here.</string>
+    <string name="pulse_new_task">New task</string>
+    <string name="pulse_create_task_title">Create task</string>
+    <string name="pulse_create_task_hint">Voice and keyboard creation will use the synchronized task queue.</string>
+    <string name="pulse_goals_title">Goals</string>
+    <string name="pulse_goals_empty">Daily focus progress and active goals will appear here.</string>
+    <string name="pulse_sync_title">Sync</string>
+    <string name="pulse_sync_waiting">Open Focus on your phone to complete the first sync.</string>
+    <string name="pulse_sync_ready">Focus Pulse has received the latest phone state.</string>
+    <string name="pulse_settings_title">Settings</string>
+    <string name="pulse_settings_body">Timer, vibration, automatic sessions and synchronization preferences.</string>
+    <string name="pulse_no_next_task">No next task selected</string>
+    <string name="pulse_back">Back</string>
 </resources>
