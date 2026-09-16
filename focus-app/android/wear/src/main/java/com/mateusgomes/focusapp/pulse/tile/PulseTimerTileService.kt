@@ -289,7 +289,6 @@ class PulseTimerTileService : TileService() {
             .setText(value)
             .setMaxLines(1)
             .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_ELLIPSIZE_END)
-            .setTextAlignment(LayoutElementBuilders.TEXT_ALIGN_CENTER)
             .setFontStyle(
                 LayoutElementBuilders.FontStyle.Builder()
                     .setSize(DimensionBuilders.sp(size))
