@@ -21,4 +21,22 @@
     <string name="ongoing_timer_title">Focus — Pulse</string>
     <string name="ongoing_timer_channel">Timer ativo</string>
     <string name="ongoing_timer_channel_description">Mostra o timer ativo do Focus no relógio</string>
+    <string name="pulse_home_title">Hoje</string>
+    <string name="pulse_start_focus">Iniciar foco</string>
+    <string name="pulse_today_title">Plano de hoje</string>
+    <string name="pulse_today_empty">Suas prioridades aparecerão aqui após sincronizar com o Focus.</string>
+    <string name="pulse_tasks_title">Tarefas</string>
+    <string name="pulse_tasks_empty">Suas tarefas pendentes e planejadas aparecerão aqui.</string>
+    <string name="pulse_new_task">Nova tarefa</string>
+    <string name="pulse_create_task_title">Criar tarefa</string>
+    <string name="pulse_create_task_hint">A criação por voz e teclado usará a fila sincronizada de tarefas.</string>
+    <string name="pulse_goals_title">Metas</string>
+    <string name="pulse_goals_empty">O progresso diário e suas metas ativas aparecerão aqui.</string>
+    <string name="pulse_sync_title">Sincronização</string>
+    <string name="pulse_sync_waiting">Abra o Focus no celular para concluir a primeira sincronização.</string>
+    <string name="pulse_sync_ready">O Focus Pulse recebeu o estado mais recente do celular.</string>
+    <string name="pulse_settings_title">Configurações</string>
+    <string name="pulse_settings_body">Timer, vibração, sessões automáticas e preferências de sincronização.</string>
+    <string name="pulse_no_next_task">Nenhuma próxima tarefa selecionada</string>
+    <string name="pulse_back">Voltar</string>
 </resources>
