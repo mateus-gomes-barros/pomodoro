@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Focus</string>
-    <string name="title_activity_main">Focus</string>
+    <string name="app_name">Focus — Palm</string>
+    <string name="title_activity_main">Focus — Palm</string>
     <string name="package_name">com.mateusgomes.focusapp</string>
     <string name="custom_url_scheme">com.mateusgomes.focusapp</string>
     <string name="widget_weekly_name">Weekly Focus</string>

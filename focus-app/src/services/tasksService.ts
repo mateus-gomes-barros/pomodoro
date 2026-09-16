@@ -24,6 +24,10 @@ interface TaskRow {
   completed_at: string | null
   deleted_at: string | null
   scheduled_deletion_at: string | null
+  planned_date: string | null
+  due_at: string | null
+  daily_order: number | null
+  daily_priority: 1 | 2 | 3 | null
   task_order: number
 }
 
@@ -33,6 +37,10 @@ export interface CreateTaskInput {
   priority: TaskPriority
   category?: TaskCategory
   estimatedPomodoros: number
+  plannedDate?: string | null
+  dueAt?: string | null
+  dailyOrder?: number | null
+  dailyPriority?: 1 | 2 | 3 | null
 }
 
 export interface UpdateTaskInput {
@@ -44,6 +52,10 @@ export interface UpdateTaskInput {
   estimatedPomodoros?: number
   completedPomodoros?: number
   completedAt?: string
+  plannedDate?: string | null
+  dueAt?: string | null
+  dailyOrder?: number | null
+  dailyPriority?: 1 | 2 | 3 | null
   order?: number
 }
 
@@ -60,6 +72,10 @@ const TASK_SELECT = `
   completed_at,
   deleted_at,
   scheduled_deletion_at,
+  planned_date,
+  due_at,
+  daily_order,
+  daily_priority,
   task_order
 `
 
@@ -84,6 +100,14 @@ function mapTaskRow(row: TaskRow): Task {
     scheduledDeletionAt:
       row.scheduled_deletion_at ??
       undefined,
+    plannedDate:
+      row.planned_date ?? undefined,
+    dueAt:
+      row.due_at ?? undefined,
+    dailyOrder:
+      row.daily_order ?? undefined,
+    dailyPriority:
+      row.daily_priority ?? undefined,
     order: row.task_order,
   }
 }
@@ -187,6 +211,14 @@ export async function createTask(
         input.category ?? 'planned',
       estimated_pomodoros:
         input.estimatedPomodoros,
+      planned_date:
+        input.plannedDate ?? null,
+      due_at:
+        input.dueAt ?? null,
+      daily_order:
+        input.dailyOrder ?? null,
+      daily_priority:
+        input.dailyPriority ?? null,
       task_order: count ?? 0,
     })
     .select(TASK_SELECT)
@@ -268,6 +300,25 @@ export async function updateTask(
   if (input.completedAt !== undefined) {
     updates.completed_at =
       input.completedAt || null
+  }
+
+  if (input.plannedDate !== undefined) {
+    updates.planned_date =
+      input.plannedDate
+  }
+
+  if (input.dueAt !== undefined) {
+    updates.due_at = input.dueAt
+  }
+
+  if (input.dailyOrder !== undefined) {
+    updates.daily_order =
+      input.dailyOrder
+  }
+
+  if (input.dailyPriority !== undefined) {
+    updates.daily_priority =
+      input.dailyPriority
   }
 
   if (input.order !== undefined) {
@@ -476,6 +527,182 @@ export async function reorderTasks(
         .eq('id', task.id)
         .is('deleted_at', null),
     ),
+  )
+
+  const failedResult = results.find(
+    ({ error }) => error,
+  )
+
+  if (failedResult?.error) {
+    throw failedResult.error
+  }
+}
+
+
+export async function reorderDailyPlan(
+  tasks: Task[],
+): Promise<void> {
+  const results = await Promise.all(
+    tasks.map((task, index) =>
+      supabase
+        .from('tasks')
+        .update({
+          daily_order: index,
+        })
+        .eq('id', task.id)
+        .is('deleted_at', null),
+    ),
+  )
+
+  const failedResult = results.find(
+    ({ error }) => error,
+  )
+
+  if (failedResult?.error) {
+    throw failedResult.error
+  }
+}
+
+export async function setDailyTaskPriority(
+  task: Task,
+  priority: 1 | 2 | 3 | null,
+): Promise<void> {
+  if (!task.plannedDate) {
+    return
+  }
+
+  if (priority !== null) {
+    const { error: clearError } =
+      await supabase
+        .from('tasks')
+        .update({
+          daily_priority: null,
+        })
+        .eq(
+          'planned_date',
+          task.plannedDate,
+        )
+        .eq(
+          'daily_priority',
+          priority,
+        )
+        .neq('id', task.id)
+        .is('deleted_at', null)
+
+    if (clearError) {
+      throw clearError
+    }
+  }
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({
+      daily_priority: priority,
+    })
+    .eq('id', task.id)
+    .is('deleted_at', null)
+
+  if (error) {
+    throw error
+  }
+}
+
+
+export type DailyPlanDestination =
+  | 'tomorrow'
+  | 'backlog'
+  | 'keep'
+
+export interface DailyPlanDecision {
+  taskId: string
+  destination: DailyPlanDestination
+}
+
+export async function closeDailyPlan(
+  decisions: DailyPlanDecision[],
+  tomorrowDate: string,
+): Promise<void> {
+  const tomorrowDecisions =
+    decisions.filter(
+      (decision) =>
+        decision.destination ===
+        'tomorrow',
+    )
+
+  let nextTomorrowOrder = 0
+
+  if (tomorrowDecisions.length > 0) {
+    const { data, error } =
+      await supabase
+        .from('tasks')
+        .select('daily_order')
+        .eq(
+          'planned_date',
+          tomorrowDate,
+        )
+        .is('deleted_at', null)
+        .order('daily_order', {
+          ascending: false,
+          nullsFirst: false,
+        })
+        .limit(1)
+        .maybeSingle()
+
+    if (error) {
+      throw error
+    }
+
+    nextTomorrowOrder =
+      typeof data?.daily_order ===
+      'number'
+        ? data.daily_order + 1
+        : 0
+  }
+
+  let tomorrowOffset = 0
+
+  const results = await Promise.all(
+    decisions.map((decision) => {
+      if (
+        decision.destination === 'keep'
+      ) {
+        return Promise.resolve({
+          error: null,
+        })
+      }
+
+      if (
+        decision.destination ===
+        'tomorrow'
+      ) {
+        const dailyOrder =
+          nextTomorrowOrder +
+          tomorrowOffset
+
+        tomorrowOffset += 1
+
+        return supabase
+          .from('tasks')
+          .update({
+            planned_date:
+              tomorrowDate,
+            daily_order: dailyOrder,
+            daily_priority: null,
+          })
+          .eq('id', decision.taskId)
+          .is('deleted_at', null)
+      }
+
+      return supabase
+        .from('tasks')
+        .update({
+          planned_date: null,
+          daily_order: null,
+          daily_priority: null,
+        })
+        .eq('id', decision.taskId)
+        .is('deleted_at', null)
+    }),
   )
 
   const failedResult = results.find(

@@ -21,6 +21,7 @@ export interface Project {
   color: string
   emoji: string
   description?: string
+  goalId?: string
   totalSessions: number
   completedSessions: number
   totalFocusMinutes: number
@@ -45,6 +46,10 @@ export interface Task {
   completedAt?: string
   deletedAt?: string
   scheduledDeletionAt?: string
+  plannedDate?: string
+  dueAt?: string
+  dailyOrder?: number
+  dailyPriority?: 1 | 2 | 3
   order: number
 }
 
@@ -84,6 +89,34 @@ export interface TimerSettings {
   soundEnabled: boolean
   autoStartBreaks: boolean
   autoStartWork: boolean
+}
+
+// ─── Focus Routine ──────────────────────────────────────────────────────────────
+
+export type FocusRoutineTemplate =
+  | 'work'
+  | 'study'
+  | 'reading'
+
+export interface FocusRoutine {
+  id: string
+  name: string
+  templateKey?: FocusRoutineTemplate
+  icon: string
+  color: string
+  workDuration: number
+  shortBreakDuration: number
+  longBreakDuration: number
+  sessionsUntilLongBreak: number
+  defaultProjectId?: string
+  soundEnabled: boolean
+  autoStartBreaks: boolean
+  autoStartWork: boolean
+  doNotDisturb: boolean
+  isDefault: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
 }
 
 // ─── Stats ──────────────────────────────────────────────────────────────────────

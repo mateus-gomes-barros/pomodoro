@@ -40,6 +40,25 @@ public class MediumTimerWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    private static int badgeResource(
+        int badgeLevel
+    ) {
+        if (badgeLevel >= 2000) return R.drawable.ic_badge_infinity;
+        if (badgeLevel >= 1500) return R.drawable.ic_badge_trophy;
+        if (badgeLevel >= 1000) return R.drawable.ic_badge_crown;
+        if (badgeLevel >= 750) return R.drawable.ic_badge_crystal;
+        if (badgeLevel >= 600) return R.drawable.ic_badge_diamond;
+        if (badgeLevel >= 200) return R.drawable.ic_badge_medal;
+        if (badgeLevel >= 100) return R.drawable.ic_badge_star;
+        if (badgeLevel >= 75) return R.drawable.ic_badge_moon;
+        if (badgeLevel >= 50) return R.drawable.ic_badge_rocket;
+        if (badgeLevel >= 30) return R.drawable.ic_badge_bolt;
+        if (badgeLevel >= 14) return R.drawable.ic_badge_heart;
+        if (badgeLevel >= 7) return R.drawable.ic_badge_fire;
+        if (badgeLevel >= 3) return R.drawable.ic_badge_sprout;
+        return R.drawable.ic_badge_drop;
+    }
+
     private static void updateWidget(
         Context context,
         AppWidgetManager manager,
@@ -63,10 +82,10 @@ public class MediumTimerWidgetProvider extends AppWidgetProvider {
                 ""
             );
 
-        String badge =
-            prefs.getString(
-                "timer_widget_badge",
-                "💧"
+        int badgeLevel =
+            prefs.getInt(
+                "timer_widget_badge_level",
+                0
             );
 
         long endTime =
@@ -89,11 +108,9 @@ public class MediumTimerWidgetProvider extends AppWidgetProvider {
 
         WidgetLanguage.applyStaticLabels(context, views);
 
-        views.setTextViewText(
+        views.setImageViewResource(
             R.id.medium_timer_badge,
-            badge == null || badge.isEmpty()
-                ? "💧"
-                : badge
+            badgeResource(badgeLevel)
         );
 
         views.setTextViewText(

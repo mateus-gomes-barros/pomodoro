@@ -17,6 +17,7 @@ interface PomodoroSessionRow {
 }
 
 export interface CreatePomodoroSessionInput {
+  id: string
   type: SessionType
   projectId?: string
   taskId?: string
@@ -68,9 +69,14 @@ export async function getPomodoroSessions(): Promise<
   )
 }
 
+export interface CreatePomodoroSessionResult {
+  session: PomodoroSession
+  created: boolean
+}
+
 export async function createPomodoroSession(
   input: CreatePomodoroSessionInput,
-): Promise<PomodoroSession> {
+): Promise<CreatePomodoroSessionResult> {
   const {
     data: { user },
     error: userError,
@@ -98,6 +104,7 @@ export async function createPomodoroSession(
   const { data, error } = await supabase
     .from('pomodoro_sessions')
     .insert({
+      id: input.id,
       user_id: user.id,
       type: input.type,
       project_id: input.projectId || null,
@@ -111,12 +118,37 @@ export async function createPomodoroSession(
     .single()
 
   if (error) {
+    if (error.code === '23505') {
+      const {
+        data: existingData,
+        error: existingError,
+      } = await supabase
+        .from('pomodoro_sessions')
+        .select(POMODORO_SESSION_SELECT)
+        .eq('id', input.id)
+        .single()
+
+      if (existingError) {
+        throw existingError
+      }
+
+      return {
+        session: mapPomodoroSessionRow(
+          existingData as PomodoroSessionRow,
+        ),
+        created: false,
+      }
+    }
+
     throw error
   }
 
-  return mapPomodoroSessionRow(
-    data as PomodoroSessionRow,
-  )
+  return {
+    session: mapPomodoroSessionRow(
+      data as PomodoroSessionRow,
+    ),
+    created: true,
+  }
 }
 
 export async function deletePomodoroSession(

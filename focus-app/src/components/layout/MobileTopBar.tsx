@@ -5,6 +5,7 @@ import {
   subDays,
 } from 'date-fns'
 import { useTranslation } from 'react-i18next'
+import { StreakBadgeIcon } from '@/components/streaks/StreakBadgeIcon'
   
   import {
     usePomodoroSessions,
@@ -204,17 +205,15 @@ import { useTranslation } from 'react-i18next'
               shrink-0
               items-center
               justify-center
-              rounded-2xl
-              border
-              border-white/[0.07]
-              bg-white/[0.045]
-              text-xl
-              leading-none
-              shadow-[0_8px_25px_rgba(0,0,0,0.16)]
             "
             aria-hidden="true"
           >
-            {badge.icon}
+            <StreakBadgeIcon
+              minimumDays={
+                badge.minimumDays
+              }
+              size={40}
+            />
           </motion.div>
   
           <div

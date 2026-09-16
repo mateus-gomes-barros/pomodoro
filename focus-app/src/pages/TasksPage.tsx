@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
+  CalendarDays,
   CheckCircle2,
   Circle,
   Clock3,
   LoaderCircle,
   Pencil,
+  Play,
   Plus,
   Trash2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
+import { TaskDatePicker } from '@/components/tasks/TaskDatePicker'
 import { useProjects } from '@/hooks/projects/useProjects'
 import {
   useCreateTask,
@@ -21,6 +24,7 @@ import {
   useTrashTasks,
   useUpdateTask,
 } from '@/hooks/tasks/useTasks'
+import { usePomodoroStore } from '@/store/pomodoroStore'
 
 import type {
   Task,
@@ -63,9 +67,37 @@ const statusOptions: StatusFilter[] = [
   'all',
 ]
 
+function toLocalDateInput(
+  value?: string,
+) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  const year = date.getFullYear()
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, '0')
+  const day = String(
+    date.getDate(),
+  ).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
 export function TasksPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+
+  const {
+    status: timerStatus,
+    sessionType,
+    activeTaskId,
+    setActiveTask,
+    setActiveProject,
+    switchSession,
+  } = usePomodoroStore()
 
   const {
     data: tasks = [],
@@ -101,6 +133,10 @@ export function TasksPage() {
   const [category, setCategory] =
     useState<TaskCategory>('planned')
   const [projectId, setProjectId] =
+    useState('')
+  const [plannedDate, setPlannedDate] =
+    useState('')
+  const [dueDate, setDueDate] =
     useState('')
   const [
     estimatedPomodoros,
@@ -156,6 +192,8 @@ export function TasksPage() {
     setTitle('')
     setCategory('planned')
     setProjectId('')
+    setPlannedDate('')
+    setDueDate('')
     setEstimatedPomodoros(1)
   }
 
@@ -174,6 +212,12 @@ export function TasksPage() {
     setTitle(task.title)
     setCategory(task.category)
     setProjectId(task.projectId ?? '')
+    setPlannedDate(
+      task.plannedDate ?? '',
+    )
+    setDueDate(
+      toLocalDateInput(task.dueAt),
+    )
     setEstimatedPomodoros(
       task.estimatedPomodoros,
     )
@@ -208,6 +252,14 @@ export function TasksPage() {
             title: trimmedTitle,
             category,
             projectId,
+            plannedDate:
+              plannedDate || null,
+            dueAt: dueDate
+              ? new Date(
+                  dueDate +
+                    'T23:59:59',
+                ).toISOString()
+              : null,
             estimatedPomodoros,
           },
         })
@@ -216,6 +268,13 @@ export function TasksPage() {
           title: trimmedTitle,
           category,
           projectId,
+          plannedDate:
+            plannedDate || null,
+          dueAt: dueDate
+            ? new Date(
+                dueDate + 'T23:59:59',
+              ).toISOString()
+            : null,
           priority: 'medium',
           estimatedPomodoros,
         })
@@ -231,6 +290,32 @@ export function TasksPage() {
         mutationError,
       )
     }
+  }
+
+  function handleStartFocus(task: Task) {
+    const timerIsBusy =
+      timerStatus === 'running' ||
+      timerStatus === 'paused'
+
+    if (timerIsBusy) {
+      navigate('/timer')
+      return
+    }
+
+    setActiveTask(task.id)
+    setActiveProject(
+      task.projectId ?? null,
+    )
+
+    if (
+      sessionType !== 'work' ||
+      timerStatus === 'completed'
+    ) {
+      switchSession('work')
+    }
+
+    usePomodoroStore.getState().start()
+    navigate('/timer')
   }
 
   async function handleToggle(
@@ -336,7 +421,7 @@ export function TasksPage() {
               <Trash2 size={17} />
 
               {trashTasks.length > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-green px-1 text-[10px] font-bold text-black">
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-accent-green/25 bg-[#10251d] px-1 text-[10px] font-bold text-accent-green shadow-[0_4px_12px_rgba(0,0,0,0.35)]">
                   {trashTasks.length > 99
                     ? '99+'
                     : trashTasks.length}
@@ -616,15 +701,134 @@ export function TasksPage() {
                         <Clock3 size={11} />
 
                         {t(
-                          'tasksPage.pomodoroCount',
+                          'tasksPage.focusProgress',
                           {
-                            count:
+                            completed:
+                              task.completedPomodoros,
+                            estimated:
                               task.estimatedPomodoros,
                           },
                         )}
                       </span>
+
+                      {task.plannedDate && (
+                        <span className="flex items-center gap-1 text-emerald-200/65">
+                          <CalendarDays
+                            size={11}
+                          />
+                          {t(
+                            'tasksPage.plannedDateLabel',
+                            {
+                              date:
+                                new Date(
+                                  task.plannedDate +
+                                    'T12:00:00',
+                                ).toLocaleDateString(
+                                  i18n.language,
+                                  {
+                                    day: '2-digit',
+                                    month: 'short',
+                                  },
+                                ),
+                            },
+                          )}
+                        </span>
+                      )}
+
+                      {task.dueAt && (
+                        <span className="flex items-center gap-1 text-amber-200/70">
+                          <CalendarDays
+                            size={11}
+                          />
+                          {t(
+                            'tasksPage.dueDateLabel',
+                            {
+                              date:
+                                new Date(
+                                  task.dueAt,
+                                ).toLocaleDateString(
+                                  i18n.language,
+                                  {
+                                    day: '2-digit',
+                                    month: 'short',
+                                  },
+                                ),
+                            },
+                          )}
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.06]"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={
+                        task.estimatedPomodoros
+                      }
+                      aria-valuenow={
+                        Math.min(
+                          task.completedPomodoros,
+                          task.estimatedPomodoros,
+                        )
+                      }
+                    >
+                      <div
+                        className="h-full rounded-full bg-emerald-300 transition-[width] duration-300"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (
+                              task.completedPomodoros /
+                              Math.max(
+                                task.estimatedPomodoros,
+                                1,
+                              )
+                            ) * 100,
+                          )}%`,
+                        }}
+                      />
                     </div>
                   </div>
+
+                  {!task.completed && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleStartFocus(task)
+                      }
+                      disabled={
+                        isUpdating ||
+                        (
+                          (
+                            timerStatus === 'running' ||
+                            timerStatus === 'paused'
+                          ) &&
+                          activeTaskId !== task.id
+                        )
+                      }
+                      aria-label={t(
+                        activeTaskId === task.id &&
+                          (
+                            timerStatus === 'running' ||
+                            timerStatus === 'paused'
+                          )
+                          ? 'tasksPage.focus.openActive'
+                          : 'tasksPage.focus.start',
+                        {
+                          title: task.title,
+                        },
+                      )}
+                      className={cn(
+                        'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-30',
+                        activeTaskId === task.id
+                          ? 'bg-emerald-300/15 text-emerald-300'
+                          : 'bg-white/[0.04] text-accent-subtle hover:text-emerald-300',
+                      )}
+                    >
+                      <Play size={14} />
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -695,7 +899,7 @@ export function TasksPage() {
           <div>
             <label
               htmlFor="task-title"
-              className="mb-2 block text-xs font-medium text-accent-subtle"
+              className="mb-2 block text-xs font-semibold text-emerald-300"
             >
               {t(
                 'tasksPage.form.name',
@@ -728,7 +932,7 @@ export function TasksPage() {
           </div>
 
           <div>
-            <span className="mb-2 block text-xs font-medium text-accent-subtle">
+            <span className="mb-2 block text-xs font-semibold text-emerald-300">
               {t(
                 'tasksPage.form.category',
               )}
@@ -781,7 +985,7 @@ export function TasksPage() {
           <div>
             <label
               htmlFor="task-project"
-              className="mb-2 block text-xs font-medium text-accent-subtle"
+              className="mb-2 block text-xs font-semibold text-emerald-300"
             >
               {t(
                 'tasksPage.form.project',
@@ -817,10 +1021,70 @@ export function TasksPage() {
             </select>
           </div>
 
-          <div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TaskDatePicker
+              id="task-planned-date"
+              label={t(
+                'tasksPage.form.plannedDate',
+              )}
+              help={t(
+                'tasksPage.form.plannedDateHelp',
+              )}
+              value={plannedDate}
+              onChange={setPlannedDate}
+              disabled={isSaving}
+              language={i18n.language}
+              optionalLabel={t(
+                'tasksPage.form.optional',
+              )}
+              emptyLabel={t(
+                'tasksPage.form.selectDate',
+              )}
+              clearLabel={t(
+                'tasksPage.form.clearDate',
+              )}
+              todayLabel={t(
+                'tasksPage.form.today',
+              )}
+              closeLabel={t(
+                'tasksPage.form.closeCalendar',
+              )}
+            />
+
+            <TaskDatePicker
+              id="task-due-date"
+              label={t(
+                'tasksPage.form.dueDate',
+              )}
+              help={t(
+                'tasksPage.form.dueDateHelp',
+              )}
+              value={dueDate}
+              onChange={setDueDate}
+              disabled={isSaving}
+              language={i18n.language}
+              optionalLabel={t(
+                'tasksPage.form.optional',
+              )}
+              emptyLabel={t(
+                'tasksPage.form.selectDate',
+              )}
+              clearLabel={t(
+                'tasksPage.form.clearDate',
+              )}
+              todayLabel={t(
+                'tasksPage.form.today',
+              )}
+              closeLabel={t(
+                'tasksPage.form.closeCalendar',
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col items-center pt-1">
             <label
               htmlFor="task-estimate"
-              className="mb-2 block text-xs font-medium text-accent-subtle"
+              className="mb-3 block text-center text-xs font-semibold text-emerald-300"
             >
               {t(
                 'tasksPage.form.estimate',

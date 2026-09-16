@@ -370,6 +370,10 @@ const en = {
       description: 'Description',
       descriptionPlaceholder:
         'Optional description',
+      goal: 'Linked goal',
+      noGoal: 'No goal',
+      goalHelp:
+        'Focus completed in this project will contribute to the selected goal.',
       color: 'Color',
       selectColor:
         'Select project color {{color}}',
@@ -445,6 +449,14 @@ const en = {
     save: 'Save Changes',
     pomodoroCount_one: '{{count}} Pomodoro',
     pomodoroCount_other: '{{count}} Pomodoros',
+    focusProgress:
+      '{{completed}} of {{estimated}} sessions',
+    focus: {
+      start: 'Start focusing on {{title}}',
+      openActive: 'Open active focus for {{title}}',
+    },
+    plannedDateLabel: 'Planned: {{date}}',
+    dueDateLabel: 'Due: {{date}}',
 
     filters: {
       status: 'Filter by status',
@@ -488,6 +500,17 @@ const en = {
       category: 'Category',
       project: 'Project',
       noProject: 'No project',
+      plannedDate: 'Plan for',
+      plannedDateHelp:
+        'Choose the day when this task should appear in your plan.',
+      dueDate: 'Completion deadline',
+      optional: 'Optional',
+      selectDate: 'Select a date',
+      clearDate: 'Clear',
+      today: 'Today',
+      closeCalendar: 'Close calendar',
+      dueDateHelp:
+        'The deadline is independent from the day you plan to work on this task.',
       estimate: 'Focus estimate',
     },
 
@@ -557,6 +580,15 @@ const en = {
       delete: 'Delete {{title}}',
     },
 
+    progress: {
+      projects_one: '{{count}} linked project',
+      projects_other: '{{count}} linked projects',
+      focus:
+        '{{duration}} focused · {{sessions}} sessions',
+      tasks:
+        '{{completed}} of {{total}} tasks completed',
+    },
+
     achievements: {
       title: 'Achievements this year',
       description:
@@ -598,6 +630,117 @@ const en = {
       "You've focused for {{duration}} today.",
     startMomentum:
       'Start your first session to build momentum.',
+
+    today: {
+      summaryEmpty:
+        'Choose what deserves your attention today.',
+      summaryWithPlan:
+        '{{count}} tasks are part of your plan for today.',
+      primaryEyebrow: 'Next action',
+      activeEyebrow: 'Focusing now',
+      noTaskTitle: 'Your day is still open',
+      noTaskDescription:
+        'Add a task to your plan and turn intention into progress.',
+      planDay: 'Plan my day',
+      startFocus: 'Start focus',
+      continueFocus: 'Continue session',
+      estimatedSessions: '{{count}} estimated sessions',
+      oneEstimatedSession: '1 estimated session',
+      planTitle: "Today's plan",
+      organize: 'Organize',
+      organizeTitle: "Organize today's plan",
+      organizeDescription:
+        'Set up to three priorities and manually adjust the order of your day.',
+      priorityLabel: 'Daily priority',
+      priorityHelp:
+        'Priorities 1, 2 and 3 stay at the top. No task will be reorganized automatically.',
+      moveUp: 'Move {{title}} up',
+      moveDown: 'Move {{title}} down',
+      closure: {
+        open: 'Close the day',
+        title: "Close today's plan",
+        description:
+          'Choose where each pending task should go. Nothing changes before confirmation.',
+        tomorrow: 'Tomorrow',
+        backlog: 'Remove',
+        keep: 'Keep today',
+        history:
+          'Completed tasks remain recorded on today’s date.',
+        confirm: 'Confirm day closure',
+        saving: 'Saving decisions...',
+        error:
+          'Unable to close the plan. Please try again.',
+      },
+      load: {
+        light: 'Light load',
+        balanced: 'Balanced load',
+        overloaded: 'Over capacity',
+        comparison:
+          '{{planned}} planned · {{available}} available',
+        lightDescription:
+          'Your plan leaves room for unexpected work or new tasks.',
+        balancedDescription:
+          'The estimate fits the focus time still available today.',
+        overloadedDescription:
+          'The plan requires more time than remains in your daily goal. You decide whether to keep or adjust it.',
+      },
+      planEmpty:
+        'No tasks planned for today.',
+      addToToday: 'Add to today',
+      removeFromToday: "Remove from today's plan",
+      suggestionsTitle: 'Suggestions for today',
+      suggestionsDescription:
+        'Selected from your pending tasks.',
+      suggestedTask: 'Suggested for your plan',
+      suggestionReasons: {
+        overdue: 'Overdue',
+        dueToday: 'Due today',
+        dueSoon: 'Due soon',
+        urgent: 'Marked as urgent',
+        continue: 'Continue recent progress',
+        fits: 'Fits your available time',
+        projectMomentum: 'Recently active project',
+        recommended: 'Recommended for your plan',
+      },
+      morePlannedTasks_one:
+        'View {{count}} more planned task',
+      morePlannedTasks_other:
+        'View {{count}} more planned tasks',
+      viewAllTasks: 'View all',
+      completed: 'Completed',
+      progressTitle: 'Your progress',
+      plannedTasks: 'Tasks',
+      focusTime: 'Focused time',
+      sessions: 'Sessions',
+      dailyGoal: 'of daily goal',
+      urgentTitle: 'Needs attention',
+      urgentDescription:
+        'This task is marked as urgent.',
+      urgentDueTodayDescription:
+        'This task is due today.',
+      urgentOverdueDescription:
+        'This task is overdue.',
+      insightTitle: "Today's rhythm",
+      insightStart:
+        'Your first session is the most important step right now.',
+      insightBuilding:
+        "You've built momentum. Continue with the next planned task.",
+      insightHalfway:
+        "You're already past halfway toward your daily focus goal.",
+      insightComplete:
+        'Daily goal reached. The rest of your day can feel lighter.',
+      achievementsTitle:
+        'These are your achievements so far!',
+      badgeCount_one:
+        '{{count}} badge earned',
+      badgeCount_other:
+        '{{count}} badges earned',
+      noBadgesYet:
+        'Complete your first session to begin earning achievements.',
+      focusHomeLabel: 'Your FocushoMe emblem',
+      focusHomeLocked:
+        'Not revealed yet',
+    },
 
     stats: {
       todayFocus: "Today's Focus",
@@ -672,12 +815,45 @@ const en = {
       mute: 'Mute sound',
       enable: 'Enable sound',
     },
+    routines: {
+      title: 'Focus routine',
+      description:
+        'Choose a routine to prepare the timer.',
+      active: '{{routine}} is ready',
+      locked:
+        'The routine cannot be changed during a session.',
+      duration:
+        '{{minutes}} min · {{sessions}} sessions',
+      loadError:
+        'Unable to load your routines.',
+      presets: {
+        work: 'Work',
+        study: 'Study',
+        reading: 'Reading',
+      },
+    },
+    tasks: {
+      assign: 'Focus task',
+      clear: 'Clear',
+      progress: '{{completed}} of {{estimated}} sessions completed',
+      empty: 'Create a task to connect it to your focus.',
+      loadError: 'Unable to load tasks.',
+    },
     projects: {
       title: 'Project',
+      assign: 'Assign to a project',
       none: 'No project',
       loadError: 'Unable to load projects.',
     },
     settings: {
+      title: 'Timer settings',
+      automation: 'Automation',
+      autoStartBreaks: 'Start breaks automatically',
+      autoStartBreaksDescription:
+        'Starts a break as soon as a focus session ends.',
+      autoStartWork: 'Start focus automatically',
+      autoStartWorkDescription:
+        'Starts the next session with the same task and project.',
       dailyGoal:
         'Daily focus goal',
       dailyGoalDescription:
@@ -688,6 +864,17 @@ const en = {
       sessionsUntilLongBreak:
         'Sessions until long break',
       minutes: 'min',
+    },
+    completion: {
+      focusFinished: 'Focus session completed',
+      breakFinished: 'Break completed',
+      taskContext: 'You were focusing on “{{task}}”.',
+      noTaskContext: 'Choose how you want to continue.',
+      continueFocus: 'Continue focusing',
+      startBreak: 'Start break',
+      completeTask: 'Complete task',
+      chooseTask: 'Choose another task',
+      selectTask: 'Select a task',
     },
     sessionNumber: 'Session {{current}} of {{total}}',
   },
@@ -1614,7 +1801,7 @@ const en = {
     about: {
       title: 'About',
       description:
-        'Focus v4.0 — A minimalist Pomodoro and productivity app. Guest data is stored locally on your device.',
+        'Focus v6.0 — Plan what matters. Focus on what moves you forward. Guest data is stored locally on your device.',
     },
   },
 }

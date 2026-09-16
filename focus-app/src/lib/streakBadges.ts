@@ -1,6 +1,5 @@
 export type StreakBadge = {
     minimumDays: number
-    icon: string
     name: string
     description: string
   }
@@ -8,126 +7,108 @@ export type StreakBadge = {
   export const STREAK_BADGES: StreakBadge[] = [
     {
       minimumDays: 0,
-      icon: '💧',
       name: 'First Drop',
       description:
         'Begin your focus journey.',
     },
     {
       minimumDays: 3,
-      icon: '🌱',
       name: 'First Steps',
       description:
         'Maintain a 3-day streak.',
     },
     {
       minimumDays: 7,
-      icon: '🔥',
       name: 'On Fire',
       description:
         'Maintain a 7-day streak.',
     },
     {
       minimumDays: 14,
-      icon: '❤️‍🔥',
       name: 'Flame Keeper',
       description:
         'Maintain a 14-day streak.',
     },
     {
       minimumDays: 30,
-      icon: '⚡',
       name: 'Momentum',
       description:
         'Maintain a 30-day streak.',
     },
     {
       minimumDays: 50,
-      icon: '🚀',
       name: 'Liftoff',
       description:
         'Maintain a 50-day streak.',
     },
     {
       minimumDays: 75,
-      icon: '🌙',
       name: 'Steady Orbit',
       description:
         'Maintain a 75-day streak.',
     },
     {
       minimumDays: 100,
-      icon: '⭐',
       name: 'Focus Star',
       description:
         'Maintain a 100-day streak.',
     },
     {
       minimumDays: 150,
-      icon: '🌟',
       name: 'Bright Mind',
       description:
         'Maintain a 150-day streak.',
     },
     {
       minimumDays: 200,
-      icon: '🏅',
       name: 'Focus Champion',
       description:
         'Maintain a 200-day streak.',
     },
     {
       minimumDays: 300,
-      icon: '🥉',
       name: 'Bronze Master',
       description:
         'Maintain a 300-day streak.',
     },
     {
       minimumDays: 365,
-      icon: '🥈',
       name: 'Year of Focus',
       description:
         'Maintain a full 365-day streak.',
     },
     {
       minimumDays: 500,
-      icon: '🥇',
       name: 'Golden Focus',
       description:
         'Maintain a 500-day streak.',
     },
     {
       minimumDays: 600,
-      icon: '💎',
       name: 'Diamond Mind',
       description:
         'Maintain a 600-day streak.',
     },
     {
       minimumDays: 750,
-      icon: '🔮',
       name: 'Focus Sage',
       description:
         'Maintain a 750-day streak.',
     },
     {
       minimumDays: 1000,
-      icon: '👑',
       name: 'Focus Legend',
       description:
         'Maintain a 1,000-day streak.',
     },
     {
       minimumDays: 1500,
-      icon: '🏆',
       name: 'Grandmaster',
       description:
         'Maintain a 1,500-day streak.',
     },
     {
       minimumDays: 2000,
-      icon: '♾️',
       name: 'Infinite Focus',
       description:
         'Maintain a 2,000-day streak.',

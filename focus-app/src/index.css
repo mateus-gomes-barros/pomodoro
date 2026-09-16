@@ -307,8 +307,17 @@
       text-[10px]
       font-semibold
       uppercase
-      tracking-widest
-      text-white/35;
+      tracking-widest;
+    color: var(--color-emerald-300);
+  }
+
+  .card h2,
+  .card h3 {
+    color: var(--color-emerald-300);
+  }
+
+  .stat-card-label {
+    color: var(--color-emerald-300);
   }
 }
 

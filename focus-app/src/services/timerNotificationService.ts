@@ -9,7 +9,7 @@ interface PomodoroServicePlugin {
     title: string
     body: string
     endTime: number
-    badgeIcon?: string
+    badgeLevel?: number
     status: 'running' | 'paused'
     sessionType: 'focus' | 'short_break' | 'long_break'
     durationSeconds: number
@@ -258,7 +258,7 @@ export async function showTimerNotification(
   title: string,
   body: string,
   endTime: number,
-  badgeIcon: string | undefined,
+  badgeLevel: number | undefined,
   status: 'running' | 'paused',
   sessionType: 'focus' | 'short_break' | 'long_break',
   durationSeconds: number,
@@ -276,7 +276,7 @@ export async function showTimerNotification(
       title,
       body,
       endTime,
-      badgeIcon,
+      badgeLevel,
       status,
       sessionType,
       durationSeconds,

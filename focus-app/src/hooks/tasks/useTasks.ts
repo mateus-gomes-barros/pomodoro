@@ -1,19 +1,26 @@
-import { useQuery } from '@tanstack/react-query'
+import {
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { useInvalidateQuery } from '@/hooks/useInvalidateQuery'
 
 import {
+  closeDailyPlan,
   createTask,
   deleteTask,
   deleteTaskPermanently,
   getTasks,
   getTrashTasks,
   incrementTaskPomodoro,
+  reorderDailyPlan,
   reorderTasks,
+  setDailyTaskPriority,
   restoreTask,
   toggleTask,
   updateTask,
   type CreateTaskInput,
+  type DailyPlanDecision,
   type UpdateTaskInput,
 } from '@/services/tasksService'
 
@@ -136,6 +143,140 @@ export function useReorderTasks() {
       mutationFn: (
         tasks: Task[],
       ) => reorderTasks(tasks),
+    },
+  )
+}
+
+
+export function useReorderDailyPlan() {
+  return useInvalidateQuery(
+    tasksQueryKey,
+    {
+      mutationFn: (
+        tasks: Task[],
+      ) => reorderDailyPlan(tasks),
+    },
+  )
+}
+
+interface SetDailyTaskPriorityVariables {
+  task: Task
+  priority: 1 | 2 | 3 | null
+}
+
+interface SetDailyTaskPriorityContext {
+  previousTasks?: Task[]
+}
+
+export function useSetDailyTaskPriority() {
+  const queryClient = useQueryClient()
+
+  return useInvalidateQuery<
+    void,
+    Error,
+    SetDailyTaskPriorityVariables,
+    SetDailyTaskPriorityContext
+  >(
+    tasksQueryKey,
+    {
+      mutationFn: ({
+        task,
+        priority,
+      }) =>
+        setDailyTaskPriority(
+          task,
+          priority,
+        ),
+      onMutate: async ({
+        task,
+        priority,
+      }) => {
+        await queryClient.cancelQueries({
+          queryKey:
+            activeTasksQueryKey,
+        })
+
+        const previousTasks =
+          queryClient.getQueryData<
+            Task[]
+          >(activeTasksQueryKey)
+
+        queryClient.setQueryData<
+          Task[]
+        >(
+          activeTasksQueryKey,
+          (currentTasks) =>
+            currentTasks?.map(
+              (currentTask) => {
+                if (
+                  currentTask.id ===
+                  task.id
+                ) {
+                  return {
+                    ...currentTask,
+                    dailyPriority:
+                      priority ??
+                      undefined,
+                  }
+                }
+
+                if (
+                  priority !== null &&
+                  currentTask.plannedDate ===
+                    task.plannedDate &&
+                  currentTask.dailyPriority ===
+                    priority
+                ) {
+                  return {
+                    ...currentTask,
+                    dailyPriority:
+                      undefined,
+                  }
+                }
+
+                return currentTask
+              },
+            ),
+        )
+
+        return {
+          previousTasks,
+        }
+      },
+      onError: (
+        _error,
+        _variables,
+        context,
+      ) => {
+        if (context?.previousTasks) {
+          queryClient.setQueryData(
+            activeTasksQueryKey,
+            context.previousTasks,
+          )
+        }
+      },
+    },
+  )
+}
+
+
+interface CloseDailyPlanVariables {
+  decisions: DailyPlanDecision[]
+  tomorrowDate: string
+}
+
+export function useCloseDailyPlan() {
+  return useInvalidateQuery(
+    tasksQueryKey,
+    {
+      mutationFn: ({
+        decisions,
+        tomorrowDate,
+      }: CloseDailyPlanVariables) =>
+        closeDailyPlan(
+          decisions,
+          tomorrowDate,
+        ),
     },
   )
 }

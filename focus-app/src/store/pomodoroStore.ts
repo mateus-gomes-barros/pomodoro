@@ -9,6 +9,7 @@ import type {
 } from '../types'
 
 import {
+  formatLocalDate,
   generateId,
   getTodayString,
 } from '../utils'
@@ -26,12 +27,14 @@ interface PomodoroState {
   currentSessionCount: number
   activeProjectId: string | null
   activeTaskId: string | null
+  activeRoutineId: string | null
 
   // Settings
   settings: TimerSettings
 
   // History
   sessions: PomodoroSession[]
+  pendingSessionIds: string[]
 
   // Actions
   start: () => void
@@ -42,10 +45,16 @@ interface PomodoroState {
     type: SessionType,
   ) => void
   completeSession: () => void
+  markSessionSynced: (
+    sessionId: string,
+  ) => void
   setActiveProject: (
     id: string | null,
   ) => void
   setActiveTask: (
+    id: string | null,
+  ) => void
+  setActiveRoutine: (
     id: string | null,
   ) => void
   updateSettings: (
@@ -110,8 +119,10 @@ export const usePomodoroStore =
         currentSessionCount: 0,
         activeProjectId: null,
         activeTaskId: null,
+        activeRoutineId: null,
         settings: DEFAULT_SETTINGS,
         sessions: [],
+        pendingSessionIds: [],
 
         start: () => {
           const {
@@ -327,7 +338,12 @@ export const usePomodoroStore =
             settings,
             activeProjectId,
             activeTaskId,
+            endsAt,
           } = get()
+
+          const completedAt = new Date(
+            endsAt ?? Date.now(),
+          )
 
           const session: PomodoroSession = {
             id: generateId(),
@@ -340,8 +356,10 @@ export const usePomodoroStore =
                 : sessionType === 'short_break'
                   ? settings.shortBreakDuration
                   : settings.longBreakDuration,
-            completedAt: new Date().toISOString(),
-            date: getTodayString(),
+            completedAt:
+              completedAt.toISOString(),
+            date:
+              formatLocalDate(completedAt),
           }
 
           const newCount =
@@ -381,6 +399,10 @@ export const usePomodoroStore =
               ...state.sessions,
               session,
             ],
+            pendingSessionIds: [
+              ...state.pendingSessionIds,
+              session.id,
+            ],
             status: shouldAutoStart
               ? 'running'
               : 'completed',
@@ -416,6 +438,17 @@ export const usePomodoroStore =
           }
         },
 
+        markSessionSynced: (
+          sessionId,
+        ) => {
+          set((state) => ({
+            pendingSessionIds:
+              state.pendingSessionIds.filter(
+                (id) => id !== sessionId,
+              ),
+          }))
+        },
+
         setActiveProject: (id) => {
           set({
             activeProjectId: id,
@@ -425,6 +458,12 @@ export const usePomodoroStore =
         setActiveTask: (id) => {
           set({
             activeTaskId: id,
+          })
+        },
+
+        setActiveRoutine: (id) => {
+          set({
+            activeRoutineId: id,
           })
         },
 
@@ -439,6 +478,7 @@ export const usePomodoroStore =
 
             return {
               settings: merged,
+              activeRoutineId: null,
               secondsLeft: getDuration(
                 state.sessionType,
                 merged,
@@ -492,7 +532,11 @@ export const usePomodoroStore =
             state.activeProjectId,
           activeTaskId:
             state.activeTaskId,
+          activeRoutineId:
+            state.activeRoutineId,
           sessions: state.sessions,
+          pendingSessionIds:
+            state.pendingSessionIds,
           settings: state.settings,
           currentSessionCount:
             state.currentSessionCount,

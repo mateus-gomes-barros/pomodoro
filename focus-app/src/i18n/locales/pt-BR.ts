@@ -378,6 +378,10 @@ const ptBR = {
       description: 'Descrição',
       descriptionPlaceholder:
         'Descrição opcional',
+      goal: 'Meta vinculada',
+      noGoal: 'Nenhuma meta',
+      goalHelp:
+        'O foco deste projeto contribuirá para a meta selecionada.',
       color: 'Cor',
       selectColor:
         'Selecionar cor do projeto {{color}}',
@@ -454,6 +458,14 @@ const ptBR = {
     save: 'Salvar alterações',
     pomodoroCount_one: '{{count}} pomodoro',
     pomodoroCount_other: '{{count}} pomodoros',
+    focusProgress:
+      '{{completed}} de {{estimated}} sessões',
+    focus: {
+      start: 'Iniciar foco em {{title}}',
+      openActive: 'Abrir foco ativo em {{title}}',
+    },
+    plannedDateLabel: 'Planejada: {{date}}',
+    dueDateLabel: 'Prazo: {{date}}',
 
     filters: {
       status: 'Filtrar por status',
@@ -497,6 +509,17 @@ const ptBR = {
       category: 'Categoria',
       project: 'Projeto',
       noProject: 'Sem projeto',
+      plannedDate: 'Planejar para:',
+      plannedDateHelp:
+        'Escolha o dia em que esta tarefa deve aparecer no seu plano.',
+      dueDate: 'Conclusão:',
+      optional: 'Opcional',
+      selectDate: 'Selecionar uma data',
+      clearDate: 'Limpar',
+      today: 'Hoje',
+      closeCalendar: 'Fechar calendário',
+      dueDateHelp:
+        'O prazo é independente do dia em que você pretende trabalhar nesta tarefa.',
       estimate: 'Estimativa de foco',
     },
 
@@ -567,6 +590,15 @@ const ptBR = {
       delete: 'Excluir {{title}}',
     },
 
+    progress: {
+      projects_one: '{{count}} projeto vinculado',
+      projects_other: '{{count}} projetos vinculados',
+      focus:
+        '{{duration}} de foco · {{sessions}} sessões',
+      tasks:
+        '{{completed}} de {{total}} tarefas concluídas',
+    },
+
     achievements: {
       title: 'Conquistas deste ano',
       description:
@@ -608,6 +640,117 @@ const ptBR = {
       'Você focou por {{duration}} hoje.',
     startMomentum:
       'Inicie sua primeira sessão para ganhar ritmo.',
+
+    today: {
+      summaryEmpty:
+        'Escolha o que merece sua atenção hoje.',
+      summaryWithPlan:
+        '{{count}} tarefas fazem parte do seu plano de hoje.',
+      primaryEyebrow: 'Próxima ação',
+      activeEyebrow: 'Em foco agora',
+      noTaskTitle: 'Seu dia ainda está em aberto',
+      noTaskDescription:
+        'Adicione uma tarefa ao plano e transforme intenção em progresso.',
+      planDay: 'Planejar meu dia',
+      startFocus: 'Iniciar foco',
+      continueFocus: 'Continuar sessão',
+      estimatedSessions: '{{count}} sessões estimadas',
+      oneEstimatedSession: '1 sessão estimada',
+      planTitle: 'Plano de hoje',
+      organize: 'Organizar',
+      organizeTitle: 'Organizar plano de hoje',
+      organizeDescription:
+        'Defina até três prioridades e ajuste manualmente a ordem do seu dia.',
+      priorityLabel: 'Prioridade do dia',
+      priorityHelp:
+        'As prioridades 1, 2 e 3 ficam no topo. Nenhuma tarefa será reorganizada automaticamente.',
+      moveUp: 'Mover {{title}} para cima',
+      moveDown: 'Mover {{title}} para baixo',
+      closure: {
+        open: 'Encerrar o dia',
+        title: 'Encerrar planejamento de hoje',
+        description:
+          'Escolha o destino de cada tarefa pendente. Nada será alterado antes da confirmação.',
+        tomorrow: 'Amanhã',
+        backlog: 'Retirar',
+        keep: 'Manter hoje',
+        history:
+          'Tarefas concluídas permanecem registradas no dia de hoje.',
+        confirm: 'Confirmar encerramento',
+        saving: 'Salvando decisões...',
+        error:
+          'Não foi possível encerrar o planejamento. Tente novamente.',
+      },
+      load: {
+        light: 'Carga leve',
+        balanced: 'Carga equilibrada',
+        overloaded: 'Acima da capacidade',
+        comparison:
+          '{{planned}} planejados · {{available}} disponíveis',
+        lightDescription:
+          'Seu plano deixa espaço para imprevistos ou novas tarefas.',
+        balancedDescription:
+          'A estimativa cabe no tempo de foco que ainda resta hoje.',
+        overloadedDescription:
+          'O plano exige mais tempo do que resta na sua meta diária. Você decide se mantém ou ajusta.',
+      },
+      planEmpty:
+        'Nenhuma tarefa planejada para hoje.',
+      addToToday: 'Adicionar ao dia',
+      removeFromToday: 'Retirar do plano de hoje',
+      suggestionsTitle: 'Sugestões para hoje',
+      suggestionsDescription:
+        'Escolhidas entre suas tarefas pendentes.',
+      suggestedTask: 'Sugestão para seu plano',
+      suggestionReasons: {
+        overdue: 'Prazo vencido',
+        dueToday: 'Prazo termina hoje',
+        dueSoon: 'Prazo próximo',
+        urgent: 'Marcada como urgente',
+        continue: 'Continue o progresso recente',
+        fits: 'Cabe no tempo disponível',
+        projectMomentum: 'Projeto em andamento recente',
+        recommended: 'Recomendada para seu plano',
+      },
+      morePlannedTasks_one:
+        'Ver mais {{count}} tarefa planejada',
+      morePlannedTasks_other:
+        'Ver mais {{count}} tarefas planejadas',
+      viewAllTasks: 'Ver todas',
+      completed: 'Concluída',
+      progressTitle: 'Seu progresso',
+      plannedTasks: 'Tarefas',
+      focusTime: 'Tempo focado',
+      sessions: 'Sessões',
+      dailyGoal: 'da meta diária',
+      urgentTitle: 'Precisa de atenção',
+      urgentDescription:
+        'Esta tarefa está marcada como urgente.',
+      urgentDueTodayDescription:
+        'O prazo desta tarefa termina hoje.',
+      urgentOverdueDescription:
+        'O prazo desta tarefa já passou.',
+      insightTitle: 'Ritmo de hoje',
+      insightStart:
+        'Sua primeira sessão é o passo mais importante agora.',
+      insightBuilding:
+        'Você já criou ritmo. Continue na próxima tarefa planejada.',
+      insightHalfway:
+        'Você já ultrapassou metade da sua meta diária de foco.',
+      insightComplete:
+        'Meta diária alcançada. O restante do dia pode ser mais leve.',
+      achievementsTitle:
+        'Essas são suas conquistas até agora!',
+      badgeCount_one:
+        '{{count}} insígnia conquistada',
+      badgeCount_other:
+        '{{count}} insígnias conquistadas',
+      noBadgesYet:
+        'Conclua sua primeira sessão para iniciar suas conquistas.',
+      focusHomeLabel: 'Seu emblema FocushoMe',
+      focusHomeLocked:
+        'Ainda não revelado',
+    },
 
     stats: {
       todayFocus: 'Foco de hoje',
@@ -682,12 +825,45 @@ const ptBR = {
       mute: 'Desativar som',
       enable: 'Ativar som',
     },
+    routines: {
+      title: 'Rotina de foco',
+      description:
+        'Escolha uma rotina para preparar o timer.',
+      active: '{{routine}} está preparada',
+      locked:
+        'A rotina não pode ser alterada durante uma sessão.',
+      duration:
+        '{{minutes}} min · {{sessions}} sessões',
+      loadError:
+        'Não foi possível carregar suas rotinas.',
+      presets: {
+        work: 'Trabalho',
+        study: 'Estudos',
+        reading: 'Leitura',
+      },
+    },
+    tasks: {
+      assign: 'Tarefa em foco',
+      clear: 'Remover',
+      progress: '{{completed}} de {{estimated}} sessões realizadas',
+      empty: 'Crie uma tarefa para vinculá-la ao seu foco.',
+      loadError: 'Não foi possível carregar as tarefas.',
+    },
     projects: {
       title: 'Projeto',
+      assign: 'Atribuir a um projeto',
       none: 'Sem projeto',
       loadError: 'Não foi possível carregar os projetos.',
     },
     settings: {
+      title: 'Configurações do timer',
+      automation: 'Automação',
+      autoStartBreaks: 'Iniciar pausas automaticamente',
+      autoStartBreaksDescription:
+        'Começa a pausa assim que uma sessão de foco termina.',
+      autoStartWork: 'Iniciar foco automaticamente',
+      autoStartWorkDescription:
+        'Começa a próxima sessão mantendo a mesma tarefa e projeto.',
       dailyGoal:
         'Meta diária de foco',
       dailyGoalDescription:
@@ -698,6 +874,17 @@ const ptBR = {
       sessionsUntilLongBreak:
         'Sessões até a pausa longa',
       minutes: 'min',
+    },
+    completion: {
+      focusFinished: 'Sessão de foco concluída',
+      breakFinished: 'Pausa concluída',
+      taskContext: 'Você estava focando em “{{task}}”.',
+      noTaskContext: 'Escolha como deseja continuar.',
+      continueFocus: 'Continuar focando',
+      startBreak: 'Iniciar pausa',
+      completeTask: 'Concluir tarefa',
+      chooseTask: 'Escolher outra tarefa',
+      selectTask: 'Selecionar uma tarefa',
     },
     sessionNumber: 'Sessão {{current}} de {{total}}',
   },
@@ -1630,7 +1817,7 @@ const ptBR = {
     about: {
       title: 'Sobre',
       description:
-        'Focus v4.0 — Um aplicativo minimalista de Pomodoro e produtividade. Dados do modo visitante são armazenados localmente no dispositivo.',
+        'Focus v6.0 — Planeje o que importa. Foque no que transforma. Dados do modo visitante são armazenados localmente no dispositivo.',
     },
   },
 }

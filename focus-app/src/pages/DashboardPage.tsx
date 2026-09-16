@@ -1,152 +1,361 @@
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { enUS, ptBR } from 'date-fns/locale'
-import { useTranslation } from 'react-i18next'
-import { useMemo } from 'react'
+import {
+  addDays,
+  differenceInCalendarDays,
+  format,
+  isBefore,
+  isToday,
+  parseISO,
+} from 'date-fns'
 import { motion } from 'framer-motion'
 import {
+  ArrowDown,
   ArrowRight,
-  CheckSquare,
-  Flame,
+  ArrowUp,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  Circle,
+  Archive,
+  Clock3,
+  Gauge,
   LoaderCircle,
   Play,
-  Target,
-  Timer,
-  TrendingUp,
+  Trophy,
+  CalendarPlus,
+  SlidersHorizontal,
+  Sparkles,
+  TriangleAlert,
+  X,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import {
-  format,
-  subDays,
-} from 'date-fns'
+  Link,
+  useNavigate,
+} from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
+import { Modal } from '@/components/ui/Modal'
+import { StreakBadgeIcon } from '@/components/streaks/StreakBadgeIcon'
 import { useAuth } from '@/contexts/AuthContext'
-import { usePomodoroStore } from '@/store/pomodoroStore'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
-import { useTasks } from '@/hooks/tasks/useTasks'
-import { useProjects } from '@/hooks/projects/useProjects'
-import { useGoals } from '@/hooks/goals/useGoals'
-
-import { StatCard } from '@/components/ui/Card'
-import { CircularProgress } from '@/components/ui/CircularProgress'
-
+import { useFocusHomeProfile } from '@/hooks/focusme/useFocusHomeProfile'
 import {
+  useCloseDailyPlan,
+  useReorderDailyPlan,
+  useSetDailyTaskPriority,
+  useTasks,
+  useToggleTask,
+  useUpdateTask,
+} from '@/hooks/tasks/useTasks'
+import { useProjects } from '@/hooks/projects/useProjects'
+import { usePomodoroStore } from '@/store/pomodoroStore'
+import {
+  FOCUS_HOME_COLORS,
+  FocusHomeSymbol,
+} from '@/components/focusme/FocusHomeSymbol'
+import { STREAK_BADGES } from '@/lib/streakBadges'
+import type { Task } from '@/types'
+import type { DailyPlanDestination } from '@/services/tasksService'
+import {
+  cn,
   formatDuration,
-  formatLocalDate,
   formatTime,
   getTodayString,
 } from '@/utils'
 
-const PRIORITY_COLORS = {
-  high: '#f87171',
-  medium: '#fb923c',
-  low: '#6b7280',
+const CATEGORY_WEIGHT = {
+  urgent: 0,
+  quick: 1,
+  planned: 2,
+  long_term: 3,
 } as const
 
-function calculateCurrentStreak(
-  activeDates: string[],
-): number {
-  const uniqueDates = new Set(activeDates)
+const PRIORITY_WEIGHT = {
+  high: 0,
+  medium: 1,
+  low: 2,
+} as const
 
-  const today = new Date()
-  const todayString = format(
-    today,
-    'yyyy-MM-dd',
-  )
+function sortPlanTasks(a: Task, b: Task) {
+  const priorityA = a.dailyPriority ?? 99
+  const priorityB = b.dailyPriority ?? 99
 
-  const yesterday = subDays(today, 1)
-  const yesterdayString = format(
-    yesterday,
-    'yyyy-MM-dd',
-  )
-
-  let currentDate: Date | null =
-    uniqueDates.has(todayString)
-      ? today
-      : uniqueDates.has(yesterdayString)
-        ? yesterday
-        : null
-
-  let currentStreak = 0
-
-  while (currentDate) {
-    const dateString = format(
-      currentDate,
-      'yyyy-MM-dd',
-    )
-
-    if (!uniqueDates.has(dateString)) {
-      break
-    }
-
-    currentStreak += 1
-    currentDate = subDays(
-      currentDate,
-      1,
-    )
+  if (priorityA !== priorityB) {
+    return priorityA - priorityB
   }
 
-  return currentStreak
+  const orderA = a.dailyOrder ?? a.order
+  const orderB = b.dailyOrder ?? b.order
+
+  return orderA - orderB
+}
+
+function getLongestStreak(activeDates: string[]) {
+  const dates = [...new Set(activeDates)]
+    .sort()
+
+  if (dates.length === 0) {
+    return 0
+  }
+
+  let longest = 1
+  let running = 1
+
+  for (
+    let index = 1;
+    index < dates.length;
+    index += 1
+  ) {
+    const isConsecutive =
+      differenceInCalendarDays(
+        parseISO(dates[index]),
+        parseISO(dates[index - 1]),
+      ) === 1
+
+    running = isConsecutive
+      ? running + 1
+      : 1
+    longest = Math.max(longest, running)
+  }
+
+  return longest
+}
+
+function getSuggestionScore(
+  task: Task,
+  availableMinutes: number,
+  workDuration: number,
+  recentTaskIds: Set<string>,
+  recentProjectIds: Set<string>,
+) {
+  let score =
+    (4 - CATEGORY_WEIGHT[task.category]) *
+      12 +
+    (3 - PRIORITY_WEIGHT[task.priority]) *
+      6
+
+  if (task.dueAt) {
+    const daysUntilDue =
+      differenceInCalendarDays(
+        new Date(task.dueAt),
+        new Date(),
+      )
+
+    score +=
+      daysUntilDue < 0
+        ? 80
+        : daysUntilDue === 0
+          ? 70
+          : daysUntilDue <= 3
+            ? 45
+            : daysUntilDue <= 7
+              ? 20
+              : 0
+  }
+
+  const remainingMinutes =
+    Math.max(
+      0,
+      task.estimatedPomodoros -
+        task.completedPomodoros,
+    ) * workDuration
+
+  if (
+    availableMinutes > 0 &&
+    remainingMinutes > 0 &&
+    remainingMinutes <= availableMinutes
+  ) {
+    score += 18
+  } else if (
+    availableMinutes > 0 &&
+    remainingMinutes >
+      availableMinutes * 1.5
+  ) {
+    score -= 10
+  }
+
+  if (
+    task.completedPomodoros > 0
+  ) {
+    score += 12
+  }
+
+  if (recentTaskIds.has(task.id)) {
+    score += 16
+  }
+
+  if (
+    task.projectId &&
+    recentProjectIds.has(task.projectId)
+  ) {
+    score += 7
+  }
+
+  return score
 }
 
 export function DashboardPage() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
+  const { user } = useAuth()
 
-  const {
-    user,
-  } = useAuth()
+  const [planEditorOpen, setPlanEditorOpen] =
+    useState(false)
+  const [dayClosureOpen, setDayClosureOpen] =
+    useState(false)
+  const [
+    dayClosureDecisions,
+    setDayClosureDecisions,
+  ] = useState<
+    Record<
+      string,
+      DailyPlanDestination | undefined
+    >
+  >({})
 
   const {
     status,
     sessionType,
     secondsLeft,
     settings,
+    activeTaskId,
     start,
+    switchSession,
+    setActiveProject,
+    setActiveTask,
   } = usePomodoroStore()
 
   const sessionsQuery =
     usePomodoroSessions()
-
+  const focusHomeQuery =
+    useFocusHomeProfile()
   const tasksQuery = useTasks()
   const projectsQuery = useProjects()
-  const currentYear =
-  new Date().getFullYear()
-
-const goalsQuery =
-  useGoals(currentYear)
+  const updateTask = useUpdateTask()
+  const toggleTask = useToggleTask()
+  const reorderDailyPlan =
+    useReorderDailyPlan()
+  const closeDailyPlan =
+    useCloseDailyPlan()
+  const setDailyPriority =
+    useSetDailyTaskPriority()
 
   const sessions =
     sessionsQuery.data ?? []
-
   const tasks = tasksQuery.data ?? []
   const projects =
     projectsQuery.data ?? []
-  
-    const goals =
-  goalsQuery.data ?? []
 
-const completedGoalsThisYear =
-  goals.filter(
-    (goal) => goal.completed,
-  ).length
+  const [today, setToday] = useState(
+    getTodayString,
+  )
 
-  const today = getTodayString()
+  useEffect(() => {
+    let timeoutId: number
 
-  const workSessions = useMemo(
+    function refreshToday() {
+      const currentDate = getTodayString()
+
+      setToday((previousDate) =>
+        previousDate === currentDate
+          ? previousDate
+          : currentDate,
+      )
+    }
+
+    function scheduleNextDay() {
+      const now = new Date()
+      const nextDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        0,
+        0,
+        1,
+      )
+
+      timeoutId = window.setTimeout(() => {
+        refreshToday()
+        scheduleNextDay()
+      }, nextDay.getTime() - now.getTime())
+    }
+
+    function handleVisibilityChange() {
+      if (!document.hidden) {
+        refreshToday()
+      }
+    }
+
+    scheduleNextDay()
+    window.addEventListener(
+      'focus',
+      refreshToday,
+    )
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    )
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      window.removeEventListener(
+        'focus',
+        refreshToday,
+      )
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      )
+    }
+  }, [])
+
+  const todaySessions = useMemo(
     () =>
       sessions.filter(
         (session) =>
-          session.type === 'work',
+          session.type === 'work' &&
+          session.date === today,
+      ),
+    [sessions, today],
+  )
+
+  const longestStreak = useMemo(
+    () =>
+      getLongestStreak(
+        sessions
+          .filter(
+            (session) =>
+              session.type === 'work',
+          )
+          .map(
+            (session) => session.date,
+          ),
       ),
     [sessions],
   )
 
-  const todaySessions = useMemo(
+  const earnedBadges = useMemo(
     () =>
-      workSessions.filter(
+      sessions.some(
         (session) =>
-          session.date === today,
-      ),
-    [today, workSessions],
+          session.type === 'work',
+      )
+        ? STREAK_BADGES.filter(
+            (badge) =>
+              badge.minimumDays <=
+              longestStreak,
+          )
+        : [],
+    [longestStreak, sessions],
   )
+
+  const focusHome =
+    focusHomeQuery.data
 
   const todayFocus = useMemo(
     () =>
@@ -159,102 +368,362 @@ const completedGoalsThisYear =
     [todaySessions],
   )
 
-  const todayCompletedTasks =
+  const todayPlan = useMemo(
+    () =>
+      tasks
+        .filter(
+          (task) =>
+            task.plannedDate === today,
+        )
+        .sort(sortPlanTasks),
+    [tasks, today],
+  )
+
+  const pendingToday = todayPlan.filter(
+    (task) => !task.completed,
+  )
+
+  const completedToday = todayPlan.filter(
+    (task) => task.completed,
+  )
+
+  const recentFocusThreshold =
     useMemo(
       () =>
-        tasks.filter((task) => {
-          if (
-            !task.completed ||
-            !task.completedAt
-          ) {
-            return false
-          }
-
-          return (
-            formatLocalDate(
-              new Date(
-                task.completedAt,
-              ),
-            ) === today
-          )
-        }).length,
-      [tasks, today],
+        Date.now() -
+        14 * 24 * 60 * 60 * 1000,
+      [],
     )
 
-  const currentStreak = useMemo(
+  const recentTaskIds = useMemo(
     () =>
-      calculateCurrentStreak(
-        workSessions.map(
-          (session) =>
-            session.date,
-        ),
-      ),
-    [workSessions],
-  )
-
-  const projectFocusMinutes =
-    useMemo(() => {
-      const totals = new Map<
-        string,
-        number
-      >()
-
-      workSessions.forEach(
-        (session) => {
-          if (!session.projectId) {
-            return
-          }
-
-          totals.set(
-            session.projectId,
-            (totals.get(
-              session.projectId,
-            ) ?? 0) +
-              session.durationMinutes,
+      new Set(
+        sessions
+          .filter(
+            (session) =>
+              session.type === 'work' &&
+              Boolean(session.taskId) &&
+              new Date(
+                session.completedAt,
+              ).getTime() >=
+                recentFocusThreshold,
           )
-        },
-      )
-
-      return totals
-    }, [workSessions])
-
-  const dailyFocusGoalMinutes =
-    settings.dailyFocusGoalMinutes ??
-    120
-
-  const progressRatio = Math.min(
-    todayFocus /
-      dailyFocusGoalMinutes,
-    1,
+          .map(
+            (session) =>
+              session.taskId as string,
+          ),
+      ),
+    [sessions, recentFocusThreshold],
   )
 
-  const pendingTasks = tasks
+  const recentProjectIds = useMemo(
+    () =>
+      new Set(
+        sessions
+          .filter(
+            (session) =>
+              session.type === 'work' &&
+              Boolean(
+                session.projectId,
+              ) &&
+              new Date(
+                session.completedAt,
+              ).getTime() >=
+                recentFocusThreshold,
+          )
+          .map(
+            (session) =>
+              session.projectId as string,
+          ),
+      ),
+    [sessions, recentFocusThreshold],
+  )
+
+  const suggestionCapacity =
+    Math.max(
+      0,
+      (
+        settings.dailyFocusGoalMinutes ??
+        120
+      ) -
+        todayFocus,
+    )
+
+  const suggestions = useMemo(
+    () =>
+      tasks
+        .filter(
+          (task) =>
+            !task.completed &&
+            task.plannedDate !== today,
+        )
+        .sort(
+          (a, b) =>
+            getSuggestionScore(
+              b,
+              suggestionCapacity,
+              settings.workDuration,
+              recentTaskIds,
+              recentProjectIds,
+            ) -
+              getSuggestionScore(
+                a,
+                suggestionCapacity,
+                settings.workDuration,
+                recentTaskIds,
+                recentProjectIds,
+              ) ||
+            a.order - b.order,
+        )
+        .slice(0, 3),
+    [
+      tasks,
+      today,
+      suggestionCapacity,
+      settings.workDuration,
+      recentTaskIds,
+      recentProjectIds,
+    ],
+  )
+
+  function getSuggestionReason(
+    task: Task,
+  ) {
+    if (task.dueAt) {
+      const daysUntilDue =
+        differenceInCalendarDays(
+          new Date(task.dueAt),
+          new Date(),
+        )
+
+      if (daysUntilDue < 0) {
+        return t(
+          'dashboard.today.suggestionReasons.overdue',
+        )
+      }
+
+      if (daysUntilDue === 0) {
+        return t(
+          'dashboard.today.suggestionReasons.dueToday',
+        )
+      }
+
+      if (daysUntilDue <= 3) {
+        return t(
+          'dashboard.today.suggestionReasons.dueSoon',
+        )
+      }
+    }
+
+    if (task.category === 'urgent') {
+      return t(
+        'dashboard.today.suggestionReasons.urgent',
+      )
+    }
+
+    if (
+      recentTaskIds.has(task.id) ||
+      task.completedPomodoros > 0
+    ) {
+      return t(
+        'dashboard.today.suggestionReasons.continue',
+      )
+    }
+
+    const remainingMinutes =
+      Math.max(
+        0,
+        task.estimatedPomodoros -
+          task.completedPomodoros,
+      ) * settings.workDuration
+
+    if (
+      suggestionCapacity > 0 &&
+      remainingMinutes > 0 &&
+      remainingMinutes <=
+        suggestionCapacity
+    ) {
+      return t(
+        'dashboard.today.suggestionReasons.fits',
+      )
+    }
+
+    if (
+      task.projectId &&
+      recentProjectIds.has(
+        task.projectId,
+      )
+    ) {
+      return t(
+        'dashboard.today.suggestionReasons.projectMomentum',
+      )
+    }
+
+    return t(
+      'dashboard.today.suggestionReasons.recommended',
+    )
+  }
+
+  const visibleTodayPlan =
+    todayPlan.slice(0, 3)
+
+  const hiddenTodayCount =
+    Math.max(
+      0,
+      todayPlan.length -
+        visibleTodayPlan.length,
+    )
+
+  const contextualSuggestions =
+    suggestions.slice(
+      0,
+      Math.max(
+        0,
+        3 - visibleTodayPlan.length,
+      ),
+    )
+
+  const activeTask = tasks.find(
+    (task) =>
+      task.id === activeTaskId &&
+      !task.completed,
+  )
+
+  const hasActiveSession =
+    status === 'running' ||
+    status === 'paused'
+
+  const nextTask =
+    hasActiveSession && activeTask
+      ? activeTask
+      : pendingToday[0]
+
+  const urgentTask = tasks
     .filter(
       (task) => !task.completed,
     )
-    .slice(0, 4)
+    .find((task) => {
+      if (task.category === 'urgent') {
+        return true
+      }
 
-  const totalSecs =
-    sessionType === 'work'
-      ? settings.workDuration * 60
-      : sessionType ===
-          'short_break'
-        ? settings.shortBreakDuration *
-          60
-        : settings.longBreakDuration *
-          60
+      if (!task.dueAt) {
+        return false
+      }
 
-  const timerProgress =
-    status !== 'idle' &&
-    totalSecs > 0
-      ? 1 -
-        secondsLeft / totalSecs
+      const dueDate = new Date(task.dueAt)
+
+      return (
+        isToday(dueDate) ||
+        isBefore(dueDate, new Date())
+      )
+    })
+
+  const urgentReasonKey =
+    urgentTask?.dueAt &&
+    isBefore(
+      new Date(urgentTask.dueAt),
+      new Date(),
+    )
+      ? 'urgentOverdueDescription'
+      : urgentTask?.dueAt &&
+          isToday(
+            new Date(urgentTask.dueAt),
+          )
+        ? 'urgentDueTodayDescription'
+        : 'urgentDescription'
+
+  const urgentTaskIsPlannedToday =
+    urgentTask?.plannedDate === today
+
+  const dailyGoal =
+    settings.dailyFocusGoalMinutes ??
+    120
+
+  const focusRatio = Math.min(
+    todayFocus / dailyGoal,
+    1,
+  )
+
+  const taskRatio =
+    todayPlan.length > 0
+      ? completedToday.length /
+        todayPlan.length
       : 0
 
-  const ringColor =
-    sessionType === 'work'
-      ? '#34d399'
-      : '#60a5fa'
+  const estimatedPlanMinutes =
+    pendingToday.reduce(
+      (total, task) =>
+        total +
+        Math.max(
+          0,
+          task.estimatedPomodoros -
+            task.completedPomodoros,
+        ) *
+          settings.workDuration,
+      0,
+    )
+
+  const remainingDailyCapacity =
+    Math.max(
+      0,
+      dailyGoal - todayFocus,
+    )
+
+  const dailyLoadRatio =
+    remainingDailyCapacity > 0
+      ? estimatedPlanMinutes /
+        remainingDailyCapacity
+      : estimatedPlanMinutes > 0
+        ? Number.POSITIVE_INFINITY
+        : 0
+
+  const dailyLoadStatus =
+    dailyLoadRatio > 1
+      ? 'overloaded'
+      : dailyLoadRatio > 0.6
+        ? 'balanced'
+        : 'light'
+
+  const dailyLoadColor =
+    dailyLoadStatus === 'overloaded'
+      ? 'text-amber-300'
+      : dailyLoadStatus === 'balanced'
+        ? 'text-emerald-300'
+        : 'text-sky-300'
+
+  const dailyLoadBarColor =
+    dailyLoadStatus === 'overloaded'
+      ? 'bg-amber-300'
+      : dailyLoadStatus === 'balanced'
+        ? 'bg-emerald-300'
+        : 'bg-sky-300'
+
+  const projectById = useMemo(
+    () =>
+      new Map(
+        projects.map((project) => [
+          project.id,
+          project,
+        ]),
+      ),
+    [projects],
+  )
+
+  const dateLocale =
+    i18n.language === 'pt-BR'
+      ? ptBR
+      : enUS
+
+  const metadataName =
+    user?.user_metadata?.display_name ??
+    user?.user_metadata?.full_name ??
+    user?.user_metadata?.name
+
+  const displayName =
+    typeof metadataName === 'string'
+      ? metadataName.trim()
+      : ''
 
   const hour = new Date().getHours()
 
@@ -265,373 +734,234 @@ const completedGoalsThisYear =
         ? 'afternoon'
         : 'evening'
 
-  const dateLocale =
-    i18n.language === 'pt-BR'
-      ? ptBR
-      : enUS
+  const insightKey =
+    todayFocus >= dailyGoal
+      ? 'insightComplete'
+      : focusRatio >= 0.5
+        ? 'insightHalfway'
+        : todaySessions.length > 0
+          ? 'insightBuilding'
+          : 'insightStart'
 
-  const metadataName =
-    user?.user_metadata
-      ?.display_name ??
-    user?.user_metadata
-      ?.full_name ??
-    user?.user_metadata
-      ?.name
+  const isLoading =
+    sessionsQuery.isLoading ||
+    tasksQuery.isLoading ||
+    projectsQuery.isLoading
 
-  const displayName =
-    typeof metadataName === 'string'
-      ? metadataName.trim()
-      : ''
+  const error =
+    sessionsQuery.error ??
+    tasksQuery.error ??
+    projectsQuery.error
 
-        const isLoading =
-        sessionsQuery.isLoading ||
-        tasksQuery.isLoading ||
-        projectsQuery.isLoading ||
-        goalsQuery.isLoading
+  function addToToday(task: Task) {
+    updateTask.mutate({
+      taskId: task.id,
+      input: {
+        plannedDate: today,
+        dailyOrder: todayPlan.length,
+        dailyPriority: null,
+      },
+    })
+  }
 
-        const isError =
-        sessionsQuery.isError ||
-        tasksQuery.isError ||
-        projectsQuery.isError ||
-        goalsQuery.isError
+  function completeTask(task: Task) {
+    toggleTask.mutate(task)
+  }
 
-        const error =
-        sessionsQuery.error ??
-        tasksQuery.error ??
-        projectsQuery.error ??
-        goalsQuery.error
+  function removeFromToday(task: Task) {
+    updateTask.mutate({
+      taskId: task.id,
+      input: {
+        plannedDate: null,
+        dailyOrder: null,
+        dailyPriority: null,
+      },
+    })
+  }
+
+  function openDayClosure() {
+    setDayClosureDecisions({})
+    setPlanEditorOpen(false)
+    setDayClosureOpen(true)
+  }
+
+  async function confirmDayClosure() {
+    const decisions =
+      pendingToday.map((task) => ({
+        taskId: task.id,
+        destination:
+          dayClosureDecisions[
+            task.id
+          ],
+      }))
+
+    if (
+      decisions.some(
+        (decision) =>
+          !decision.destination,
+      )
+    ) {
+      return
+    }
+
+    await closeDailyPlan.mutateAsync({
+      decisions:
+        decisions.map(
+          (decision) => ({
+            taskId:
+              decision.taskId,
+            destination:
+              decision.destination as DailyPlanDestination,
+          }),
+        ),
+      tomorrowDate: format(
+        addDays(new Date(), 1),
+        'yyyy-MM-dd',
+      ),
+    })
+
+    setDayClosureOpen(false)
+    setDayClosureDecisions({})
+  }
+
+  function moveTodayTask(
+    taskIndex: number,
+    direction: -1 | 1,
+  ) {
+    const targetIndex =
+      taskIndex + direction
+
+    if (
+      targetIndex < 0 ||
+      targetIndex >= todayPlan.length
+    ) {
+      return
+    }
+
+    const reordered = [...todayPlan]
+    const [movedTask] =
+      reordered.splice(taskIndex, 1)
+
+    reordered.splice(
+      targetIndex,
+      0,
+      movedTask,
+    )
+
+    reorderDailyPlan.mutate(reordered)
+  }
+
+  function changeDailyPriority(
+    task: Task,
+    priority: 1 | 2 | 3,
+  ) {
+    setDailyPriority.mutate({
+      task,
+      priority:
+        task.dailyPriority === priority
+          ? null
+          : priority,
+    })
+  }
+
+  function startTask(task: Task) {
+    if (
+      hasActiveSession &&
+      activeTaskId === task.id
+    ) {
+      navigate('/timer')
+      return
+    }
+
+    if (hasActiveSession) {
+      navigate('/timer')
+      return
+    }
+
+    if (sessionType !== 'work') {
+      switchSession('work')
+    }
+
+    setActiveTask(task.id)
+    setActiveProject(
+      task.projectId ?? null,
+    )
+    start()
+    navigate('/timer')
+  }
 
   if (isLoading) {
     return (
-      <div className="w-full min-w-0 space-y-8">
-        <div className="flex items-center justify-center py-24">
-          <LoaderCircle
-            size={30}
-            className="animate-spin text-white/40"
-          />
-        </div>
+      <div className="flex min-h-[45vh] items-center justify-center">
+        <LoaderCircle
+          size={30}
+          className="animate-spin text-white/40"
+        />
       </div>
     )
   }
 
-  if (isError) {
+  if (error) {
     return (
-      <div className="w-full min-w-0 space-y-8">
-        <div className="card p-6">
-          <p className="text-sm text-red-400">
-            {error instanceof Error
-              ? error.message
-              : t('dashboard.error')}
-          </p>
-        </div>
+      <div className="card p-6">
+        <p className="text-sm text-red-400">
+          {error instanceof Error
+            ? error.message
+            : t('dashboard.error')}
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="w-full min-w-0 space-y-8">
-      {/* Greeting */}
-
-      <motion.div
-        initial={{
-          opacity: 0,
-          y: -6,
-        }}
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
+    <div className="w-full min-w-0 space-y-6 lg:space-y-7">
+      <motion.header
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{
           duration: 0.3,
-          ease: [
-            0.16,
-            1,
-            0.3,
-            1,
-          ],
+          ease: [0.16, 1, 0.3, 1],
         }}
+        className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
       >
-        <p className="label-section mb-2">
+        <div className="min-w-0">
+          <p className="label-section mb-2">
           {format(
             new Date(),
             i18n.language === 'pt-BR'
               ? "EEEE, d 'de' MMMM"
               : 'EEEE, MMMM d',
-            {
-              locale: dateLocale,
-            },
+            { locale: dateLocale },
           )}
         </p>
 
         <h1 className="text-3xl font-bold tracking-tight text-white">
           {t(
-            `dashboard.greeting.${greetingKey}`,
+            'dashboard.greeting.' +
+              greetingKey,
           )}
           {displayName
-            ? `, ${displayName}`
+            ? ', ' + displayName
             : ''}
         </h1>
 
         <p className="mt-2 text-sm leading-relaxed text-white/45">
-          {todayFocus > 0
+          {todayPlan.length > 0
             ? t(
-                'dashboard.focusedToday',
+                'dashboard.today.summaryWithPlan',
                 {
-                  duration:
-                    formatDuration(
-                      todayFocus,
-                    ),
+                  count:
+                    todayPlan.length,
                 },
               )
             : t(
-                'dashboard.startMomentum',
+                'dashboard.today.summaryEmpty',
               )}
         </p>
-      </motion.div>
+        </div>
 
-      {/* Statistics */}
-
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t('dashboard.stats.todayFocus')}
-          value={formatDuration(
-            todayFocus,
-          )}
-          sub={t(
-            'dashboard.stats.goal',
-            {
-              duration:
-                formatDuration(
-                  dailyFocusGoalMinutes,
-                ),
-            },
-          )}
-          icon={<Timer size={15} />}
-          delay={0}
-        />
-
-        <StatCard
-          label={t('dashboard.stats.streak')}
-          value={currentStreak}
-          sub={
-            currentStreak === 1
-              ? t('dashboard.stats.day')
-              : t('dashboard.stats.days')
-          }
-          icon={<Flame size={15} />}
-          accent={
-            currentStreak >= 3
-          }
-          delay={0.05}
-        />
-
-        <StatCard
-          label={t('dashboard.stats.tasksDone')}
-          value={
-            todayCompletedTasks
-          }
-          sub={t('dashboard.stats.today')}
-          icon={
-            <CheckSquare
-              size={15}
-            />
-          }
-          delay={0.1}
-        />
-
-        <StatCard
-          label={t('dashboard.stats.sessions')}
-          value={
-            todaySessions.length
-          }
-          sub={t('dashboard.stats.pomodoros')}
-          icon={
-            <TrendingUp
-              size={15}
-            />
-          }
-          delay={0.15}
-        />
-      </div>
-
-      <motion.div
-        initial={{
-          opacity: 0,
-          y: 8,
-        }}
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-        transition={{
-          delay: 0.18,
-          duration: 0.35,
-          ease: [
-            0.16,
-            1,
-            0.3,
-            1,
-          ],
-        }}
-      >
-        <Link
-          to="/goals"
-          className="
-            card
-            group
-            flex
-            items-center
-            justify-between
-            gap-5
-            px-5
-            py-4
-            transition-colors
-            hover:border-emerald-400/20
-          "
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <div
-              className="
-                flex
-                h-9
-                w-9
-                shrink-0
-                items-center
-                justify-center
-                rounded-xl
-                bg-emerald-400/10
-                text-accent-green
-              "
-            >
-              <Target size={17} />
-            </div>
-
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-white">
-                {t('dashboard.goals.doneThisYear')}
-              </p>
-
-              <p className="mt-0.5 text-xs text-white/35">
-                {t(
-                  'dashboard.goals.viewYear',
-                  {
-                    year: currentYear,
-                  },
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-4">
-            <span className="text-2xl font-semibold text-white">
-              {completedGoalsThisYear}
-            </span>
-
-            <ArrowRight
-              size={16}
-              className="
-                text-white/25
-                transition-transform
-                group-hover:translate-x-1
-                group-hover:text-accent-green
-              "
-            />
-          </div>
-        </Link>
-      </motion.div>
-
-      {/* Main content */}
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-        {/* Timer and daily progress */}
-
-        <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
-          <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.97,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-            }}
-            transition={{
-              delay: 0.1,
-              duration: 0.35,
-              ease: [
-                0.16,
-                1,
-                0.3,
-                1,
-              ],
-            }}
-            className="card flex min-h-[340px] flex-col items-center justify-center p-7"
-          >
-            <p className="label-section mb-6">
-              {sessionType ===
-              'work'
-                ? t(
-                    'dashboard.timer.focusSession',
-                  )
-                : sessionType ===
-                    'short_break'
-                  ? t(
-                      'dashboard.timer.shortBreak',
-                    )
-                  : t(
-                      'dashboard.timer.longBreak',
-                    )}
-            </p>
-
-            <CircularProgress
-              progress={
-                timerProgress
-              }
-              size={164}
-              strokeWidth={5}
-              color={ringColor}
-            >
-              <span className="font-mono text-[34px] font-bold tracking-tighter text-white">
-                {formatTime(
-                  secondsLeft,
-                )}
-              </span>
-            </CircularProgress>
-
-            <div className="mt-6">
-              {status !==
-              'running' ? (
-                <button
-                  type="button"
-                  onClick={start}
-                  className="btn-primary"
-                >
-                  <Play size={14} />
-
-                  {status ===
-                  'paused'
-                    ? t(
-                        'dashboard.timer.resume',
-                      )
-                    : t(
-                        'dashboard.timer.startSession',
-                      )}
-                </button>
-              ) : (
-                <Link
-                  to="/timer"
-                  className="badge-green flex items-center gap-2 px-3 py-1.5"
-                >
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  {t(
-                    'dashboard.timer.running',
-                  )}
-                </Link>
-              )}
-            </div>
-          </motion.div>
-
-          <motion.div
+        {urgentTask && (
+          <motion.section
             initial={{
               opacity: 0,
               y: 6,
@@ -640,310 +970,1057 @@ const completedGoalsThisYear =
               opacity: 1,
               y: 0,
             }}
-            transition={{
-              delay: 0.2,
-            }}
-            className="card p-6"
+            transition={{ delay: 0.08 }}
+            className="w-full shrink-0 rounded-[22px] border border-amber-400/15 bg-amber-400/[0.055] p-4 xl:max-w-[420px]"
           >
-            <div className="mb-4 flex items-center justify-between">
-              <span className="label-section">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-400/10 text-amber-300">
+                <TriangleAlert size={15} />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="label-section text-amber-200/60">
+                  {t(
+                    'dashboard.today.urgentTitle',
+                  )}
+                </p>
+                <p className="mt-1.5 truncate text-sm font-medium text-white/85">
+                  {urgentTask.title}
+                </p>
+                <p className="mt-1 text-xs text-white/35">
+                  {t(
+                    'dashboard.today.' +
+                      urgentReasonKey,
+                  )}
+                </p>
+              </div>
+
+              {!urgentTaskIsPlannedToday && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    addToToday(urgentTask)
+                  }
+                  aria-label={t(
+                    'dashboard.today.addToToday',
+                  )}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/30 transition-colors hover:bg-white/[0.06] hover:text-white"
+                >
+                  <ChevronRight size={15} />
+                </button>
+              )}
+            </div>
+          </motion.section>
+        )}
+      </motion.header>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: 0.05,
+            duration: 0.35,
+          }}
+          className="relative overflow-hidden rounded-[28px] border border-emerald-400/15 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.16),transparent_40%),linear-gradient(145deg,rgba(14,24,20,0.96),rgba(7,12,10,0.98))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:p-8 xl:col-span-3"
+        >
+          <div className="relative z-10">
+            <div className="mb-8 flex items-center justify-between gap-4">
+              <span className="label-section text-emerald-300/80">
+                {hasActiveSession &&
+                activeTask
+                  ? t(
+                      'dashboard.today.activeEyebrow',
+                    )
+                  : t(
+                      'dashboard.today.primaryEyebrow',
+                    )}
+              </span>
+
+              {hasActiveSession && (
+                <span className="flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.08] px-3 py-1.5 font-mono text-xs text-emerald-300">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                  {formatTime(
+                    secondsLeft,
+                  )}
+                </span>
+              )}
+            </div>
+
+            {nextTask ? (
+              <>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.05] text-xl">
+                    {nextTask.projectId
+                      ? projectById.get(
+                          nextTask.projectId,
+                        )?.emoji ?? '✓'
+                      : '✓'}
+                  </div>
+
+                  <div className="min-w-0">
+                    <h2 className="text-2xl font-semibold leading-tight text-white sm:text-3xl">
+                      {nextTask.title}
+                    </h2>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-white/40">
+                      {nextTask.projectId &&
+                        projectById.get(
+                          nextTask.projectId,
+                        ) && (
+                          <span>
+                            {
+                              projectById.get(
+                                nextTask.projectId,
+                              )?.name
+                            }
+                          </span>
+                        )}
+
+                      <span className="flex items-center gap-1.5">
+                        <Clock3 size={13} />
+                        {nextTask
+                          .estimatedPomodoros ===
+                        1
+                          ? t(
+                              'dashboard.today.oneEstimatedSession',
+                            )
+                          : t(
+                              'dashboard.today.estimatedSessions',
+                              {
+                                count:
+                                  nextTask.estimatedPomodoros,
+                              },
+                            )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    startTask(nextTask)
+                  }
+                  className="btn-primary mt-9"
+                >
+                  <Play size={15} />
+                  {hasActiveSession
+                    ? t(
+                        'dashboard.today.continueFocus',
+                      )
+                    : t(
+                        'dashboard.today.startFocus',
+                      )}
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-semibold text-white sm:text-3xl">
+                  {t(
+                    'dashboard.today.noTaskTitle',
+                  )}
+                </h2>
+
+                <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/45">
+                  {t(
+                    'dashboard.today.noTaskDescription',
+                  )}
+                </p>
+
+                <Link
+                  to="/tasks"
+                  className="btn-primary mt-8 inline-flex"
+                >
+                  <CalendarDays size={15} />
+                  {t(
+                    'dashboard.today.planDay',
+                  )}
+                </Link>
+              </>
+            )}
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: 0.1,
+            duration: 0.35,
+          }}
+          className="card flex flex-col p-6 xl:col-span-2"
+        >
+          <div className="mb-6 flex items-center justify-between">
+            <span className="label-section">
+              {t(
+                'dashboard.today.progressTitle',
+              )}
+            </span>
+
+            <span className="font-mono text-xs text-white/35">
+              {Math.round(
+                focusRatio * 100,
+              )}
+              %
+            </span>
+          </div>
+
+          <div className="grid flex-1 grid-cols-3 gap-3">
+            <div>
+              <p className="text-2xl font-semibold text-white">
+                {completedToday.length}
+                <span className="text-white/25">
+                  /{todayPlan.length}
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-white/35">
                 {t(
-                  'dashboard.timer.dailyProgress',
+                  'dashboard.today.plannedTasks',
                 )}
-              </span>
-
-              <span className="font-mono text-xs text-white/40">
-                {Math.round(
-                  progressRatio *
-                    100,
-                )}
-                %
-              </span>
+              </p>
             </div>
 
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
-              <motion.div
-                initial={{
-                  width: 0,
-                }}
-                animate={{
-                  width: `${progressRatio * 100}%`,
-                }}
-                transition={{
-                  duration: 1,
-                  ease: 'easeOut',
-                  delay: 0.3,
-                }}
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500"
-              />
+            <div>
+              <p className="text-2xl font-semibold text-white">
+                {formatDuration(
+                  todayFocus,
+                )}
+              </p>
+              <p className="mt-1 text-xs text-white/35">
+                {t(
+                  'dashboard.today.focusTime',
+                )}
+              </p>
             </div>
 
-            <div className="mt-3 flex justify-between">
-              <span className="text-xs text-white/30">
+            <div>
+              <p className="text-2xl font-semibold text-white">
+                {todaySessions.length}
+              </p>
+              <p className="mt-1 text-xs text-white/35">
+                {t(
+                  'dashboard.today.sessions',
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-7">
+            <div className="mb-2 flex justify-between text-xs text-white/30">
+              <span>
                 {formatDuration(
                   todayFocus,
                 )}
               </span>
-
-              <span className="text-xs text-white/30">
+              <span>
                 {formatDuration(
-                  dailyFocusGoalMinutes,
+                  dailyGoal,
                 )}
               </span>
             </div>
-          </motion.div>
-        </div>
 
-        {/* Tasks and projects */}
+            <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{
+                  width:
+                    focusRatio * 100 + '%',
+                }}
+                transition={{
+                  delay: 0.25,
+                  duration: 0.8,
+                }}
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500"
+              />
+            </div>
+          </div>
+        </motion.section>
+      </div>
 
-        <div className="flex min-w-0 flex-col gap-5 xl:col-span-3">
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 6,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: 0.15,
-            }}
-            className="card p-6"
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <span className="label-section">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="card p-6 xl:col-span-3"
+        >
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-white">
                 {t(
-                  'dashboard.tasks.pending',
+                  'dashboard.today.planTitle',
                 )}
-              </span>
+              </h2>
+              {todayPlan.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                  <span className="text-white/35">
+                    {Math.round(
+                      taskRatio * 100,
+                    )}
+                    % {t(
+                      'dashboard.today.completed',
+                    ).toLowerCase()}
+                  </span>
+
+                  <span className="text-white/20">·</span>
+
+                  <span
+                    className={dailyLoadColor}
+                  >
+                    {t(
+                      `dashboard.today.load.${dailyLoadStatus}`,
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {todayPlan.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPlanEditorOpen(true)
+                  }
+                  className="flex items-center gap-1.5 text-xs text-emerald-300/65 transition-colors hover:text-emerald-300"
+                >
+                  <SlidersHorizontal size={12} />
+                  {t(
+                    'dashboard.today.organize',
+                  )}
+                </button>
+              )}
 
               <Link
                 to="/tasks"
-                className="flex items-center gap-1 text-xs text-white/35 transition-colors hover:text-white/65"
+                className="flex items-center gap-1 text-xs text-white/35 transition-colors hover:text-white/70"
               >
                 {t(
-                  'dashboard.tasks.viewAll',
+                  'dashboard.today.viewAllTasks',
                 )}
-                <ArrowRight
-                  size={12}
-                />
+                <ArrowRight size={12} />
               </Link>
             </div>
+          </div>
 
-            {pendingTasks.length ===
-            0 ? (
-              <div className="flex min-h-[180px] items-center justify-center">
-                <p className="text-sm text-white/30">
+          {todayPlan.length === 0 ? (
+            contextualSuggestions.length > 0 ? (
+              <div className="space-y-2">
+                <p className="mb-3 text-xs text-white/35">
                   {t(
-                    'dashboard.tasks.allComplete',
+                    'dashboard.today.suggestionsDescription',
                   )}
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {pendingTasks.map(
-                  (
-                    task,
-                    index,
-                  ) => (
-                    <motion.div
+                {contextualSuggestions.map(
+                  (task) => (
+                    <button
                       key={task.id}
-                      initial={{
-                        opacity: 0,
-                        x: -6,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        x: 0,
-                      }}
-                      transition={{
-                        delay:
-                          0.2 +
-                          index *
-                            0.05,
-                      }}
-                      className="flex items-start gap-3 rounded-xl border border-white/[0.04] bg-white/[0.025] p-3.5"
+                      type="button"
+                      onClick={() =>
+                        addToToday(task)
+                      }
+                      disabled={
+                        updateTask.isPending
+                      }
+                      className="group flex w-full min-w-0 items-center gap-3 rounded-2xl border border-dashed border-white/[0.07] p-3.5 text-left transition-colors hover:border-emerald-400/20 hover:bg-emerald-400/[0.035]"
                     >
-                      <div className="mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border border-white/20" />
-
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm text-white/80">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white/35">
+                        +
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-white/55">
                           {task.title}
-                        </p>
-
-                        <div className="mt-1.5 flex items-center gap-2">
-                          <span className="font-mono text-xs text-white/30">
-                            {
-                              task.completedPomodoros
-                            }
-                            /
-                            {
-                              task.estimatedPomodoros
-                            }{' '}
-                            🍅
-                          </span>
-
-                          <span
-                            className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
-                            style={{
-                              backgroundColor:
-                                PRIORITY_COLORS[
-                                  task
-                                    .priority
-                                ],
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </motion.div>
+                        </span>
+                        <span className="mt-1 block text-[10px] uppercase tracking-[0.12em] text-emerald-300/45">
+                          {getSuggestionReason(
+                            task,
+                          )}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={14}
+                        className="shrink-0 text-white/15 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300"
+                      />
+                    </button>
                   ),
                 )}
               </div>
-            )}
-          </motion.div>
-
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 6,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: 0.22,
-            }}
-            className="card p-6"
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <span className="label-section">
-                {t(
-                  'dashboard.projects.title',
-                )}
-              </span>
-
-              <Link
-                to="/projects"
-                className="flex items-center gap-1 text-xs text-white/35 transition-colors hover:text-white/65"
-              >
-                {t(
-                  'dashboard.projects.viewAll',
-                )}
-                <ArrowRight
-                  size={12}
-                />
-              </Link>
-            </div>
-
-            {projects.length === 0 ? (
-              <div className="flex min-h-[140px] items-center justify-center">
+            ) : (
+              <div className="flex min-h-[130px] items-center justify-center rounded-2xl border border-dashed border-white/[0.08]">
                 <p className="text-sm text-white/30">
                   {t(
-                    'dashboard.projects.empty',
+                    'dashboard.today.planEmpty',
                   )}
                 </p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {projects
-                  .slice(0, 3)
-                  .map(
-                    (
-                      project,
-                      index,
-                    ) => {
-                      const progress =
-                        project.totalSessions >
-                        0
-                          ? Math.min(
-                              project.completedSessions /
-                                project.totalSessions,
-                              1,
+            )
+          ) : (
+            <div className="space-y-2">
+              {visibleTodayPlan.map(
+                (task, index) => (
+                  <div
+                    key={task.id}
+                    className="group flex items-center gap-3 rounded-2xl border border-white/[0.04] bg-white/[0.025] p-3.5"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        completeTask(task)
+                      }
+                      aria-label={
+                        task.completed
+                          ? t(
+                              'dashboard.today.completed',
                             )
-                          : 0
+                          : task.title
+                      }
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/15 text-emerald-300 transition-colors hover:border-emerald-400/40"
+                    >
+                      {task.completed ? (
+                        <Check size={13} />
+                      ) : (
+                        <Circle
+                          size={10}
+                          className="opacity-30"
+                        />
+                      )}
+                    </button>
 
-                      const focusMinutes =
-                        projectFocusMinutes.get(
-                          project.id,
-                        ) ?? 0
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={
+                          'truncate text-sm ' +
+                          (task.completed
+                            ? 'text-white/25 line-through'
+                            : 'text-white/80')
+                        }
+                      >
+                        {task.title}
+                      </p>
+
+                      <p className="mt-1 text-xs text-white/25">
+                        {task.dailyPriority
+                          ? '#' +
+                            task.dailyPriority +
+                            ' · '
+                          : ''}
+                        {task.estimatedPomodoros}{' '}
+                        × {settings.workDuration}
+                        min
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeFromToday(task)
+                      }
+                      disabled={
+                        updateTask.isPending
+                      }
+                      title={t(
+                        'dashboard.today.removeFromToday',
+                      )}
+                      aria-label={t(
+                        'dashboard.today.removeFromToday',
+                      )}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/20 transition-colors hover:bg-red-400/[0.08] hover:text-red-300 disabled:opacity-30"
+                    >
+                      <X size={13} />
+                    </button>
+
+                    {!task.completed && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startTask(task)
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.04] text-white/35 transition-colors hover:bg-emerald-400/10 hover:text-emerald-300"
+                      >
+                        <Play size={13} />
+                      </button>
+                    )}
+
+                    <span className="w-4 text-right font-mono text-[10px] text-white/15">
+                      {index + 1}
+                    </span>
+                  </div>
+                ),
+              )}
+
+              {contextualSuggestions.map(
+                (task) => (
+                  <button
+                    key={task.id}
+                    type="button"
+                    onClick={() =>
+                      addToToday(task)
+                    }
+                    disabled={
+                      updateTask.isPending
+                    }
+                    className="group flex w-full min-w-0 items-center gap-3 rounded-2xl border border-dashed border-white/[0.07] p-3.5 text-left transition-colors hover:border-emerald-400/20 hover:bg-emerald-400/[0.035]"
+                  >
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white/35">
+                      +
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-white/45">
+                        {task.title}
+                      </span>
+                      <span className="mt-1 block text-[10px] uppercase tracking-[0.12em] text-emerald-300/45">
+                        {t(
+                          'dashboard.today.suggestedTask',
+                        )}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      size={14}
+                      className="shrink-0 text-white/15 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300"
+                    />
+                  </button>
+                ),
+              )}
+
+              {hiddenTodayCount > 0 && (
+                <Link
+                  to="/tasks"
+                  className="flex items-center justify-center gap-1 py-1 text-xs text-white/35 transition-colors hover:text-white/65"
+                >
+                  {t(
+                    'dashboard.today.morePlannedTasks',
+                    {
+                      count:
+                        hiddenTodayCount,
+                    },
+                  )}
+                  <ArrowRight size={12} />
+                </Link>
+              )}
+            </div>
+          )}
+        </motion.section>
+
+        <div className="flex flex-col gap-5 xl:col-span-2">
+          <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.24 }}
+            className="card overflow-hidden p-5"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold leading-snug text-white">
+                  {t(
+                    'dashboard.today.achievementsTitle',
+                  )}
+                </h2>
+                <p className="mt-1 text-xs text-white/35">
+                  {t(
+                    'dashboard.today.badgeCount',
+                    {
+                      count:
+                        earnedBadges.length,
+                    },
+                  )}
+                </p>
+              </div>
+              <Trophy
+                size={17}
+                className="shrink-0 text-amber-300/60"
+              />
+            </div>
+
+            <div className="space-y-4">
+              {earnedBadges.length > 0 ? (
+                <div className="grid grid-cols-6 gap-2 sm:grid-cols-9 sm:gap-1.5">
+                  {earnedBadges.map(
+                    (badge) => {
+                      const badgeName = t(
+                        'streaksPage.badges.' +
+                          badge.minimumDays +
+                          '.name',
+                      )
 
                       return (
-                        <motion.div
+                        <Link
                           key={
-                            project.id
+                            badge.minimumDays
                           }
-                          initial={{
-                            opacity: 0,
-                            x: -6,
-                          }}
-                          animate={{
-                            opacity: 1,
-                            x: 0,
-                          }}
-                          transition={{
-                            delay:
-                              0.28 +
-                              index *
-                                0.06,
-                          }}
-                          className="flex items-center gap-3"
+                          to="/streaks"
+                          title={badgeName}
+                          aria-label={badgeName}
+                          className="flex aspect-square min-w-0 items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.025] transition-colors hover:border-emerald-300/20 hover:bg-emerald-300/[0.04]"
                         >
-                          <span className="text-lg">
-                            {
-                              project.emoji
+                          <StreakBadgeIcon
+                            minimumDays={
+                              badge.minimumDays
                             }
-                          </span>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-2 flex items-center justify-between gap-3">
-                              <span className="truncate text-sm font-medium text-white/80">
-                                {
-                                  project.name
-                                }
-                              </span>
-
-                              <span className="flex-shrink-0 font-mono text-xs text-white/30">
-                                {formatDuration(
-                                  focusMinutes,
-                                )}
-                              </span>
-                            </div>
-
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
-                              <motion.div
-                                initial={{
-                                  width: 0,
-                                }}
-                                animate={{
-                                  width: `${progress * 100}%`,
-                                }}
-                                transition={{
-                                  duration: 0.8,
-                                  ease: 'easeOut',
-                                  delay:
-                                    0.35 +
-                                    index *
-                                      0.07,
-                                }}
-                                className="h-full rounded-full"
-                                style={{
-                                  backgroundColor:
-                                    project.color,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </motion.div>
+                            size={34}
+                          />
+                        </Link>
                       )
                     },
                   )}
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-white/[0.08] px-3 py-4 text-center text-xs text-white/30">
+                  {t(
+                    'dashboard.today.noBadgesYet',
+                  )}
+                </p>
+              )}
+
+              <Link
+                to="/focusme"
+                className="group flex items-center gap-3 rounded-2xl border border-white/[0.05] bg-white/[0.02] p-3 transition-colors hover:bg-white/[0.035]"
+              >
+                {focusHome ? (
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border bg-white/[0.025]"
+                    style={{
+                      color:
+                        FOCUS_HOME_COLORS[
+                          focusHome.focusHome
+                        ],
+                      borderColor:
+                        FOCUS_HOME_COLORS[
+                          focusHome.focusHome
+                        ] + '35',
+                    }}
+                  >
+                    <FocusHomeSymbol
+                      type={
+                        focusHome.focusHome
+                      }
+                      size={34}
+                      compact
+                      colored
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.025] text-white/20">
+                    <Sparkles size={17} />
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/30">
+                    {t(
+                      'dashboard.today.focusHomeLabel',
+                    )}
+                  </p>
+                  <p className="mt-1 truncate text-sm font-medium text-white/70">
+                    {focusHome
+                      ? t(
+                          'focusHomeIdentity.archetypes.' +
+                            focusHome.archetype,
+                        )
+                      : t(
+                          'dashboard.today.focusHomeLocked',
+                        )}
+                  </p>
+                </div>
+                <ChevronRight
+                  size={14}
+                  className="text-white/20 transition-transform group-hover:translate-x-0.5 group-hover:text-white/50"
+                />
+              </Link>
+            </div>
+          </motion.section>
+
+          <motion.section
+            initial={{
+              opacity: 0,
+              y: 8,
+            }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.21 }}
+            className="card p-5"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
+                <Sparkles size={16} />
               </div>
-            )}
-          </motion.div>
+
+              <div>
+                <p className="label-section">
+                  {t(
+                    'dashboard.today.insightTitle',
+                  )}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-white/55">
+                  {t(
+                    'dashboard.today.' +
+                      insightKey,
+                  )}
+                </p>
+              </div>
+            </div>
+          </motion.section>
+
         </div>
       </div>
+
+
+      <Modal
+        isOpen={planEditorOpen}
+        onClose={() =>
+          setPlanEditorOpen(false)
+        }
+        title={t(
+          'dashboard.today.organizeTitle',
+        )}
+      >
+        <div className="space-y-3">
+          <p className="text-xs leading-relaxed text-white/40">
+            {t(
+              'dashboard.today.organizeDescription',
+            )}
+          </p>
+
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+            <div className="flex items-start gap-3">
+              <Gauge
+                size={17}
+                className={
+                  dailyLoadColor
+                }
+              />
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p
+                    className={cn(
+                      'text-sm font-semibold',
+                      dailyLoadColor,
+                    )}
+                  >
+                    {t(
+                      `dashboard.today.load.${dailyLoadStatus}`,
+                    )}
+                  </p>
+
+                  <span className="text-[11px] text-white/35">
+                    {t(
+                      'dashboard.today.load.comparison',
+                      {
+                        planned:
+                          formatDuration(
+                            estimatedPlanMinutes,
+                          ),
+                        available:
+                          formatDuration(
+                            remainingDailyCapacity,
+                          ),
+                      },
+                    )}
+                  </span>
+                </div>
+
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-[width] duration-300',
+                      dailyLoadBarColor,
+                    )}
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        dailyLoadRatio * 100,
+                      )}%`,
+                    }}
+                  />
+                </div>
+
+                <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+                  {t(
+                    `dashboard.today.load.${dailyLoadStatus}Description`,
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {todayPlan.map(
+            (task, index) => (
+              <div
+                key={task.id}
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="min-w-0 flex-1 truncate text-sm text-white/75">
+                    {task.title}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      moveTodayTask(
+                        index,
+                        -1,
+                      )
+                    }
+                    disabled={
+                      index === 0 ||
+                      Boolean(
+                        task.dailyPriority,
+                      ) ||
+                      Boolean(
+                        todayPlan[
+                          index - 1
+                        ]?.dailyPriority,
+                      ) ||
+                      reorderDailyPlan.isPending
+                    }
+                    aria-label={t(
+                      'dashboard.today.moveUp',
+                      {
+                        title: task.title,
+                      },
+                    )}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 transition-colors hover:text-white disabled:opacity-20"
+                  >
+                    <ArrowUp size={13} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      moveTodayTask(
+                        index,
+                        1,
+                      )
+                    }
+                    disabled={
+                      index ===
+                        todayPlan.length - 1 ||
+                      Boolean(
+                        task.dailyPriority,
+                      ) ||
+                      reorderDailyPlan.isPending
+                    }
+                    aria-label={t(
+                      'dashboard.today.moveDown',
+                      {
+                        title: task.title,
+                      },
+                    )}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 transition-colors hover:text-white disabled:opacity-20"
+                  >
+                    <ArrowDown size={13} />
+                  </button>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-white/25">
+                    {t(
+                      'dashboard.today.priorityLabel',
+                    )}
+                  </span>
+
+                  <div className="flex gap-1.5">
+                    {([1, 2, 3] as const).map(
+                      (priority) => (
+                        <button
+                          key={priority}
+                          type="button"
+                          onClick={() =>
+                            changeDailyPriority(
+                              task,
+                              priority,
+                            )
+                          }
+                          disabled={
+                            setDailyPriority.isPending
+                          }
+                          aria-pressed={
+                            task.dailyPriority ===
+                            priority
+                          }
+                          className={cn(
+                            'flex h-7 w-7 items-center justify-center rounded-lg text-xs font-semibold transition-colors',
+                            task.dailyPriority ===
+                              priority
+                              ? 'bg-emerald-300 text-black'
+                              : 'bg-white/[0.04] text-white/35 hover:text-white/70',
+                          )}
+                        >
+                          {priority}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
+            ),
+          )}
+
+          <p className="text-[11px] leading-relaxed text-white/30">
+            {t(
+              'dashboard.today.priorityHelp',
+            )}
+          </p>
+
+          {pendingToday.length > 0 && (
+            <button
+              type="button"
+              onClick={openDayClosure}
+              className="btn-ghost flex w-full items-center justify-center gap-2"
+            >
+              <Archive size={14} />
+              {t(
+                'dashboard.today.closure.open',
+              )}
+            </button>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={dayClosureOpen}
+        onClose={() => {
+          if (!closeDailyPlan.isPending) {
+            setDayClosureOpen(false)
+          }
+        }}
+        title={t(
+          'dashboard.today.closure.title',
+        )}
+      >
+        <div className="space-y-4">
+          <p className="text-xs leading-relaxed text-white/40">
+            {t(
+              'dashboard.today.closure.description',
+            )}
+          </p>
+
+          <div className="space-y-3">
+            {pendingToday.map(
+              (task) => {
+                const selected =
+                  dayClosureDecisions[
+                    task.id
+                  ]
+
+                return (
+                  <div
+                    key={task.id}
+                    className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5"
+                  >
+                    <p className="truncate text-sm text-white/75">
+                      {task.title}
+                    </p>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {([
+                        [
+                          'tomorrow',
+                          'dashboard.today.closure.tomorrow',
+                          CalendarPlus,
+                        ],
+                        [
+                          'backlog',
+                          'dashboard.today.closure.backlog',
+                          Archive,
+                        ],
+                        [
+                          'keep',
+                          'dashboard.today.closure.keep',
+                          Clock3,
+                        ],
+                      ] as const).map(
+                        ([
+                          destination,
+                          labelKey,
+                          Icon,
+                        ]) => (
+                          <button
+                            key={destination}
+                            type="button"
+                            onClick={() =>
+                              setDayClosureDecisions(
+                                (
+                                  current,
+                                ) => ({
+                                  ...current,
+                                  [task.id]:
+                                    destination,
+                                }),
+                              )
+                            }
+                            disabled={
+                              closeDailyPlan.isPending
+                            }
+                            className={cn(
+                              'flex min-w-0 flex-col items-center gap-1.5 rounded-xl px-2 py-2.5 text-[10px] transition-colors',
+                              selected ===
+                                destination
+                                ? 'bg-emerald-300 text-black'
+                                : 'bg-white/[0.04] text-white/40 hover:text-white/70',
+                            )}
+                          >
+                            <Icon size={13} />
+                            <span className="truncate">
+                              {t(labelKey)}
+                            </span>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )
+              },
+            )}
+          </div>
+
+          <p className="text-[11px] leading-relaxed text-white/30">
+            {t(
+              'dashboard.today.closure.history',
+            )}
+          </p>
+
+          {closeDailyPlan.isError && (
+            <p className="text-xs text-red-300">
+              {t(
+                'dashboard.today.closure.error',
+              )}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              void confirmDayClosure()
+            }}
+            disabled={
+              closeDailyPlan.isPending ||
+              pendingToday.some(
+                (task) =>
+                  !dayClosureDecisions[
+                    task.id
+                  ],
+              )
+            }
+            className="btn-primary flex w-full items-center justify-center gap-2 disabled:opacity-35"
+          >
+            {closeDailyPlan.isPending ? (
+              <LoaderCircle
+                size={15}
+                className="animate-spin"
+              />
+            ) : (
+              <Check size={15} />
+            )}
+            {t(
+              closeDailyPlan.isPending
+                ? 'dashboard.today.closure.saving'
+                : 'dashboard.today.closure.confirm',
+            )}
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }
