@@ -1,21 +1,40 @@
 import { createTimerDeadline, getRemainingSeconds } from '@focus/shared/timer'
 
 import {
-  DEFAULT_TIMER_STATE,
   TIMER_ALARM_NAME,
+  getSessionDurationSeconds,
   type ExtensionTimerState,
+  type SessionType,
   readTimerState,
   writeTimerState,
 } from './timerStorage'
 
-function getCompletedTimerState(
+function getNextSessionState(
   state: ExtensionTimerState,
 ): ExtensionTimerState {
+  const nextCount =
+    state.sessionType === 'work'
+      ? state.currentSessionCount + 1
+      : state.currentSessionCount
+
+  const shouldUseLongBreak =
+    nextCount > 0 &&
+    nextCount % state.settings.sessionsUntilLongBreak === 0
+
+  const nextType: SessionType =
+    state.sessionType === 'work'
+      ? shouldUseLongBreak
+        ? 'long_break'
+        : 'short_break'
+      : 'work'
+
   return {
     ...state,
-    status: 'idle',
-    secondsLeft: DEFAULT_TIMER_STATE.secondsLeft,
+    status: 'completed',
+    sessionType: nextType,
+    secondsLeft: getSessionDurationSeconds(nextType, state.settings),
     endsAt: null,
+    currentSessionCount: nextCount,
   }
 }
 
@@ -24,10 +43,7 @@ export async function getTimerState(
 ): Promise<ExtensionTimerState> {
   const state = await readTimerState()
 
-  if (
-    state.status !== 'running' ||
-    state.endsAt === null
-  ) {
+  if (state.status !== 'running' || state.endsAt === null) {
     return state
   }
 
@@ -40,8 +56,7 @@ export async function getTimerState(
     }
   }
 
-  const completedState = getCompletedTimerState(state)
-
+  const completedState = getNextSessionState(state)
   await writeTimerState(completedState)
   return completedState
 }
@@ -86,7 +101,57 @@ export async function pauseTimer(
 
   await chrome.alarms.clear(TIMER_ALARM_NAME)
   await writeTimerState(nextState)
+  return nextState
+}
 
+export async function resetTimer(): Promise<ExtensionTimerState> {
+  const state = await readTimerState()
+
+  const nextState: ExtensionTimerState = {
+    ...state,
+    status: 'idle',
+    secondsLeft: getSessionDurationSeconds(state.sessionType, state.settings),
+    endsAt: null,
+  }
+
+  await chrome.alarms.clear(TIMER_ALARM_NAME)
+  await writeTimerState(nextState)
+  return nextState
+}
+
+export async function switchTimerSession(
+  sessionType: SessionType,
+): Promise<ExtensionTimerState> {
+  const state = await readTimerState()
+
+  if (state.status === 'running') {
+    return state
+  }
+
+  const nextState: ExtensionTimerState = {
+    ...state,
+    status: 'idle',
+    sessionType,
+    secondsLeft: getSessionDurationSeconds(sessionType, state.settings),
+    endsAt: null,
+  }
+
+  await chrome.alarms.clear(TIMER_ALARM_NAME)
+  await writeTimerState(nextState)
+  return nextState
+}
+
+export async function toggleTimerSound(): Promise<ExtensionTimerState> {
+  const state = await readTimerState()
+  const nextState: ExtensionTimerState = {
+    ...state,
+    settings: {
+      ...state.settings,
+      soundEnabled: !state.settings.soundEnabled,
+    },
+  }
+
+  await writeTimerState(nextState)
   return nextState
 }
 
@@ -95,6 +160,11 @@ export async function setActiveTimerTask(
   projectId: string | null,
 ): Promise<ExtensionTimerState> {
   const state = await getTimerState()
+
+  if (state.status === 'running') {
+    return state
+  }
+
   const nextState: ExtensionTimerState = {
     ...state,
     activeTaskId: taskId,
@@ -105,14 +175,8 @@ export async function setActiveTimerTask(
   return nextState
 }
 
-export async function resetTimer(): Promise<ExtensionTimerState> {
-  await chrome.alarms.clear(TIMER_ALARM_NAME)
-  await writeTimerState(DEFAULT_TIMER_STATE)
-  return DEFAULT_TIMER_STATE
-}
-
 export function completeTimerState(
   state: ExtensionTimerState,
 ): ExtensionTimerState {
-  return getCompletedTimerState(state)
+  return getNextSessionState(state)
 }
