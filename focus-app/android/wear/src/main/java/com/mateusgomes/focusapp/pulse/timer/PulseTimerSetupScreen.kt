@@ -1,5 +1,6 @@
 package com.mateusgomes.focusapp.pulse.timer
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -55,6 +56,9 @@ fun PulseTimerSetupScreen(
     onDone: () -> Unit,
 ) {
     var projectPickerVisible by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = projectPickerVisible) {
+        projectPickerVisible = false
+    }
     if (projectPickerVisible) {
         PulseProjectPicker(
             projects = projects,
