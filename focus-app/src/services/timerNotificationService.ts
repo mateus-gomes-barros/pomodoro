@@ -24,6 +24,10 @@ interface PomodoroServicePlugin {
 
   stopService(): Promise<void>
 
+  publishFocusPulseSnapshot(options: {
+    snapshotJson: string
+  }): Promise<void>
+
   getFocusPulseStatus(): Promise<FocusPulseStatus>
   retryFocusPulse(): Promise<{ retried: boolean }>
 
@@ -294,6 +298,15 @@ export async function showTimerNotification(
       error,
     )
   }
+}
+
+export async function publishFocusPulseSnapshot(
+  snapshot: unknown,
+) {
+  if (!isFocusPulseAvailable()) return
+  await PomodoroService.publishFocusPulseSnapshot({
+    snapshotJson: JSON.stringify(snapshot),
+  })
 }
 
 export async function clearTimerNotification() {
