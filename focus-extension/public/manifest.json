@@ -6,7 +6,10 @@
   "action": {
     "default_title": "Focus — Horizon",
     "default_popup": "index.html",
-    "default_icon": "focus-icon.png"
+    "default_icon": {
+      "16": "focus-icon-16.png",
+      "32": "focus-icon-32.png"
+    }
   },
   "background": {
     "service_worker": "background.js",
@@ -22,6 +25,9 @@
     "https://fjixvpdfbvfwgzzjlphb.supabase.co/*"
   ],
   "icons": {
-    "128": "focus-icon.png"
+    "16": "focus-icon-16.png",
+    "32": "focus-icon-32.png",
+    "48": "focus-icon-48.png",
+    "128": "focus-icon-128.png"
   }
 }
