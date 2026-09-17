@@ -26,7 +26,12 @@ vi.mock('../lib/supabase', () => ({
   },
 }))
 
-import { getAuthState, signInWithGoogle, signOutUser } from './authService'
+import {
+  getAuthState,
+  performGoogleSignIn,
+  signInWithGoogle,
+  signOutUser,
+} from './authService'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -36,6 +41,9 @@ beforeEach(() => {
       identity: {
         getRedirectURL: vi.fn(() => 'https://extension-id.chromiumapp.org/auth'),
         launchWebAuthFlow: vi.fn(async () => undefined),
+      },
+      runtime: {
+        sendMessage: vi.fn(async () => ({ ok: true })),
       },
       storage: {
         local: {
@@ -58,7 +66,15 @@ describe('extension auth service', () => {
     })
   })
 
-  it('completes Google OAuth from an implicit redirect', async () => {
+  it('asks the background service worker to start Google OAuth', async () => {
+    await signInWithGoogle()
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'focus-auth-google',
+    })
+  })
+
+  it('completes Google OAuth from an implicit redirect in the background', async () => {
     signInWithOAuth.mockResolvedValue({
       data: { url: 'https://supabase.example/oauth' },
       error: null,
@@ -75,7 +91,7 @@ describe('extension auth service', () => {
       error: null,
     })
 
-    const session = await signInWithGoogle()
+    const session = await performGoogleSignIn()
 
     expect(chrome.identity.launchWebAuthFlow).toHaveBeenCalledWith({
       url: 'https://supabase.example/oauth',
