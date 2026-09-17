@@ -6,6 +6,8 @@ import {
   resetTimer,
   setActiveTimerTask,
   startTimer,
+  switchTimerSession,
+  toggleTimerSound,
 } from './timerStore'
 import {
   DEFAULT_TIMER_STATE,
@@ -78,7 +80,7 @@ describe('extension timer engine', () => {
     expect(storage[TIMER_STORAGE_KEY]).toEqual(state)
   })
 
-  it('reconstructs an expired running timer as ready for a new session', async () => {
+  it('completes focus into the next break using the same session cycle as Focus', async () => {
     storage[TIMER_STORAGE_KEY] = {
       ...DEFAULT_TIMER_STATE,
       status: 'running',
@@ -88,21 +90,43 @@ describe('extension timer engine', () => {
 
     const state = await getTimerState(3_000)
 
-    expect(state.status).toBe('idle')
-    expect(state.secondsLeft).toBe(DEFAULT_TIMER_STATE.secondsLeft)
+    expect(state.status).toBe('completed')
+    expect(state.sessionType).toBe('short_break')
+    expect(state.secondsLeft).toBe(5 * 60)
+    expect(state.currentSessionCount).toBe(1)
     expect(state.endsAt).toBeNull()
     expect(state.activeTaskId).toBe('task-1')
   })
 
-  it('resets to the default timer state', async () => {
+  it('resets the current session without clearing task or project context', async () => {
     storage[TIMER_STORAGE_KEY] = {
       ...DEFAULT_TIMER_STATE,
       status: 'paused',
       secondsLeft: 42,
+      activeTaskId: 'task-1',
+      activeProjectId: 'project-1',
     }
 
     const state = await resetTimer()
 
-    expect(state).toEqual(DEFAULT_TIMER_STATE)
+    expect(state.status).toBe('idle')
+    expect(state.secondsLeft).toBe(25 * 60)
+    expect(state.activeTaskId).toBe('task-1')
+    expect(state.activeProjectId).toBe('project-1')
+  })
+
+  it('switches between focus and break durations when not running', async () => {
+    const state = await switchTimerSession('long_break')
+
+    expect(state.sessionType).toBe('long_break')
+    expect(state.secondsLeft).toBe(15 * 60)
+    expect(state.status).toBe('idle')
+  })
+
+  it('toggles sound without changing the current timer', async () => {
+    const state = await toggleTimerSound()
+
+    expect(state.settings.soundEnabled).toBe(false)
+    expect(state.secondsLeft).toBe(25 * 60)
   })
 })
