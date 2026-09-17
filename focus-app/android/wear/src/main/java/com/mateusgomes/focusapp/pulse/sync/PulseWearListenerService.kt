@@ -19,9 +19,24 @@ class PulseWearListenerService : WearableListenerService() {
     override fun onDataChanged(events: DataEventBuffer) {
         events.forEach { event ->
             if (event.type != DataEvent.TYPE_CHANGED) return@forEach
-            if (event.dataItem.uri.path != PulseWearContract.TIMER_STATE_PATH) return@forEach
-
+            val path = event.dataItem.uri.path
             val data = DataMapItem.fromDataItem(event.dataItem).dataMap
+
+            if (path == PulseWearContract.SNAPSHOT_PATH) {
+                val snapshotJson = data.getString(
+                    PulseWearContract.KEY_SNAPSHOT_JSON,
+                    "{}",
+                )
+                runCatching {
+                    PulseFocusSnapshotStore(this).save(snapshotJson)
+                    sendBroadcast(
+                        Intent(ACTION_FOCUS_SNAPSHOT_UPDATED).setPackage(packageName),
+                    )
+                }
+                return@forEach
+            }
+
+            if (path != PulseWearContract.TIMER_STATE_PATH) return@forEach
             if (data.getString(
                     PulseWearContract.KEY_SOURCE_DEVICE,
                     "",
@@ -141,5 +156,7 @@ class PulseWearListenerService : WearableListenerService() {
     companion object {
         const val ACTION_REMOTE_TIMER_UPDATED =
             "com.mateusgomes.focusapp.pulse.REMOTE_TIMER_UPDATED"
+        const val ACTION_FOCUS_SNAPSHOT_UPDATED =
+            "com.mateusgomes.focusapp.pulse.FOCUS_SNAPSHOT_UPDATED"
     }
 }
