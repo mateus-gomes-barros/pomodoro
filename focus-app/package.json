@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "tauri": "tauri",
-    "desktop:prepare": "tauri icon assets-source/focus-app-icon.png",
+    "desktop:prepare": "tauri icon ios/App/App/Assets.xcassets/AppIcon.appiconset/pomodoro-icon.png",
     "desktop:dev": "npm run desktop:prepare && tauri dev",
     "desktop:build": "npm run desktop:prepare && tauri build"
   },
