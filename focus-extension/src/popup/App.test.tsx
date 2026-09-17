@@ -102,6 +102,14 @@ const projects = [
 describe('Focus Horizon popup', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    Object.assign(globalThis, {
+      chrome: {
+        tabs: {
+          create: vi.fn(async () => undefined),
+        },
+      },
+    })
     getTimerState.mockResolvedValue(idleState)
     startTimer.mockResolvedValue({
       ...idleState,
@@ -238,6 +246,34 @@ describe('Focus Horizon popup', () => {
     })
 
     expect(await screen.findByText('Mateus')).toBeInTheDocument()
+  })
+
+  it('opens the Focus Horizon web app from the header button', async () => {
+    render(<App />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /open focus horizon/i }),
+    )
+
+    expect(chrome.tabs.create).toHaveBeenCalledWith({
+      url: 'https://pomodoro-1ktl-theta.vercel.app/',
+    })
+  })
+
+  it('lets a signed-in user choose a project independently', async () => {
+    getAuthState.mockResolvedValue({
+      session: { user },
+      user,
+    })
+
+    render(<App />)
+
+    const projectSelect = await screen.findByLabelText(/active project/i)
+    fireEvent.change(projectSelect, { target: { value: 'project-1' } })
+
+    await waitFor(() => {
+      expect(setActiveTimerTask).toHaveBeenCalledWith(null, 'project-1')
+    })
   })
 
   it('loads account tasks and assigns one to the timer', async () => {
