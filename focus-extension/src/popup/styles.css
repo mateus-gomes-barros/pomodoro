@@ -28,6 +28,11 @@ button {
   color: inherit;
 }
 
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .popup-shell {
   width: 360px;
   min-height: 470px;
@@ -67,15 +72,19 @@ button {
   font-weight: 650;
 }
 
-.icon-button {
-  width: 36px;
-  height: 36px;
+.icon-button,
+.secondary-button {
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 12px;
   background: rgba(255, 255, 255, 0.045);
   cursor: pointer;
+}
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
 }
 
 .timer-card,
@@ -101,6 +110,12 @@ button {
   letter-spacing: -0.055em;
 }
 
+.timer-actions {
+  display: grid;
+  grid-template-columns: 1fr 46px;
+  gap: 9px;
+}
+
 .primary-button {
   width: 100%;
   min-height: 46px;
@@ -114,6 +129,12 @@ button {
   color: #052218;
   font-weight: 700;
   cursor: pointer;
+}
+
+.secondary-button {
+  width: 46px;
+  min-height: 46px;
+  border-radius: 14px;
 }
 
 .status-card {
