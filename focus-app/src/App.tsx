@@ -20,6 +20,9 @@ import {
 import {
   useTimer,
 } from './hooks/useTimer'
+import {
+  useFocusPulseSync,
+} from './hooks/useFocusPulseSync'
 
 import {
   LoginPage,
@@ -201,6 +204,7 @@ const ChangesPage = lazy(
 
 function TimerDriver() {
   useTimer()
+  useFocusPulseSync()
 
   return null
 }
