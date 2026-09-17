@@ -5,7 +5,8 @@
   "description": "Quick access to your Focus timer, tasks and reminders.",
   "action": {
     "default_title": "Focus — Horizon",
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_icon": "focus-icon.png"
   },
   "background": {
     "service_worker": "background.js",
@@ -19,5 +20,8 @@
   ],
   "host_permissions": [
     "https://fjixvpdfbvfwgzzjlphb.supabase.co/*"
-  ]
+  ],
+  "icons": {
+    "128": "focus-icon.png"
+  }
 }
