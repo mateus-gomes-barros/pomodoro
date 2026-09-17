@@ -31,6 +31,10 @@ public class FocusWearListenerService extends WearableListenerService {
                 receiveAcknowledgement(data);
             } else if (FocusWearContract.TIMER_STATE_PATH.equals(path)) {
                 receiveWatchState(data);
+            } else if (FocusWearContract.ACTION_PATH.equals(path)) {
+                PomodoroServicePlugin.onWearActionReceived(
+                        data.getString(FocusWearContract.KEY_ACTION_JSON, "{}")
+                );
             }
         }
     }
