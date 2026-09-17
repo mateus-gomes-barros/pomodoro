@@ -5,6 +5,7 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.WearableListenerService
+import com.mateusgomes.focusapp.pulse.tile.PulseAwardsTileService
 import com.mateusgomes.focusapp.pulse.tile.PulseTimerTileService
 import com.mateusgomes.focusapp.pulse.timer.PulseSession
 import com.mateusgomes.focusapp.pulse.timer.PulseTimerAlarmScheduler
@@ -29,6 +30,7 @@ class PulseWearListenerService : WearableListenerService() {
                 )
                 runCatching {
                     PulseFocusSnapshotStore(this).save(snapshotJson)
+                    PulseAwardsTileService.requestUpdate(this)
                     sendBroadcast(
                         Intent(ACTION_FOCUS_SNAPSHOT_UPDATED).setPackage(packageName),
                     )
