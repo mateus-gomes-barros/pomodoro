@@ -24,6 +24,17 @@ public class PomodoroServicePlugin extends Plugin {
     public void load() {
         super.load();
         instance = this;
+        String pendingWearAction = getContext()
+                .getSharedPreferences("focus_wear_actions", Context.MODE_PRIVATE)
+                .getString("pending_action_json", "");
+        if (pendingWearAction != null && !pendingWearAction.isEmpty()) {
+            onWearActionReceived(pendingWearAction);
+            getContext()
+                    .getSharedPreferences("focus_wear_actions", Context.MODE_PRIVATE)
+                    .edit()
+                    .remove("pending_action_json")
+                    .apply();
+        }
     }
 
     @Override
@@ -46,11 +57,12 @@ public class PomodoroServicePlugin extends Plugin {
         }
     }
 
-    public static void onWearActionReceived(String actionJson) {
-        if (instance == null) return;
+    public static boolean onWearActionReceived(String actionJson) {
+        if (instance == null) return false;
         com.getcapacitor.JSObject ret = new com.getcapacitor.JSObject();
         ret.put("actionJson", actionJson);
-        instance.notifyListeners("onWearAction", ret);
+        instance.notifyListeners("onWearAction", ret, true);
+        return true;
     }
 
     public static void onWearTimerStateReceived(
