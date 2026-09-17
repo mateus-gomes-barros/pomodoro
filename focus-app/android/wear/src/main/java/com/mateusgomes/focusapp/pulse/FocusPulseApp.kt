@@ -16,6 +16,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -128,20 +129,22 @@ fun FocusPulseApp() {
             PulseTaskDetailScreen(
                 task = task,
                 onFocus = {
-                    task ?: return@PulseTaskDetailScreen
-                    PulseWearDataLayer(context).publishAction(
-                        type = "select_task",
-                        taskId = task.id,
-                    )
-                    destination = PulseDestination.TIMER.name
+                    if (task != null) {
+                        PulseWearDataLayer(context).publishAction(
+                            type = "select_task",
+                            taskId = task.id,
+                        )
+                        destination = PulseDestination.TIMER.name
+                    }
                 },
                 onComplete = {
-                    task ?: return@PulseTaskDetailScreen
-                    PulseWearDataLayer(context).publishAction(
-                        type = "complete_task",
-                        taskId = task.id,
-                    )
-                    destination = PulseDestination.TODAY.name
+                    if (task != null) {
+                        PulseWearDataLayer(context).publishAction(
+                            type = "complete_task",
+                            taskId = task.id,
+                        )
+                        destination = PulseDestination.TODAY.name
+                    }
                 },
             )
         }
@@ -395,7 +398,7 @@ private fun PulseSettingsScreen(snapshot: PulseFocusSnapshot?) {
 @Composable
 private fun PulseScrollableScreen(
     accent: Color = PulseGreen,
-    content: @Composable Column.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
