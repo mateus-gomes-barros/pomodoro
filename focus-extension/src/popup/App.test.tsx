@@ -331,6 +331,19 @@ describe('Focus Horizon popup', () => {
     })
   })
 
+  it('shows an explicit sign out action for signed-in users', async () => {
+    getAuthState.mockResolvedValue({
+      session: { user },
+      user,
+    })
+
+    render(<App />)
+
+    expect(
+      await screen.findByRole('button', { name: /sign out/i }),
+    ).toBeInTheDocument()
+  })
+
   it('loads account tasks and assigns one to the timer', async () => {
     getAuthState.mockResolvedValue({
       session: { user },
