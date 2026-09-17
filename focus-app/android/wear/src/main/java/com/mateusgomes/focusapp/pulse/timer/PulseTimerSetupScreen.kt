@@ -3,6 +3,8 @@ package com.mateusgomes.focusapp.pulse.timer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,13 +12,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -26,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Text
 import com.mateusgomes.focusapp.pulse.R
 import com.mateusgomes.focusapp.pulse.sync.PulseProject
+import kotlinx.coroutines.launch
 
 @Composable
 fun PulseTimerSetupScreen(
@@ -39,6 +50,9 @@ fun PulseTimerSetupScreen(
     onProjectChange: (PulseProject?) -> Unit,
     onDone: () -> Unit,
 ) {
+    val scrollState = rememberScrollState()
+    val scrollScope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
     val range = when (session) {
         PulseSession.FOCUS -> 5..90
         PulseSession.SHORT_BREAK -> 1..30
@@ -57,6 +71,18 @@ fun PulseTimerSetupScreen(
         contentAlignment = Alignment.Center,
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .onRotaryScrollEvent {
+                    scrollScope.launch {
+                        scrollState.scrollBy(it.verticalScrollPixels)
+                    }
+                    true
+                }
+                .focusRequester(focusRequester)
+                .focusable()
+                .verticalScroll(scrollState)
+                .padding(vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -174,6 +200,9 @@ fun PulseTimerSetupScreen(
                 )
             }
         }
+    }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
     }
 }
 
