@@ -1,5 +1,9 @@
 import type { Session, User } from '@supabase/supabase-js'
 
+import {
+  clearAuthDiagnostic,
+  saveAuthDiagnostic,
+} from './authDiagnostics'
 import { supabase } from '../lib/supabase'
 
 export type ExtensionAuthState = {
@@ -32,38 +36,84 @@ function getRedirectError(redirectUrl: string) {
   )
 }
 
+async function failAuth(
+  stage: string,
+  message: string,
+  redirectTo: string,
+): Promise<never> {
+  await saveAuthDiagnostic({
+    stage,
+    message,
+    redirectTo,
+    createdAt: new Date().toISOString(),
+  })
+
+  throw new Error(message)
+}
+
 export async function signInWithGoogle(): Promise<Session | null> {
   const redirectTo = chrome.identity.getRedirectURL('auth')
+  await clearAuthDiagnostic()
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
+  let oauthUrl: string
+
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
+    })
+
+    if (error) {
+      return await failAuth('supabase-start', error.message, redirectTo)
+    }
+
+    if (!data.url) {
+      return await failAuth(
+        'supabase-start',
+        'Could not start Google sign in.',
+        redirectTo,
+      )
+    }
+
+    oauthUrl = data.url
+  } catch (error) {
+    return await failAuth(
+      'supabase-start',
+      error instanceof Error ? error.message : 'Could not start Google sign in.',
       redirectTo,
-      skipBrowserRedirect: true,
-    },
-  })
-
-  if (error) {
-    throw new Error(error.message)
+    )
   }
 
-  if (!data.url) {
-    throw new Error('Could not start Google sign in.')
-  }
+  let callbackUrl: string | undefined
 
-  const callbackUrl = await chrome.identity.launchWebAuthFlow({
-    url: data.url,
-    interactive: true,
-  })
+  try {
+    callbackUrl = await chrome.identity.launchWebAuthFlow({
+      url: oauthUrl,
+      interactive: true,
+    })
+  } catch (error) {
+    return await failAuth(
+      'launch-web-auth-flow',
+      error instanceof Error ? error.message : 'Chrome OAuth flow failed.',
+      redirectTo,
+    )
+  }
 
   if (!callbackUrl) {
-    throw new Error('Google sign in was cancelled.')
+    return await failAuth(
+      'launch-web-auth-flow',
+      'Google sign in was cancelled or Chrome did not receive the callback.',
+      redirectTo,
+    )
   }
 
   const redirectError = getRedirectError(callbackUrl)
 
   if (redirectError) {
-    throw new Error(redirectError)
+    return await failAuth('provider-redirect', redirectError, redirectTo)
   }
 
   const parsed = new URL(callbackUrl)
@@ -74,9 +124,14 @@ export async function signInWithGoogle(): Promise<Session | null> {
       await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError) {
-      throw new Error(exchangeError.message)
+      return await failAuth(
+        'exchange-code',
+        exchangeError.message,
+        redirectTo,
+      )
     }
 
+    await clearAuthDiagnostic()
     return exchanged.session
   }
 
@@ -85,7 +140,11 @@ export async function signInWithGoogle(): Promise<Session | null> {
   const refreshToken = hashParams.get('refresh_token')
 
   if (!accessToken || !refreshToken) {
-    throw new Error('Could not complete Google sign in.')
+    return await failAuth(
+      'parse-callback',
+      'Chrome received the OAuth callback without a Supabase session.',
+      redirectTo,
+    )
   }
 
   const { data: sessionData, error: sessionError } =
@@ -95,9 +154,10 @@ export async function signInWithGoogle(): Promise<Session | null> {
     })
 
   if (sessionError) {
-    throw new Error(sessionError.message)
+    return await failAuth('set-session', sessionError.message, redirectTo)
   }
 
+  await clearAuthDiagnostic()
   return sessionData.session
 }
 
