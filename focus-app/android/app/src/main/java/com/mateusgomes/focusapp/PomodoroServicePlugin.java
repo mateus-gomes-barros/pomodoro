@@ -217,6 +217,13 @@ public class PomodoroServicePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void publishFocusPulseSnapshot(PluginCall call) {
+        String snapshotJson = call.getString("snapshotJson", "{}");
+        FocusWearDataLayer.publishFocusSnapshot(getContext(), snapshotJson);
+        call.resolve();
+    }
+
+    @PluginMethod
     public void startService(PluginCall call) {
 
         Log.d(TAG, "startService() called");
