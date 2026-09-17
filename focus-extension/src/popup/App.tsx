@@ -447,6 +447,7 @@ export function App() {
               aria-label="Active project"
               value={timer.activeProjectId ?? ''}
               onChange={(event) => void handleProjectChange(event.target.value)}
+              disabled={isRunning}
             >
               <option value="">No project selected</option>
               {projects.map((project) => (
@@ -463,6 +464,7 @@ export function App() {
               aria-label="Active task"
               value={timer.activeTaskId ?? ''}
               onChange={(event) => void handleTaskChange(event.target.value)}
+              disabled={isRunning}
             >
               <option value="">No task selected</option>
               {visibleTasks.map((task) => (
