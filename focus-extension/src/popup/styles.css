@@ -43,14 +43,16 @@ select:disabled {
 .popup-header,
 .status-card,
 .reminder-card,
-.reminder-heading {
+.reminder-heading,
+.account-row {
   display: flex;
   align-items: center;
 }
 
 .popup-header,
 .status-card,
-.reminder-card {
+.reminder-card,
+.account-row {
   justify-content: space-between;
   gap: 12px;
 }
@@ -63,6 +65,7 @@ select:disabled {
 .popup-header p,
 .status-card p,
 .reminder-card p,
+.account-card p,
 .popup-footer {
   margin: 0;
 }
@@ -98,7 +101,8 @@ select:disabled {
 
 .timer-card,
 .status-card,
-.reminder-card {
+.reminder-card,
+.account-card {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.045);
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
@@ -148,7 +152,8 @@ select:disabled {
 }
 
 .status-card,
-.reminder-card {
+.reminder-card,
+.account-card {
   margin-top: 12px;
   padding: 15px;
   border-radius: 18px;
@@ -168,6 +173,65 @@ select:disabled {
   color: oklch(84.5% 0.143 164.978);
   font-size: 11px;
   font-weight: 650;
+}
+
+.signed-out-card {
+  display: grid;
+  gap: 12px;
+}
+
+.google-button,
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.google-button {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.text-button {
+  border: 0;
+  padding: 5px 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 11px;
+}
+
+.task-control {
+  display: grid;
+  gap: 7px;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.task-control select,
+.interval-control select {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  background: #0f1b17;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.task-control select {
+  width: 100%;
+  padding: 9px 10px;
+}
+
+.project-context {
+  margin-top: 9px !important;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
 }
 
 .reminder-card {
@@ -247,11 +311,15 @@ select:disabled {
 }
 
 .interval-control select {
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 10px;
   padding: 6px 9px;
-  background: #0f1b17;
-  color: rgba(255, 255, 255, 0.9);
+}
+
+.account-error {
+  margin: 12px 4px 0;
+  color: #fca5a5;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
 }
 
 .popup-footer {
