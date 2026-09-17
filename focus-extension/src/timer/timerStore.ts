@@ -8,6 +8,17 @@ import {
   writeTimerState,
 } from './timerStorage'
 
+function getCompletedTimerState(
+  state: ExtensionTimerState,
+): ExtensionTimerState {
+  return {
+    ...state,
+    status: 'idle',
+    secondsLeft: DEFAULT_TIMER_STATE.secondsLeft,
+    endsAt: null,
+  }
+}
+
 export async function getTimerState(
   now = Date.now(),
 ): Promise<ExtensionTimerState> {
@@ -29,12 +40,7 @@ export async function getTimerState(
     }
   }
 
-  const completedState: ExtensionTimerState = {
-    ...state,
-    status: 'idle',
-    secondsLeft: 0,
-    endsAt: null,
-  }
+  const completedState = getCompletedTimerState(state)
 
   await writeTimerState(completedState)
   return completedState
@@ -88,4 +94,10 @@ export async function resetTimer(): Promise<ExtensionTimerState> {
   await chrome.alarms.clear(TIMER_ALARM_NAME)
   await writeTimerState(DEFAULT_TIMER_STATE)
   return DEFAULT_TIMER_STATE
+}
+
+export function completeTimerState(
+  state: ExtensionTimerState,
+): ExtensionTimerState {
+  return getCompletedTimerState(state)
 }
