@@ -1,10 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const signInWithOAuth = vi.fn()
-const setSession = vi.fn()
-const exchangeCodeForSession = vi.fn()
-const getSession = vi.fn()
-const signOut = vi.fn()
+const {
+  signInWithOAuth,
+  setSession,
+  exchangeCodeForSession,
+  getSession,
+  signOut,
+} = vi.hoisted(() => ({
+  signInWithOAuth: vi.fn(),
+  setSession: vi.fn(),
+  exchangeCodeForSession: vi.fn(),
+  getSession: vi.fn(),
+  signOut: vi.fn(),
+}))
 
 vi.mock('../lib/supabase', () => ({
   supabase: {
