@@ -135,20 +135,24 @@ class PulseAwardsTileService : TileService() {
         "focushome_${key?.wireValue ?: "default"}"
 
     private fun badgeImageId(level: Int): String = "badge_" + when {
-        level >= 2000 -> "infinity"
-        level >= 1500 -> "trophy"
-        level >= 1000 -> "crown"
-        level >= 750 -> "crystal"
-        level >= 600 -> "diamond"
-        level >= 200 -> "medal"
-        level >= 100 -> "star"
-        level >= 75 -> "moon"
-        level >= 50 -> "rocket"
-        level >= 30 -> "bolt"
-        level >= 14 -> "heart"
-        level >= 7 -> "fire"
-        level >= 3 -> "sprout"
-        else -> "drop"
+        level >= 2000 -> "2000"
+        level >= 1500 -> "1500"
+        level >= 1000 -> "1000"
+        level >= 750 -> "750"
+        level >= 600 -> "600"
+        level >= 500 -> "500"
+        level >= 365 -> "365"
+        level >= 300 -> "300"
+        level >= 200 -> "200"
+        level >= 150 -> "150"
+        level >= 100 -> "100"
+        level >= 75 -> "75"
+        level >= 50 -> "50"
+        level >= 30 -> "30"
+        level >= 14 -> "14"
+        level >= 7 -> "7"
+        level >= 3 -> "3"
+        else -> "0"
     }
 
     private fun imageResources(): Map<String, Int> = mapOf(
@@ -179,6 +183,24 @@ class PulseAwardsTileService : TileService() {
         "badge_crown" to R.drawable.ic_badge_crown,
         "badge_trophy" to R.drawable.ic_badge_trophy,
         "badge_infinity" to R.drawable.ic_badge_infinity,
+        "badge_0" to R.drawable.ic_streak_badge_0,
+        "badge_3" to R.drawable.ic_streak_badge_3,
+        "badge_7" to R.drawable.ic_streak_badge_7,
+        "badge_14" to R.drawable.ic_streak_badge_14,
+        "badge_30" to R.drawable.ic_streak_badge_30,
+        "badge_50" to R.drawable.ic_streak_badge_50,
+        "badge_75" to R.drawable.ic_streak_badge_75,
+        "badge_100" to R.drawable.ic_streak_badge_100,
+        "badge_150" to R.drawable.ic_streak_badge_150,
+        "badge_200" to R.drawable.ic_streak_badge_200,
+        "badge_300" to R.drawable.ic_streak_badge_300,
+        "badge_365" to R.drawable.ic_streak_badge_365,
+        "badge_500" to R.drawable.ic_streak_badge_500,
+        "badge_600" to R.drawable.ic_streak_badge_600,
+        "badge_750" to R.drawable.ic_streak_badge_750,
+        "badge_1000" to R.drawable.ic_streak_badge_1000,
+        "badge_1500" to R.drawable.ic_streak_badge_1500,
+        "badge_2000" to R.drawable.ic_streak_badge_2000,
     )
 
     private fun ring(
@@ -264,7 +286,7 @@ class PulseAwardsTileService : TileService() {
     }
 
     companion object {
-        private const val RESOURCES_VERSION = "2"
+        private const val RESOURCES_VERSION = "3"
         private const val ACTION_TOGGLE = "pulse_awards_toggle"
         private const val PREFERENCES = "pulse_awards_tile"
         private const val KEY_BADGE = "show_badge"
