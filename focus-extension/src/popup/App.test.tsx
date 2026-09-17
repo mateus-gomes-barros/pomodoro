@@ -346,9 +346,14 @@ describe('Focus Horizon popup', () => {
 
     render(<App />)
 
+    const signOutButton = await screen.findByRole('button', { name: /sign out/i })
+    expect(signOutButton).toBeInTheDocument()
+
+    const footer = screen.getByText(/timer and reminders work even without signing in/i)
     expect(
-      await screen.findByRole('button', { name: /sign out/i }),
-    ).toBeInTheDocument()
+      signOutButton.compareDocumentPosition(footer) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   it('loads account tasks and assigns one to the timer', async () => {
