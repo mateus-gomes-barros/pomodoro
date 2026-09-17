@@ -54,6 +54,11 @@ interface PomodoroServicePlugin {
   ): Promise<import('@capacitor/core').PluginListenerHandle>
 
   addListener(
+    eventName: 'onWearAction',
+    listenerFunc: (data: { actionJson: string }) => void,
+  ): Promise<import('@capacitor/core').PluginListenerHandle>
+
+  addListener(
     eventName: 'onWearTimerState',
     listenerFunc: (data: WearTimerState) => void,
   ): Promise<import('@capacitor/core').PluginListenerHandle>
@@ -139,6 +144,24 @@ export function addNotificationActionListener(
       callback(data.action)
     },
   )
+}
+
+export function addWearActionListener(
+  callback: (action: {
+    id: string
+    type: 'create_task' | 'complete_task'
+    taskId?: string
+    title?: string
+  }) => void,
+) {
+  if (!isFocusPulseAvailable()) return { remove: () => {} }
+  return PomodoroService.addListener('onWearAction', ({ actionJson }) => {
+    try {
+      callback(JSON.parse(actionJson))
+    } catch (error) {
+      console.error('Invalid Focus Pulse action:', error)
+    }
+  })
 }
 
 export function addWearTimerStateListener(
