@@ -7,19 +7,40 @@ const getTimerState = vi.fn()
 const startTimer = vi.fn()
 const pauseTimer = vi.fn()
 const resetTimer = vi.fn()
+const setActiveTimerTask = vi.fn()
 const getHydrationReminder = vi.fn()
 const setHydrationReminder = vi.fn()
+const getAuthState = vi.fn()
+const signInWithGoogle = vi.fn()
+const signOutUser = vi.fn()
+const getExtensionTasks = vi.fn()
+const getExtensionProjects = vi.fn()
 
 vi.mock('../timer/timerStore', () => ({
   getTimerState,
   startTimer,
   pauseTimer,
   resetTimer,
+  setActiveTimerTask,
 }))
 
 vi.mock('../reminders/reminderStore', () => ({
   getHydrationReminder,
   setHydrationReminder,
+}))
+
+vi.mock('../auth/authService', () => ({
+  getAuthState,
+  signInWithGoogle,
+  signOutUser,
+}))
+
+vi.mock('../data/tasks', () => ({
+  getExtensionTasks,
+}))
+
+vi.mock('../data/projects', () => ({
+  getExtensionProjects,
 }))
 
 const idleState = {
@@ -30,6 +51,32 @@ const idleState = {
   activeTaskId: null,
   activeProjectId: null,
 }
+
+const user = {
+  id: 'user-1',
+  email: 'mateus@example.com',
+  user_metadata: { display_name: 'Mateus' },
+}
+
+const tasks = [
+  {
+    id: 'task-1',
+    title: 'Ship extension',
+    projectId: 'project-1',
+    plannedDate: '2026-09-17',
+    dailyPriority: 1,
+    order: 0,
+  },
+]
+
+const projects = [
+  {
+    id: 'project-1',
+    name: 'Focus 6.0',
+    emoji: '🎯',
+    color: '#10b981',
+  },
+]
 
 describe('Focus Horizon popup', () => {
   beforeEach(() => {
@@ -46,11 +93,20 @@ describe('Focus Horizon popup', () => {
       secondsLeft: 1490,
     })
     resetTimer.mockResolvedValue(idleState)
+    setActiveTimerTask.mockImplementation(async (taskId, projectId) => ({
+      ...idleState,
+      activeTaskId: taskId,
+      activeProjectId: projectId,
+    }))
     getHydrationReminder.mockResolvedValue({
       enabled: false,
       intervalMinutes: 60,
     })
     setHydrationReminder.mockImplementation(async (state) => state)
+    getAuthState.mockResolvedValue({ session: null, user: null })
+    signOutUser.mockResolvedValue(undefined)
+    getExtensionTasks.mockResolvedValue(tasks)
+    getExtensionProjects.mockResolvedValue(projects)
   })
 
   it('renders the persisted focus timer', async () => {
@@ -72,10 +128,6 @@ describe('Focus Horizon popup', () => {
     await waitFor(() => {
       expect(startTimer).toHaveBeenCalledTimes(1)
     })
-
-    expect(
-      screen.getByRole('button', { name: /pause focus/i }),
-    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /pause focus/i }))
 
@@ -128,5 +180,40 @@ describe('Focus Horizon popup', () => {
         intervalMinutes: 45,
       })
     })
+  })
+
+  it('offers Google sign in while preserving local mode', async () => {
+    signInWithGoogle.mockResolvedValue({ user } as never)
+
+    render(<App />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /continue with google/i }),
+    )
+
+    await waitFor(() => {
+      expect(signInWithGoogle).toHaveBeenCalledTimes(1)
+      expect(getExtensionTasks).toHaveBeenCalledTimes(1)
+    })
+
+    expect(await screen.findByText('Mateus')).toBeInTheDocument()
+  })
+
+  it('loads account tasks and assigns one to the timer', async () => {
+    getAuthState.mockResolvedValue({
+      session: { user },
+      user,
+    })
+
+    render(<App />)
+
+    const select = await screen.findByLabelText(/active task/i)
+    fireEvent.change(select, { target: { value: 'task-1' } })
+
+    await waitFor(() => {
+      expect(setActiveTimerTask).toHaveBeenCalledWith('task-1', 'project-1')
+    })
+
+    expect(screen.getByText(/Focus 6.0/)).toBeInTheDocument()
   })
 })
