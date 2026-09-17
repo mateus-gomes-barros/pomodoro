@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Focus — Horizon",
+  "version": "0.1.0",
+  "description": "Quick access to your Focus timer, tasks and reminders.",
+  "action": {
+    "default_title": "Focus — Horizon",
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ]
+}
