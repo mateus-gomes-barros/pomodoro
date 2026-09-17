@@ -70,6 +70,12 @@ class PulseTimerAlarmScheduler(private val context: Context) {
 
 class PulseTimerAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_PAUSE || intent.action == ACTION_END ||
+            intent.action == ACTION_CONTINUE
+        ) {
+            handleQuickAction(context, intent.action.orEmpty())
+            return
+        }
         if (intent.action != PulseTimerAlarmScheduler.ACTION_TIMER_FINISHED) return
 
         val session = runCatching {
@@ -108,7 +114,7 @@ class PulseTimerAlarmReceiver : BroadcastReceiver() {
         )
 
         createNotificationChannel(context)
-        vibrate(context)
+        vibrate(context, session)
 
         val openApp = PendingIntent.getActivity(
             context,
@@ -125,6 +131,14 @@ class PulseTimerAlarmReceiver : BroadcastReceiver() {
             PulseSession.LONG_BREAK -> context.getString(R.string.notification_long_break_complete)
         }
 
+        val continueAction = actionIntent(context, ACTION_CONTINUE, 4201)
+        val endAction = actionIntent(context, ACTION_END, 4202)
+        val nextLabel = if (session == PulseSession.FOCUS) {
+            context.getString(R.string.notification_start_break)
+        } else {
+            context.getString(R.string.notification_start_focus)
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_focus_pulse)
             .setContentTitle(context.getString(R.string.notification_timer_complete))
@@ -133,11 +147,128 @@ class PulseTimerAlarmReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setSilent(true)
+            .addAction(0, nextLabel, continueAction)
+            .addAction(
+                0,
+                context.getString(R.string.notification_end),
+                endAction,
+            )
             .build()
 
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun actionIntent(
+        context: Context,
+        action: String,
+        requestCode: Int,
+    ): PendingIntent = PendingIntent.getBroadcast(
+        context,
+        requestCode,
+        Intent(context, PulseTimerAlarmReceiver::class.java).setAction(action),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    private fun handleQuickAction(context: Context, action: String) {
+        val persistence = PulseTimerPersistence(context)
+        val snapshot = persistence.load(PulseTimerSettings())
+        val focusHome = FocusHomeKey.fromWireValue(
+            PulseRemoteTimerStore(context).load()?.focusHome,
+        )
+        val alarm = PulseTimerAlarmScheduler(context)
+        when (action) {
+            ACTION_PAUSE -> {
+                val remaining = if (snapshot.endsAtEpochMillis > 0L) {
+                    kotlin.math.ceil(
+                        (snapshot.endsAtEpochMillis - System.currentTimeMillis())
+                            .coerceAtLeast(0L) / 1000.0,
+                    ).toInt()
+                } else snapshot.remainingSeconds
+                persistence.save(
+                    snapshot.copy(
+                        status = PulseTimerStatus.PAUSED,
+                        remainingSeconds = remaining,
+                        endsAtEpochMillis = 0L,
+                    ),
+                )
+                alarm.cancel()
+                PulseTimerOngoingService.stop(context)
+                PulseWearDataLayer(context).publishTimer(
+                    snapshot.session,
+                    PulseTimerStatus.PAUSED,
+                    durationSeconds(snapshot),
+                    remaining,
+                    0L,
+                    focusHome,
+                )
+            }
+            ACTION_CONTINUE -> {
+                val next = if (snapshot.status == PulseTimerStatus.COMPLETED) {
+                    if (snapshot.session == PulseSession.FOCUS) {
+                        PulseSession.SHORT_BREAK
+                    } else {
+                        PulseSession.FOCUS
+                    }
+                } else snapshot.session
+                val remaining = if (
+                    snapshot.status == PulseTimerStatus.PAUSED &&
+                    next == snapshot.session
+                ) snapshot.remainingSeconds else durationSeconds(snapshot, next)
+                val endsAt = System.currentTimeMillis() + remaining * 1000L
+                val running = snapshot.copy(
+                    session = next,
+                    status = PulseTimerStatus.RUNNING,
+                    remainingSeconds = remaining,
+                    endsAtEpochMillis = endsAt,
+                )
+                persistence.save(running)
+                alarm.schedule(endsAt, next)
+                PulseTimerOngoingService.start(context, endsAt, next)
+                PulseWearDataLayer(context).publishTimer(
+                    next,
+                    PulseTimerStatus.RUNNING,
+                    durationSeconds(running, next),
+                    remaining,
+                    endsAt,
+                    focusHome,
+                )
+            }
+            ACTION_END -> {
+                val total = durationSeconds(snapshot)
+                persistence.save(
+                    snapshot.copy(
+                        status = PulseTimerStatus.IDLE,
+                        remainingSeconds = total,
+                        endsAtEpochMillis = 0L,
+                    ),
+                )
+                alarm.cancel()
+                PulseTimerOngoingService.stop(context)
+                PulseWearDataLayer(context).publishTimer(
+                    snapshot.session,
+                    PulseTimerStatus.IDLE,
+                    total,
+                    total,
+                    0L,
+                    focusHome,
+                )
+            }
+        }
+        PulseTimerTileService.requestUpdate(context)
+        val manager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.cancel(NOTIFICATION_ID)
+    }
+
+    private fun durationSeconds(
+        snapshot: PulseTimerSnapshot,
+        session: PulseSession = snapshot.session,
+    ): Int = when (session) {
+        PulseSession.FOCUS -> snapshot.workDurationMinutes * 60
+        PulseSession.SHORT_BREAK -> snapshot.shortBreakDurationMinutes * 60
+        PulseSession.LONG_BREAK -> snapshot.longBreakDurationMinutes * 60
     }
 
     private fun createNotificationChannel(context: Context) {
@@ -156,7 +287,7 @@ class PulseTimerAlarmReceiver : BroadcastReceiver() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun vibrate(context: Context) {
+    private fun vibrate(context: Context, session: PulseSession) {
         val vibrator: Vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val manager =
                 context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
@@ -165,7 +296,11 @@ class PulseTimerAlarmReceiver : BroadcastReceiver() {
             @Suppress("DEPRECATION")
             context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
-        val pattern = longArrayOf(0, 180, 90, 280)
+        val pattern = when (session) {
+            PulseSession.FOCUS -> longArrayOf(0, 180, 90, 280)
+            PulseSession.SHORT_BREAK -> longArrayOf(0, 120, 80, 120)
+            PulseSession.LONG_BREAK -> longArrayOf(0, 260, 110, 260, 110, 260)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
         } else {
@@ -175,6 +310,12 @@ class PulseTimerAlarmReceiver : BroadcastReceiver() {
     }
 
     companion object {
+        const val ACTION_PAUSE =
+            "com.mateusgomes.focusapp.pulse.action.PAUSE"
+        const val ACTION_CONTINUE =
+            "com.mateusgomes.focusapp.pulse.action.CONTINUE"
+        const val ACTION_END =
+            "com.mateusgomes.focusapp.pulse.action.END"
         private const val CHANNEL_ID = "focus_pulse_timer_completion"
         private const val NOTIFICATION_ID = 4102
     }
