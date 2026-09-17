@@ -156,7 +156,7 @@ class PulseAwardsTileService : TileService() {
     }
 
     private fun imageResources(): Map<String, Int> = mapOf(
-        "focushome_default" to R.drawable.ic_focus_pulse,
+        "focushome_default" to R.drawable.ic_focushome_default,
         "focushome_aster" to R.drawable.ic_focushome_aster,
         "focushome_atlas" to R.drawable.ic_focushome_atlas,
         "focushome_forge" to R.drawable.ic_focushome_forge,
@@ -286,7 +286,7 @@ class PulseAwardsTileService : TileService() {
     }
 
     companion object {
-        private const val RESOURCES_VERSION = "3"
+        private const val RESOURCES_VERSION = "4"
         private const val ACTION_TOGGLE = "pulse_awards_toggle"
         private const val PREFERENCES = "pulse_awards_tile"
         private const val KEY_BADGE = "show_badge"
