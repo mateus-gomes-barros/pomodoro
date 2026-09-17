@@ -18,6 +18,7 @@ const {
   getExtensionTasks,
   getExtensionProjects,
   getExtensionFocusHome,
+  getExtensionCurrentBadgeMinimumDays,
 } = vi.hoisted(() => ({
   getTimerState: vi.fn(),
   startTimer: vi.fn(),
@@ -35,6 +36,7 @@ const {
   getExtensionTasks: vi.fn(),
   getExtensionProjects: vi.fn(),
   getExtensionFocusHome: vi.fn(),
+  getExtensionCurrentBadgeMinimumDays: vi.fn(),
 }))
 
 vi.mock('../timer/timerStore', () => ({
@@ -72,6 +74,10 @@ vi.mock('../data/projects', () => ({
 
 vi.mock('../data/focusHome', () => ({
   getExtensionFocusHome,
+}))
+
+vi.mock('../data/streakBadge', () => ({
+  getExtensionCurrentBadgeMinimumDays,
 }))
 
 import { App } from './App'
@@ -168,6 +174,7 @@ describe('Focus Horizon popup', () => {
     getExtensionTasks.mockResolvedValue(tasks)
     getExtensionProjects.mockResolvedValue(projects)
     getExtensionFocusHome.mockResolvedValue('verdant')
+    getExtensionCurrentBadgeMinimumDays.mockResolvedValue(7)
   })
 
   it('renders the persisted focus timer', async () => {
@@ -259,7 +266,7 @@ describe('Focus Horizon popup', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows the signed-in user FocushoMe badge beside the Focus title', async () => {
+  it('shows the signed-in user current Focus badge beside the Focus title', async () => {
     getAuthState.mockResolvedValue({
       session: { user },
       user,
@@ -269,7 +276,7 @@ describe('Focus Horizon popup', () => {
     render(<App />)
 
     expect(
-      await screen.findByLabelText(/your focushome badge/i),
+      await screen.findByLabelText(/your current focus badge/i),
     ).toBeInTheDocument()
   })
 
@@ -279,7 +286,7 @@ describe('Focus Horizon popup', () => {
     await screen.findByText('25:00')
 
     expect(
-      screen.queryByLabelText(/your focushome badge/i),
+      screen.queryByLabelText(/your current focus badge/i),
     ).not.toBeInTheDocument()
   })
 
