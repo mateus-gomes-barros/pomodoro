@@ -1,3 +1,4 @@
+import { showTimerCompleteNotification } from './notifications'
 import {
   TIMER_ALARM_NAME,
   readTimerState,
@@ -21,4 +22,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     secondsLeft: 0,
     endsAt: null,
   })
+
+  await showTimerCompleteNotification()
 })
