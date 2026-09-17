@@ -28,7 +28,8 @@ button {
   color: inherit;
 }
 
-button:disabled {
+button:disabled,
+select:disabled {
   cursor: default;
   opacity: 0.5;
 }
@@ -40,9 +41,16 @@ button:disabled {
 }
 
 .popup-header,
-.status-card {
+.status-card,
+.reminder-card,
+.reminder-heading {
   display: flex;
   align-items: center;
+}
+
+.popup-header,
+.status-card,
+.reminder-card {
   justify-content: space-between;
   gap: 12px;
 }
@@ -54,6 +62,7 @@ button:disabled {
 .popup-header h1,
 .popup-header p,
 .status-card p,
+.reminder-card p,
 .popup-footer {
   margin: 0;
 }
@@ -88,7 +97,8 @@ button:disabled {
 }
 
 .timer-card,
-.status-card {
+.status-card,
+.reminder-card {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.045);
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
@@ -137,7 +147,8 @@ button:disabled {
   border-radius: 14px;
 }
 
-.status-card {
+.status-card,
+.reminder-card {
   margin-top: 12px;
   padding: 15px;
   border-radius: 18px;
@@ -159,6 +170,90 @@ button:disabled {
   font-weight: 650;
 }
 
+.reminder-card {
+  flex-wrap: wrap;
+}
+
+.reminder-heading {
+  gap: 10px;
+  min-width: 0;
+}
+
+.reminder-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 11px;
+  background: rgba(110, 231, 183, 0.1);
+  color: oklch(84.5% 0.143 164.978);
+}
+
+.switch-control {
+  position: relative;
+  display: inline-flex;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.switch-control input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.switch-track {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 160ms ease;
+}
+
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 160ms ease;
+}
+
+.switch-control input:checked + .switch-track {
+  background: oklch(84.5% 0.143 164.978);
+}
+
+.switch-control input:checked + .switch-track::after {
+  transform: translateX(18px);
+  background: #052218;
+}
+
+.interval-control {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 11px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 12px;
+}
+
+.interval-control select {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  padding: 6px 9px;
+  background: #0f1b17;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .popup-footer {
   padding: 17px 8px 0;
   color: rgba(255, 255, 255, 0.42);
@@ -167,7 +262,9 @@ button:disabled {
   text-align: center;
 }
 
-button:focus-visible {
+button:focus-visible,
+select:focus-visible,
+.switch-control input:focus-visible + .switch-track {
   outline: 2px solid oklch(84.5% 0.143 164.978);
   outline-offset: 2px;
 }
