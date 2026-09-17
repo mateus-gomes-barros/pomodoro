@@ -57,6 +57,10 @@
                     android:scheme="wear"
                     android:host="*"
                     android:pathPrefix="/focus/timer" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/focus/v6" />
             </intent-filter>
         </service>
 
