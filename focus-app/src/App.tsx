@@ -21,6 +21,9 @@ import {
   useTimer,
 } from './hooks/useTimer'
 import {
+  DesktopNotificationDriver,
+} from './components/desktop/DesktopNotificationDriver'
+import {
   useFocusPulseSync,
 } from './hooks/useFocusPulseSync'
 
@@ -213,6 +216,7 @@ function App() {
   return (
     <BrowserRouter>
       <TimerDriver />
+      <DesktopNotificationDriver />
 
       <Routes>
         <Route

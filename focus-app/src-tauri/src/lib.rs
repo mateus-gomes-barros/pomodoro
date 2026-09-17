@@ -11,6 +11,7 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
