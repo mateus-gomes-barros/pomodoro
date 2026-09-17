@@ -316,10 +316,27 @@ select:disabled {
 
 .account-error {
   margin: 12px 4px 0;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(252, 165, 165, 0.18);
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.12);
   color: #fca5a5;
   font-size: 11px;
   line-height: 1.45;
-  text-align: center;
+  text-align: left;
+}
+
+.account-error strong {
+  color: #fecaca;
+}
+
+.auth-redirect {
+  overflow-wrap: anywhere;
+  color: rgba(255, 255, 255, 0.62);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
 }
 
 .popup-footer {
