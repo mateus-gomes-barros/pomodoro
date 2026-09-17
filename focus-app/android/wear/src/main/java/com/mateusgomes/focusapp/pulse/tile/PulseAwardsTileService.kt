@@ -51,7 +51,7 @@ class PulseAwardsTileService : TileService() {
                 ModifiersBuilders.Modifiers.Builder()
                     .setBackground(
                         ModifiersBuilders.Background.Builder()
-                            .setColor(ColorBuilders.argb(0xFF020604.toInt()))
+                            .setColor(ColorBuilders.argb(0xFF000000.toInt()))
                             .build(),
                     )
                     .setClickable(
@@ -63,20 +63,21 @@ class PulseAwardsTileService : TileService() {
                     .build(),
             )
             .addContent(
+                LayoutElementBuilders.Image.Builder()
+                    .setWidth(DimensionBuilders.expand())
+                    .setHeight(DimensionBuilders.expand())
+                    .setResourceId(imageId)
+                    .setContentScaleMode(LayoutElementBuilders.CONTENT_SCALE_MODE_FIT)
+                    .build(),
+            )
+            .addContent(
                 LayoutElementBuilders.Column.Builder()
                     .setWidth(DimensionBuilders.expand())
                     .setHeight(DimensionBuilders.expand())
                     .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                    .addContent(spacer(12f))
-                    .addContent(
-                        LayoutElementBuilders.Image.Builder()
-                            .setResourceId(imageId)
-                            .setWidth(DimensionBuilders.dp(148f))
-                            .setHeight(DimensionBuilders.dp(148f))
-                            .setContentScaleMode(LayoutElementBuilders.CONTENT_SCALE_MODE_FIT)
-                            .build(),
-                    )
-                    .addContent(text(mainLabel.take(22), 10f, 0xCCFFFFFF.toInt()))
+                    .addContent(expandingVerticalSpacer())
+                    .addContent(text(mainLabel.take(22), 10f, 0xE6FFFFFF.toInt()))
+                    .addContent(spacer(17f))
                     .build(),
             )
             .addContent(navigationArrow(showBadge))
@@ -216,6 +217,12 @@ class PulseAwardsTileService : TileService() {
             .setHeight(DimensionBuilders.dp(1f))
             .build()
 
+    private fun expandingVerticalSpacer() =
+        LayoutElementBuilders.Spacer.Builder()
+            .setWidth(DimensionBuilders.dp(1f))
+            .setHeight(DimensionBuilders.expand())
+            .build()
+
     private fun text(value: String, size: Float, color: Int) =
         LayoutElementBuilders.Text.Builder()
             .setText(value)
@@ -236,7 +243,7 @@ class PulseAwardsTileService : TileService() {
             .build()
 
     companion object {
-        private const val RESOURCES_VERSION = "6"
+        private const val RESOURCES_VERSION = "7"
         private const val ACTION_TOGGLE = "pulse_awards_toggle"
         private const val PREFERENCES = "pulse_awards_tile"
         private const val KEY_BADGE = "show_badge"

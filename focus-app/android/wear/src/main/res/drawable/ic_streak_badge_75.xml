@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="96dp" android:height="96dp" android:viewportWidth="96" android:viewportHeight="96">
-    <path android:fillColor="#33000000" android:pathData="M9,50 A39,39 0,1 0,87 50 A39,39 0,1 0,9 50 Z" />
-    <path android:fillColor="#336366F1" android:strokeColor="#A5B4FC" android:strokeWidth="2" android:pathData="M9,47 A39,39 0,1 0,87 47 A39,39 0,1 0,9 47 Z" />
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#44A5B4FC" android:strokeWidth="1.2" android:pathData="M16,47 A32,32 0,1 0,80 47 A32,32 0,1 0,16 47 Z" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#A5B4FC" android:strokeWidth="2" android:pathData="M2,48 A46,46 0,1 0,94 48 A46,46 0,1 0,2 48 Z" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#44A5B4FC" android:strokeWidth="1.2" android:pathData="M9,48 A39,39 0,1 0,87 48 A39,39 0,1 0,9 48 Z" />
     <path android:fillColor="@android:color/transparent" android:strokeColor="#66FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M25,31 C36,17 56,11 73,23" />
+    <group android:pivotX="48" android:pivotY="48" android:scaleX="1.16" android:scaleY="1.16">
     <path android:fillColor="@android:color/transparent" android:strokeColor="#A5B4FC" android:strokeWidth="4" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M40,48 C40,44 44,40 48,40 C52,40 56,44 56,48 C56,52 52,56 48,56 C44,56 40,52 40,48 Z" />
     <path android:fillColor="@android:color/transparent" android:strokeColor="#A5B4FC" android:strokeWidth="4" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M21,48 C21,36 33,30 48,30 C63,30 75,36 75,48 C75,60 63,66 48,66 C33,66 21,60 21,48 Z" />
     <path android:fillColor="@android:color/transparent" android:strokeColor="#A5B4FC" android:strokeWidth="4" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M69,38 C69,36 70,35 72,35 C74,35 75,36 75,38 C75,40 74,41 72,41 C70,41 69,40 69,38 Z" />
+    </group>
 </vector>
 
