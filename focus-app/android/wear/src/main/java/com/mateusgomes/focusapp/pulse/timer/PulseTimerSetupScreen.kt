@@ -18,8 +18,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -50,6 +54,20 @@ fun PulseTimerSetupScreen(
     onProjectChange: (PulseProject?) -> Unit,
     onDone: () -> Unit,
 ) {
+    var projectPickerVisible by rememberSaveable { mutableStateOf(false) }
+    if (projectPickerVisible) {
+        PulseProjectPicker(
+            projects = projects,
+            selectedProjectId = selectedProjectId,
+            accent = accent,
+            onProjectChange = { project ->
+                onProjectChange(project)
+                projectPickerVisible = false
+            },
+        )
+        return
+    }
+
     val scrollState = rememberScrollState()
     val scrollScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
@@ -141,43 +159,35 @@ fun PulseTimerSetupScreen(
                 )
             }
 
-            val projectOptions = listOf<PulseProject?>(null) + projects
-            val selectedIndex = projectOptions.indexOfFirst {
-                it?.id.orEmpty() == selectedProjectId
-            }.coerceAtLeast(0)
             Text(
                 text = stringResource(R.string.timer_project_label),
                 color = Color.White.copy(alpha = 0.42f),
                 fontSize = 8.sp,
                 fontWeight = FontWeight.SemiBold,
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .size(width = 148.dp, height = 38.dp)
+                    .background(
+                        Color.White.copy(alpha = 0.065f),
+                        RoundedCornerShape(13.dp),
+                    )
+                    .clickable(
+                        role = Role.Button,
+                        onClick = { projectPickerVisible = true },
+                    )
+                    .padding(horizontal = 13.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                ValueButton(label = "‹", enabled = projectOptions.size > 1) {
-                    val next = if (selectedIndex <= 0) {
-                        projectOptions.lastIndex
-                    } else selectedIndex - 1
-                    onProjectChange(projectOptions[next])
-                }
                 Text(
-                    text = projectOptions[selectedIndex]?.name
+                    text = projects.firstOrNull { it.id == selectedProjectId }?.name
                         ?: stringResource(R.string.timer_no_project),
                     color = accent,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    modifier = Modifier
-                        .size(width = 82.dp, height = 20.dp)
-                        .basicMarquee(),
+                    modifier = Modifier.basicMarquee(),
                 )
-                ValueButton(label = "›", enabled = projectOptions.size > 1) {
-                    val next = if (selectedIndex >= projectOptions.lastIndex) {
-                        0
-                    } else selectedIndex + 1
-                    onProjectChange(projectOptions[next])
-                }
             }
 
             Box(
@@ -203,6 +213,96 @@ fun PulseTimerSetupScreen(
     }
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+}
+
+
+@Composable
+private fun PulseProjectPicker(
+    projects: List<PulseProject>,
+    selectedProjectId: String,
+    accent: Color,
+    onProjectChange: (PulseProject?) -> Unit,
+) {
+    val scrollState = rememberScrollState()
+    val scrollScope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.radialGradient(
+                    listOf(accent.copy(alpha = 0.12f), Color(0xFF020604)),
+                ),
+            )
+            .onRotaryScrollEvent {
+                scrollScope.launch {
+                    scrollState.scrollBy(it.verticalScrollPixels)
+                }
+                true
+            }
+            .focusRequester(focusRequester)
+            .focusable()
+            .verticalScroll(scrollState)
+            .padding(horizontal = 22.dp, vertical = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.timer_select_project),
+            color = Color.White,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        ProjectOption(
+            name = stringResource(R.string.timer_no_project),
+            selected = selectedProjectId.isBlank(),
+            accent = accent,
+            onClick = { onProjectChange(null) },
+        )
+        projects.forEach { project ->
+            ProjectOption(
+                name = project.name,
+                selected = project.id == selectedProjectId,
+                accent = accent,
+                onClick = { onProjectChange(project) },
+            )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+}
+
+@Composable
+private fun ProjectOption(
+    name: String,
+    selected: Boolean,
+    accent: Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(width = 154.dp, height = 38.dp)
+            .background(
+                if (selected) accent.copy(alpha = 0.20f)
+                else Color.White.copy(alpha = 0.055f),
+                RoundedCornerShape(13.dp),
+            )
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = name,
+            color = if (selected) accent else Color.White.copy(alpha = 0.72f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            modifier = Modifier.basicMarquee(),
+        )
     }
 }
 
