@@ -656,3 +656,28 @@ select:focus-visible,
   background: rgba(255,255,255,0.025);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
 }
+
+
+.signout-button {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(248,113,113,0.16);
+  border-radius: 12px;
+  background: rgba(248,113,113,0.06);
+  color: rgba(254,202,202,0.82);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.signout-button:hover {
+  border-color: rgba(248,113,113,0.28);
+  background: rgba(248,113,113,0.10);
+  color: #fecaca;
+}
