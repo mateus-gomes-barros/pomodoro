@@ -1,20 +1,33 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { App } from './App'
-
-const getTimerState = vi.fn()
-const startTimer = vi.fn()
-const pauseTimer = vi.fn()
-const resetTimer = vi.fn()
-const setActiveTimerTask = vi.fn()
-const getHydrationReminder = vi.fn()
-const setHydrationReminder = vi.fn()
-const getAuthState = vi.fn()
-const signInWithGoogle = vi.fn()
-const signOutUser = vi.fn()
-const getExtensionTasks = vi.fn()
-const getExtensionProjects = vi.fn()
+const {
+  getTimerState,
+  startTimer,
+  pauseTimer,
+  resetTimer,
+  setActiveTimerTask,
+  getHydrationReminder,
+  setHydrationReminder,
+  getAuthState,
+  signInWithGoogle,
+  signOutUser,
+  getExtensionTasks,
+  getExtensionProjects,
+} = vi.hoisted(() => ({
+  getTimerState: vi.fn(),
+  startTimer: vi.fn(),
+  pauseTimer: vi.fn(),
+  resetTimer: vi.fn(),
+  setActiveTimerTask: vi.fn(),
+  getHydrationReminder: vi.fn(),
+  setHydrationReminder: vi.fn(),
+  getAuthState: vi.fn(),
+  signInWithGoogle: vi.fn(),
+  signOutUser: vi.fn(),
+  getExtensionTasks: vi.fn(),
+  getExtensionProjects: vi.fn(),
+}))
 
 vi.mock('../timer/timerStore', () => ({
   getTimerState,
@@ -42,6 +55,8 @@ vi.mock('../data/tasks', () => ({
 vi.mock('../data/projects', () => ({
   getExtensionProjects,
 }))
+
+import { App } from './App'
 
 const idleState = {
   status: 'idle' as const,
