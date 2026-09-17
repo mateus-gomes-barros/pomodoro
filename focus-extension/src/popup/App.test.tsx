@@ -221,7 +221,10 @@ describe('Focus Horizon popup', () => {
   })
 
   it('offers Google sign in while preserving local mode', async () => {
-    signInWithGoogle.mockResolvedValue({ user } as never)
+    signInWithGoogle.mockResolvedValue(undefined)
+    getAuthState
+      .mockResolvedValueOnce({ session: null, user: null })
+      .mockResolvedValueOnce({ session: { user }, user })
 
     render(<App />)
 
