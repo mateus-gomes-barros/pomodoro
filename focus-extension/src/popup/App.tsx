@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ExternalLink, Pause, Play, RotateCcw } from 'lucide-react'
+import { Droplets, ExternalLink, Pause, Play, RotateCcw } from 'lucide-react'
 
+import {
+  getHydrationReminder,
+  setHydrationReminder,
+  type HydrationInterval,
+  type HydrationReminderState,
+} from '../reminders/reminderStore'
 import {
   getTimerState,
   pauseTimer,
@@ -18,6 +24,13 @@ const FALLBACK_TIMER_STATE: ExtensionTimerState = {
   activeProjectId: null,
 }
 
+const FALLBACK_HYDRATION_STATE: HydrationReminderState = {
+  enabled: false,
+  intervalMinutes: 60,
+}
+
+const HYDRATION_INTERVALS: HydrationInterval[] = [30, 45, 60, 90]
+
 function formatTimer(seconds: number) {
   const safeSeconds = Math.max(0, seconds)
   const minutes = Math.floor(safeSeconds / 60)
@@ -28,16 +41,23 @@ function formatTimer(seconds: number) {
 
 export function App() {
   const [timer, setTimer] = useState<ExtensionTimerState>(FALLBACK_TIMER_STATE)
+  const [hydration, setHydration] = useState<HydrationReminderState>(
+    FALLBACK_HYDRATION_STATE,
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   const refreshTimer = useCallback(async () => {
     const nextState = await getTimerState()
     setTimer(nextState)
-    setIsLoading(false)
   }, [])
 
   useEffect(() => {
-    void refreshTimer()
+    void Promise.all([refreshTimer(), getHydrationReminder()]).then(
+      ([, hydrationState]) => {
+        setHydration(hydrationState)
+        setIsLoading(false)
+      },
+    )
   }, [refreshTimer])
 
   useEffect(() => {
@@ -63,6 +83,10 @@ export function App() {
 
   const handleReset = async () => {
     setTimer(await resetTimer())
+  }
+
+  const updateHydration = async (nextState: HydrationReminderState) => {
+    setHydration(await setHydrationReminder(nextState))
   }
 
   const isRunning = timer.status === 'running'
@@ -136,6 +160,55 @@ export function App() {
               ? 'Paused'
               : 'Local mode'}
         </span>
+      </section>
+
+      <section className="reminder-card" aria-label="Water reminder settings">
+        <div className="reminder-heading">
+          <div className="reminder-icon">
+            <Droplets size={17} />
+          </div>
+          <div>
+            <p className="status-label">Water reminders</p>
+            <p className="status-value">Stay hydrated while you focus</p>
+          </div>
+        </div>
+
+        <label className="switch-control">
+          <input
+            type="checkbox"
+            aria-label="Water reminders"
+            checked={hydration.enabled}
+            onChange={(event) =>
+              void updateHydration({
+                ...hydration,
+                enabled: event.target.checked,
+              })
+            }
+            disabled={isLoading}
+          />
+          <span className="switch-track" aria-hidden="true" />
+        </label>
+
+        <label className="interval-control">
+          <span>Every</span>
+          <select
+            aria-label="Water reminder interval"
+            value={hydration.intervalMinutes}
+            onChange={(event) =>
+              void updateHydration({
+                ...hydration,
+                intervalMinutes: Number(event.target.value) as HydrationInterval,
+              })
+            }
+            disabled={isLoading || !hydration.enabled}
+          >
+            {HYDRATION_INTERVALS.map((minutes) => (
+              <option key={minutes} value={minutes}>
+                {minutes} min
+              </option>
+            ))}
+          </select>
+        </label>
       </section>
 
       <footer className="popup-footer">
