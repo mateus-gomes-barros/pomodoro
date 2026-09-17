@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, React, Vite, Chrome Extensions Manifest V3, Zustand, Supabase JS, Vitest.
 
-**Spec:** `docs/superpowers/plans/2026-09-17-focus-horizon-chrome-extension.md`
+**Spec:** `docs/superpowers/specs/2026-09-17-focus-horizon-chrome-extension-design.md`
 
 ## Global Constraints
 
