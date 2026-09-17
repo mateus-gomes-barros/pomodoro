@@ -90,6 +90,21 @@ export async function pauseTimer(
   return nextState
 }
 
+export async function setActiveTimerTask(
+  taskId: string | null,
+  projectId: string | null,
+): Promise<ExtensionTimerState> {
+  const state = await getTimerState()
+  const nextState: ExtensionTimerState = {
+    ...state,
+    activeTaskId: taskId,
+    activeProjectId: projectId,
+  }
+
+  await writeTimerState(nextState)
+  return nextState
+}
+
 export async function resetTimer(): Promise<ExtensionTimerState> {
   await chrome.alarms.clear(TIMER_ALARM_NAME)
   await writeTimerState(DEFAULT_TIMER_STATE)
