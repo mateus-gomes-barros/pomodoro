@@ -7,6 +7,8 @@ import {
   Pause,
   Play,
   RotateCcw,
+  Volume2,
+  VolumeX,
 } from 'lucide-react'
 
 import {
@@ -19,6 +21,7 @@ import {
   getAuthDiagnostic,
   type AuthDiagnostic,
 } from '../auth/authDiagnostics'
+import { getExtensionFocusHome, type FocusHomeKey } from '../data/focusHome'
 import {
   getExtensionProjects,
   type ExtensionProject,
@@ -39,16 +42,28 @@ import {
   resetTimer,
   setActiveTimerTask,
   startTimer,
+  switchTimerSession,
+  toggleTimerSound,
 } from '../timer/timerStore'
-import type { ExtensionTimerState } from '../timer/timerStorage'
+import { getSessionDurationSeconds, type ExtensionTimerState, type SessionType } from '../timer/timerStorage'
+import { CircularProgress } from './CircularProgress'
+import { FOCUS_HOME_COLORS, FocusHomeSymbol, FocusMeIcon } from './FocusIdentity'
 
 const FALLBACK_TIMER_STATE: ExtensionTimerState = {
   status: 'idle',
   sessionType: 'work',
   secondsLeft: 25 * 60,
   endsAt: null,
+  currentSessionCount: 0,
   activeTaskId: null,
   activeProjectId: null,
+  settings: {
+    workDuration: 25,
+    shortBreakDuration: 5,
+    longBreakDuration: 15,
+    sessionsUntilLongBreak: 4,
+    soundEnabled: true,
+  },
 }
 
 const FALLBACK_HYDRATION_STATE: HydrationReminderState = {
@@ -57,6 +72,12 @@ const FALLBACK_HYDRATION_STATE: HydrationReminderState = {
 }
 
 const HYDRATION_INTERVALS: HydrationInterval[] = [30, 45, 60, 90]
+const SESSION_TYPES: SessionType[] = ['work', 'short_break', 'long_break']
+const SESSION_LABELS: Record<SessionType, string> = {
+  work: 'Focus',
+  short_break: 'Short break',
+  long_break: 'Long break',
+}
 const HORIZON_WEB_URL = 'https://pomodoro-1ktl-theta.vercel.app/'
 
 function formatTimer(seconds: number) {
@@ -85,6 +106,7 @@ export function App() {
   const [user, setUser] = useState<ExtensionAuthState['user']>(null)
   const [tasks, setTasks] = useState<ExtensionTask[]>([])
   const [projects, setProjects] = useState<ExtensionProject[]>([])
+  const [focusHome, setFocusHome] = useState<FocusHomeKey | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [accountError, setAccountError] = useState<string | null>(null)
@@ -96,13 +118,15 @@ export function App() {
   }, [])
 
   const loadAccountData = useCallback(async () => {
-    const [nextTasks, nextProjects] = await Promise.all([
+    const [nextTasks, nextProjects, nextFocusHome] = await Promise.all([
       getExtensionTasks(),
       getExtensionProjects(),
+      getExtensionFocusHome(),
     ])
 
     setTasks(nextTasks)
     setProjects(nextProjects)
+    setFocusHome(nextFocusHome)
   }, [])
 
   useEffect(() => {
@@ -178,6 +202,14 @@ export function App() {
     setTimer(await resetTimer())
   }
 
+  const handleSessionChange = async (sessionType: SessionType) => {
+    setTimer(await switchTimerSession(sessionType))
+  }
+
+  const handleSoundToggle = async () => {
+    setTimer(await toggleTimerSound())
+  }
+
   const handleProjectChange = async (projectId: string) => {
     const nextProjectId = projectId || null
     const currentTask =
@@ -249,7 +281,22 @@ export function App() {
   }
 
   const isRunning = timer.status === 'running'
-  const primaryLabel = isRunning ? 'Pause focus' : 'Start focus'
+  const primaryLabel = isRunning ? 'Pause timer' : 'Start timer'
+  const totalSeconds = getSessionDurationSeconds(timer.sessionType, timer.settings)
+  const progress = Math.min(
+    Math.max(timer.status !== 'idle' && totalSeconds > 0 ? 1 - timer.secondsLeft / totalSeconds : 0, 0),
+    1,
+  )
+  const identityColor = focusHome ? FOCUS_HOME_COLORS[focusHome] : '#34d399'
+  const ringColor = focusHome
+    ? identityColor
+    : timer.sessionType === 'work'
+      ? '#34d399'
+      : '#60a5fa'
+  const completedSessionDots =
+    timer.settings.sessionsUntilLongBreak > 0
+      ? timer.currentSessionCount % timer.settings.sessionsUntilLongBreak
+      : 0
 
   return (
     <main className="popup-shell">
@@ -270,39 +317,108 @@ export function App() {
         </button>
       </header>
 
-      <section className="timer-card" aria-label="Focus timer">
-        <p className="session-label">
-          {timer.sessionType === 'work' ? 'Focus session' : 'Break'}
-        </p>
-        <strong className="timer-value" aria-live="polite">
-          {isLoading ? '--:--' : formatTimer(timer.secondsLeft)}
-        </strong>
+      <section className="focus-timer-section" aria-label="Focus timer">
+        <div className="focus-session-switcher" role="group" aria-label="Session type">
+          {SESSION_TYPES.map((type) => (
+            <button
+              key={type}
+              type="button"
+              className={`focus-segment-button ${timer.sessionType === type ? 'active' : ''}`}
+              onClick={() => void handleSessionChange(type)}
+              disabled={isRunning}
+            >
+              {SESSION_LABELS[type]}
+            </button>
+          ))}
+        </div>
 
-        <div className="timer-actions">
+        <div className="focus-timer-ring-wrap">
+          <div className="focus-outer-glass" aria-hidden="true" />
+          <div className="focus-inner-glass" aria-hidden="true">
+            <div className={`focus-glass-sheen ${isRunning ? 'running' : ''}`} />
+          </div>
+
+          <CircularProgress progress={progress} size={260} strokeWidth={5} color={ringColor}>
+            <div className="focus-ring-inner">
+              <div
+                className={`focus-home-identity ${isRunning ? 'running' : ''} ${timer.status === 'completed' ? 'completed' : ''}`}
+                style={{ filter: `drop-shadow(0 0 22px ${identityColor}66)` }}
+                aria-hidden="true"
+              >
+                {focusHome ? (
+                  <FocusHomeSymbol type={focusHome} size={205} />
+                ) : (
+                  <FocusMeIcon size={185} style={{ color: identityColor }} />
+                )}
+              </div>
+
+              <div className="focus-time-layer">
+                <span
+                  className="focus-time-value"
+                  style={{ color: identityColor, textShadow: `0 0 22px ${identityColor}38` }}
+                >
+                  {isLoading ? '--:--' : formatTimer(timer.secondsLeft)}
+                </span>
+                <span className="focus-time-label">{SESSION_LABELS[timer.sessionType]}</span>
+              </div>
+            </div>
+          </CircularProgress>
+        </div>
+
+        <div className="focus-session-dots">
+          {Array.from({ length: timer.settings.sessionsUntilLongBreak }).map((_, index) => (
+            <span
+              key={index}
+              className="focus-session-dot"
+              style={{
+                backgroundColor:
+                  index < completedSessionDots ? '#34d399' : 'rgba(255,255,255,0.12)',
+              }}
+            />
+          ))}
+          <span className="focus-until-break">until long break</span>
+        </div>
+
+        {timer.status === 'completed' && (
+          <div className="focus-completed-card">
+            <strong>
+              {timer.sessionType === 'work' ? 'Break finished' : 'Focus finished'}
+            </strong>
+            <span>
+              {timer.sessionType === 'work'
+                ? 'Ready to focus again.'
+                : 'Your session is complete. The next break is ready.'}
+            </span>
+          </div>
+        )}
+
+        <div className="focus-timer-controls">
           <button
-            className="primary-button"
             type="button"
+            className="focus-control-secondary"
+            aria-label="Reset timer"
+            onClick={() => void handleReset()}
+          >
+            <RotateCcw size={16} />
+          </button>
+
+          <button
+            type="button"
+            className={`focus-control-primary ${isRunning ? 'running' : ''}`}
             aria-label={primaryLabel}
             onClick={() => void handlePrimaryAction()}
             disabled={isLoading || timer.secondsLeft <= 0}
           >
-            {isRunning ? (
-              <Pause size={18} fill="currentColor" />
-            ) : (
-              <Play size={18} fill="currentColor" />
-            )}
-            {primaryLabel}
+            {isRunning ? <Pause size={26} /> : <Play size={26} className="focus-play-icon" />}
           </button>
 
           <button
-            className="secondary-button"
             type="button"
-            aria-label="Reset timer"
-            title="Reset timer"
-            onClick={() => void handleReset()}
-            disabled={isLoading}
+            className="focus-control-secondary"
+            aria-label={timer.settings.soundEnabled ? 'Mute timer sound' : 'Enable timer sound'}
+            onClick={() => void handleSoundToggle()}
           >
-            <RotateCcw size={17} />
+            {timer.settings.soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
         </div>
       </section>
