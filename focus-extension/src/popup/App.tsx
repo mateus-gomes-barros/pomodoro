@@ -490,16 +490,6 @@ export function App() {
               {activeProject.emoji} {activeProject.name}
             </p>
           )}
-
-          <button
-            className="signout-button"
-            type="button"
-            onClick={() => void handleSignOut()}
-            aria-label="Sign out"
-          >
-            <LogOut size={15} />
-            Sign out of Focus
-          </button>
         </section>
       ) : (
         <section className="account-card signed-out-card" aria-label="Focus account">
@@ -595,6 +585,18 @@ export function App() {
             <code className="auth-redirect">{authDiagnostic.redirectTo}</code>
           )}
         </div>
+      )}
+
+      {user && (
+        <button
+          className="signout-button signout-button-bottom"
+          type="button"
+          onClick={() => void handleSignOut()}
+          aria-label="Sign out"
+        >
+          <LogOut size={15} />
+          Sign out of Focus
+        </button>
       )}
 
       <footer className="popup-footer">
