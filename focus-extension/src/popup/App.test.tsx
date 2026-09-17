@@ -7,12 +7,19 @@ const getTimerState = vi.fn()
 const startTimer = vi.fn()
 const pauseTimer = vi.fn()
 const resetTimer = vi.fn()
+const getHydrationReminder = vi.fn()
+const setHydrationReminder = vi.fn()
 
 vi.mock('../timer/timerStore', () => ({
   getTimerState,
   startTimer,
   pauseTimer,
   resetTimer,
+}))
+
+vi.mock('../reminders/reminderStore', () => ({
+  getHydrationReminder,
+  setHydrationReminder,
 }))
 
 const idleState = {
@@ -39,6 +46,11 @@ describe('Focus Horizon popup', () => {
       secondsLeft: 1490,
     })
     resetTimer.mockResolvedValue(idleState)
+    getHydrationReminder.mockResolvedValue({
+      enabled: false,
+      intervalMinutes: 60,
+    })
+    setHydrationReminder.mockImplementation(async (state) => state)
   })
 
   it('renders the persisted focus timer', async () => {
@@ -88,5 +100,33 @@ describe('Focus Horizon popup', () => {
     })
 
     expect(await screen.findByText('25:00')).toBeInTheDocument()
+  })
+
+  it('enables hydration reminders and changes their interval', async () => {
+    render(<App />)
+
+    const toggle = await screen.findByRole('checkbox', {
+      name: /water reminders/i,
+    })
+
+    fireEvent.click(toggle)
+
+    await waitFor(() => {
+      expect(setHydrationReminder).toHaveBeenCalledWith({
+        enabled: true,
+        intervalMinutes: 60,
+      })
+    })
+
+    fireEvent.change(screen.getByLabelText(/water reminder interval/i), {
+      target: { value: '45' },
+    })
+
+    await waitFor(() => {
+      expect(setHydrationReminder).toHaveBeenLastCalledWith({
+        enabled: true,
+        intervalMinutes: 45,
+      })
+    })
   })
 })
