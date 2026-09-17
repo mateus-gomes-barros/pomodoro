@@ -243,7 +243,7 @@ class PulseAwardsTileService : TileService() {
             .build()
 
     companion object {
-        private const val RESOURCES_VERSION = "7"
+        private const val RESOURCES_VERSION = "8"
         private const val ACTION_TOGGLE = "pulse_awards_toggle"
         private const val PREFERENCES = "pulse_awards_tile"
         private const val KEY_BADGE = "show_badge"
