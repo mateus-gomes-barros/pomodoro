@@ -138,6 +138,30 @@ public final class FocusWearDataLayer {
                 );
     }
 
+    public static void publishFocusSnapshot(
+            Context context,
+            String snapshotJson
+    ) {
+        long now = System.currentTimeMillis();
+        PutDataMapRequest request =
+                PutDataMapRequest.create(FocusWearContract.SNAPSHOT_PATH);
+        request.getDataMap().putString(
+                FocusWearContract.KEY_SNAPSHOT_JSON,
+                snapshotJson == null ? "{}" : snapshotJson
+        );
+        request.getDataMap().putLong(FocusWearContract.KEY_VERSION, now);
+        request.getDataMap().putLong(FocusWearContract.KEY_UPDATED_AT, now);
+        request.getDataMap().putString(
+                FocusWearContract.KEY_SOURCE_DEVICE,
+                FocusWearContract.SOURCE_PHONE
+        );
+        Wearable.getDataClient(context)
+                .putDataItem(request.asPutDataRequest().setUrgent())
+                .addOnFailureListener(error ->
+                        Log.e(TAG, "Unable to publish Focus 6 snapshot", error)
+                );
+    }
+
     public static boolean retryLastTimerState(Context context) {
         SharedPreferences delivery = context.getSharedPreferences(
                 DELIVERY_PREFERENCES,
