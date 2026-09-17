@@ -222,7 +222,7 @@ fun PulseTimerSetupScreen(
 
 
 @Composable
-private fun PulseProjectPicker(
+fun PulseProjectPicker(
     projects: List<PulseProject>,
     selectedProjectId: String,
     accent: Color,

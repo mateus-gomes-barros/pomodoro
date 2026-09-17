@@ -67,6 +67,7 @@ import com.mateusgomes.focusapp.pulse.sync.PulseWearDataLayer
 import com.mateusgomes.focusapp.pulse.sync.PulseWearListenerService
 import com.mateusgomes.focusapp.pulse.timer.FocusHomeKey
 import com.mateusgomes.focusapp.pulse.timer.PulseTimerScreen
+import com.mateusgomes.focusapp.pulse.timer.PulseProjectPicker
 import com.mateusgomes.focusapp.pulse.timer.PulseUserPreferencesStore
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -333,7 +334,8 @@ private fun PulseCreateTaskScreen(
     onSave: (PulseNewTaskDraft) -> Unit,
 ) {
     var title by rememberSaveable { mutableStateOf("") }
-    var projectIndex by rememberSaveable { mutableIntStateOf(-1) }
+    var selectedProjectId by rememberSaveable { mutableStateOf("") }
+    var projectPickerVisible by rememberSaveable { mutableStateOf(false) }
     var plannedForToday by rememberSaveable { mutableStateOf(true) }
     var urgent by rememberSaveable { mutableStateOf(false) }
     var estimatedPomodoros by rememberSaveable { mutableIntStateOf(1) }
@@ -347,6 +349,21 @@ private fun PulseCreateTaskScreen(
                 ?.firstOrNull()
                 .orEmpty()
         }
+    }
+    BackHandler(enabled = projectPickerVisible) {
+        projectPickerVisible = false
+    }
+    if (projectPickerVisible) {
+        PulseProjectPicker(
+            projects = projects,
+            selectedProjectId = selectedProjectId,
+            accent = PulseGreen,
+            onProjectChange = { project ->
+                selectedProjectId = project?.id.orEmpty()
+                projectPickerVisible = false
+            },
+        )
+        return
     }
     PulseScrollableScreen {
         Text(
@@ -377,11 +394,11 @@ private fun PulseCreateTaskScreen(
             voiceLauncher.launch(intent)
         }
         PulseMenuButton(
-            projects.getOrNull(projectIndex)?.name
+            projects.firstOrNull { it.id == selectedProjectId }?.name
                 ?: stringResource(R.string.timer_no_project),
             PulseGreen,
         ) {
-            projectIndex = if (projectIndex >= projects.lastIndex) -1 else projectIndex + 1
+            projectPickerVisible = true
         }
         PulseMenuButton(
             stringResource(
@@ -409,7 +426,7 @@ private fun PulseCreateTaskScreen(
                 onSave(
                     PulseNewTaskDraft(
                         title = title.trim(),
-                        projectId = projects.getOrNull(projectIndex)?.id,
+                        projectId = selectedProjectId.takeIf { it.isNotBlank() },
                         plannedForToday = plannedForToday,
                         urgent = urgent,
                         estimatedPomodoros = estimatedPomodoros,
