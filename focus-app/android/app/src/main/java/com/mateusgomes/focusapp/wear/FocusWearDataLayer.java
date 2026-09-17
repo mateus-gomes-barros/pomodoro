@@ -162,6 +162,30 @@ public final class FocusWearDataLayer {
                 );
     }
 
+    public static void acknowledgeAction(Context context, String actionId) {
+        if (actionId == null || actionId.isEmpty()) return;
+        PutDataMapRequest request = PutDataMapRequest.create(
+                FocusWearContract.ACTION_ACK_PATH + "/" + actionId
+        );
+        request.getDataMap().putString(
+                FocusWearContract.KEY_ACTION_ID,
+                actionId
+        );
+        request.getDataMap().putString(
+                FocusWearContract.KEY_SOURCE_DEVICE,
+                FocusWearContract.SOURCE_PHONE
+        );
+        request.getDataMap().putLong(
+                FocusWearContract.KEY_UPDATED_AT,
+                System.currentTimeMillis()
+        );
+        Wearable.getDataClient(context)
+                .putDataItem(request.asPutDataRequest().setUrgent())
+                .addOnFailureListener(error ->
+                        Log.e(TAG, "Unable to acknowledge Pulse action", error)
+                );
+    }
+
     public static boolean retryLastTimerState(Context context) {
         SharedPreferences delivery = context.getSharedPreferences(
                 DELIVERY_PREFERENCES,

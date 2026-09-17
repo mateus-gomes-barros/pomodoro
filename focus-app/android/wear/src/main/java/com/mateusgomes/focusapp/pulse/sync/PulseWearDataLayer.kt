@@ -102,21 +102,47 @@ class PulseWearDataLayer(private val context: Context) {
         taskId: String = "",
         projectId: String = "",
         title: String = "",
+        plannedForToday: Boolean? = null,
+        priority: String = "",
+        dailyPriority: Int? = null,
+        estimatedPomodoros: Int? = null,
     ) {
         val now = System.currentTimeMillis()
+        val actionId = UUID.randomUUID().toString()
         val payload = JSONObject()
-            .put("id", UUID.randomUUID().toString())
+            .put("id", actionId)
             .put("type", type)
             .put("taskId", taskId)
             .put("projectId", projectId)
             .put("title", title)
             .put("createdAt", now)
-            .toString()
-        val request = PutDataMapRequest.create(PulseWearContract.ACTION_PATH)
+            .apply {
+                plannedForToday?.let { put("plannedForToday", it) }
+                if (priority.isNotBlank()) put("priority", priority)
+                dailyPriority?.let { put("dailyPriority", it) }
+                estimatedPomodoros?.let { put("estimatedPomodoros", it) }
+            }
+        PulseActionOutbox(context).enqueue(payload)
+        publishQueuedAction(payload)
+    }
+
+    fun retryPendingActions() {
+        PulseActionOutbox(context).pending().forEach(::publishQueuedAction)
+    }
+
+    fun pendingActionCount(): Int = PulseActionOutbox(context).count()
+
+    private fun publishQueuedAction(payload: JSONObject) {
+        val actionId = payload.optString("id")
+        if (actionId.isBlank()) return
+        val request = PutDataMapRequest.create(
+            "${PulseWearContract.ACTION_PATH}/$actionId",
+        )
         request.dataMap.apply {
-            putString(PulseWearContract.KEY_ACTION_JSON, payload)
+            putString(PulseWearContract.KEY_ACTION_JSON, payload.toString())
+            putString(PulseWearContract.KEY_ACTION_ID, actionId)
             putString(PulseWearContract.KEY_SOURCE_DEVICE, PulseWearContract.SOURCE_WATCH)
-            putLong(PulseWearContract.KEY_UPDATED_AT, now)
+            putLong(PulseWearContract.KEY_UPDATED_AT, System.currentTimeMillis())
         }
         Wearable.getDataClient(context)
             .putDataItem(request.asPutDataRequest().setUrgent())

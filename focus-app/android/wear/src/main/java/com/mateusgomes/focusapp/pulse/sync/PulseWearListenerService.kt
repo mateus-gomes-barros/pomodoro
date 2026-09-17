@@ -23,6 +23,13 @@ class PulseWearListenerService : WearableListenerService() {
             val path = event.dataItem.uri.path
             val data = DataMapItem.fromDataItem(event.dataItem).dataMap
 
+            if (path?.startsWith(PulseWearContract.ACTION_ACK_PATH) == true) {
+                data.getString(PulseWearContract.KEY_ACTION_ID, "")
+                    .takeIf { it.isNotBlank() }
+                    ?.let { PulseActionOutbox(this).acknowledge(it) }
+                return@forEach
+            }
+
             if (path == PulseWearContract.SNAPSHOT_PATH) {
                 val snapshotJson = data.getString(
                     PulseWearContract.KEY_SNAPSHOT_JSON,
@@ -31,6 +38,7 @@ class PulseWearListenerService : WearableListenerService() {
                 runCatching {
                     PulseFocusSnapshotStore(this).save(snapshotJson)
                     PulseAwardsTileService.requestUpdate(this)
+                    PulseWearDataLayer(this).retryPendingActions()
                     sendBroadcast(
                         Intent(ACTION_FOCUS_SNAPSHOT_UPDATED).setPackage(packageName),
                     )

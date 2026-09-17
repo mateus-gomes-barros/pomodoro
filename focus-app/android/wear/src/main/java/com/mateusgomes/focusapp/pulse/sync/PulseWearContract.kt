@@ -6,6 +6,7 @@ object PulseWearContract {
     const val TIMER_ACK_PATH = "/focus/timer/ack"
     const val SNAPSHOT_PATH = "/focus/v6/snapshot"
     const val ACTION_PATH = "/focus/v6/action"
+    const val ACTION_ACK_PATH = "/focus/v6/action_ack"
     const val CAPABILITY_PHONE = "focus_phone"
     const val CAPABILITY_WATCH = "focus_watch"
 
@@ -28,6 +29,7 @@ object PulseWearContract {
     const val KEY_ACK_STATUS = "ack_status"
     const val KEY_SNAPSHOT_JSON = "snapshot_json"
     const val KEY_ACTION_JSON = "action_json"
+    const val KEY_ACTION_ID = "action_id"
 
     const val SOURCE_PHONE = "phone"
     const val SOURCE_WATCH = "watch"

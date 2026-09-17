@@ -31,20 +31,30 @@ public class FocusWearListenerService extends WearableListenerService {
                 receiveAcknowledgement(data);
             } else if (FocusWearContract.TIMER_STATE_PATH.equals(path)) {
                 receiveWatchState(data);
-            } else if (FocusWearContract.ACTION_PATH.equals(path)) {
+            } else if (path != null && path.startsWith(FocusWearContract.ACTION_PATH + "/")) {
                 String actionJson = data.getString(
                         FocusWearContract.KEY_ACTION_JSON,
                         "{}"
                 );
+                String actionId = data.getString(
+                        FocusWearContract.KEY_ACTION_ID,
+                        ""
+                );
                 boolean delivered =
                         PomodoroServicePlugin.onWearActionReceived(actionJson);
-                if (!delivered) {
+                if (delivered) {
+                    FocusWearDataLayer.acknowledgeAction(
+                            getApplicationContext(),
+                            actionId
+                    );
+                } else {
                     getSharedPreferences(
                             "focus_wear_actions",
                             MODE_PRIVATE
                     )
                             .edit()
                             .putString("pending_action_json", actionJson)
+                            .putString("pending_action_id", actionId)
                             .apply();
                 }
             }

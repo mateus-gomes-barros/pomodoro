@@ -288,6 +288,7 @@ class PulseTimerAlarmReceiver : BroadcastReceiver() {
     }
 
     private fun vibrate(context: Context, session: PulseSession) {
+        if (!PulseUserPreferencesStore(context).vibrationEnabled()) return
         val vibrator: Vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val manager =
                 context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager

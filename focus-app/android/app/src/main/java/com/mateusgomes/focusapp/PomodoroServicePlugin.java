@@ -27,12 +27,20 @@ public class PomodoroServicePlugin extends Plugin {
         String pendingWearAction = getContext()
                 .getSharedPreferences("focus_wear_actions", Context.MODE_PRIVATE)
                 .getString("pending_action_json", "");
+        String pendingWearActionId = getContext()
+                .getSharedPreferences("focus_wear_actions", Context.MODE_PRIVATE)
+                .getString("pending_action_id", "");
         if (pendingWearAction != null && !pendingWearAction.isEmpty()) {
             onWearActionReceived(pendingWearAction);
+            FocusWearDataLayer.acknowledgeAction(
+                    getContext(),
+                    pendingWearActionId
+            );
             getContext()
                     .getSharedPreferences("focus_wear_actions", Context.MODE_PRIVATE)
                     .edit()
                     .remove("pending_action_json")
+                    .remove("pending_action_id")
                     .apply();
         }
     }

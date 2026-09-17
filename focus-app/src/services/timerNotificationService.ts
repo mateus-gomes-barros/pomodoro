@@ -149,10 +149,20 @@ export function addNotificationActionListener(
 export function addWearActionListener(
   callback: (action: {
     id: string
-    type: 'create_task' | 'complete_task' | 'select_task' | 'select_project'
+    type:
+      | 'create_task'
+      | 'complete_task'
+      | 'select_task'
+      | 'select_project'
+      | 'plan_task'
+      | 'set_daily_priority'
     taskId?: string
     projectId?: string
     title?: string
+    plannedForToday?: boolean
+    priority?: 'low' | 'medium' | 'high'
+    dailyPriority?: 1 | 2 | 3
+    estimatedPomodoros?: number
   }) => void,
 ) {
   if (!isFocusPulseAvailable()) return { remove: () => {} }

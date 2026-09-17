@@ -9,6 +9,8 @@ import {
   useCreateTask,
   useTasks,
   useToggleTask,
+  useUpdateTask,
+  useSetDailyTaskPriority,
 } from '@/hooks/tasks/useTasks'
 import { getStreakBadge } from '@/lib/streakBadges'
 import {
@@ -36,6 +38,8 @@ export function useFocusPulseSync() {
   const tasks = useTasks()
   const createTask = useCreateTask()
   const toggleTask = useToggleTask()
+  const updateTask = useUpdateTask()
+  const setDailyTaskPriority = useSetDailyTaskPriority()
   const projects = useProjects()
   const goals = useGoals()
   const sessions = usePomodoroSessions()
@@ -128,10 +132,11 @@ export function useFocusPulseSync() {
       if (action.type === 'create_task' && action.title?.trim()) {
         void createTask.mutateAsync({
           title: action.title.trim(),
-          priority: 'medium',
+          priority: action.priority ?? 'medium',
           category: 'planned',
-          estimatedPomodoros: 1,
-          plannedDate: today,
+          projectId: action.projectId || undefined,
+          estimatedPomodoros: action.estimatedPomodoros ?? 1,
+          plannedDate: action.plannedForToday === false ? null : today,
         })
       }
       if (action.type === 'select_task' && action.taskId) {
@@ -149,6 +154,28 @@ export function useFocusPulseSync() {
         const task = tasks.data?.find((item) => item.id === action.taskId)
         if (task && !task.completed) void toggleTask.mutateAsync(task)
       }
+      if (action.type === 'plan_task' && action.taskId) {
+        void updateTask.mutateAsync({
+          taskId: action.taskId,
+          input: {
+            plannedDate: action.plannedForToday === false ? null : today,
+            dailyPriority: action.plannedForToday === false ? null : undefined,
+          },
+        })
+      }
+      if (
+        action.type === 'set_daily_priority' &&
+        action.taskId &&
+        action.dailyPriority
+      ) {
+        const task = tasks.data?.find((item) => item.id === action.taskId)
+        if (task) {
+          void setDailyTaskPriority.mutateAsync({
+            task,
+            priority: action.dailyPriority,
+          })
+        }
+      }
     })
     return () => {
       if ('then' in listener) {
@@ -157,7 +184,14 @@ export function useFocusPulseSync() {
         listener.remove()
       }
     }
-  }, [createTask, tasks.data, today, toggleTask])
+  }, [
+    createTask,
+    setDailyTaskPriority,
+    tasks.data,
+    today,
+    toggleTask,
+    updateTask,
+  ])
 
   useEffect(() => {
     if (!isFocusPulseAvailable()) return
