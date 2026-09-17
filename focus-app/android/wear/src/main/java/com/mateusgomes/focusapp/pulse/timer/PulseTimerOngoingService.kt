@@ -51,6 +51,15 @@ class PulseTimerOngoingService : Service() {
             PulseSession.LONG_BREAK -> getString(R.string.session_long_break)
         }
 
+        val pauseIntent = quickActionIntent(
+            PulseTimerAlarmReceiver.ACTION_PAUSE,
+            REQUEST_CODE_PAUSE,
+        )
+        val endIntent = quickActionIntent(
+            PulseTimerAlarmReceiver.ACTION_END,
+            REQUEST_CODE_END,
+        )
+
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_focus_pulse)
             .setContentTitle(getString(R.string.ongoing_timer_title))
@@ -64,6 +73,16 @@ class PulseTimerOngoingService : Service() {
             .setWhen(endsAt)
             .setUsesChronometer(true)
             .setChronometerCountDown(true)
+            .addAction(
+                0,
+                getString(R.string.notification_pause),
+                pauseIntent,
+            )
+            .addAction(
+                0,
+                getString(R.string.notification_end),
+                endIntent,
+            )
 
         val ongoingActivity = OngoingActivity.Builder(
             applicationContext,
@@ -105,6 +124,14 @@ class PulseTimerOngoingService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun quickActionIntent(action: String, requestCode: Int): PendingIntent =
+        PendingIntent.getBroadcast(
+            this,
+            requestCode,
+            Intent(this, PulseTimerAlarmReceiver::class.java).setAction(action),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
     private fun createChannel() {
         val manager = getSystemService(NotificationManager::class.java)
         val channel = NotificationChannel(
@@ -124,6 +151,8 @@ class PulseTimerOngoingService : Service() {
         private const val NOTIFICATION_ID = 4100
         private const val EXTRA_ENDS_AT = "ends_at_epoch_millis"
         private const val EXTRA_SESSION = "session"
+        private const val REQUEST_CODE_PAUSE = 4110
+        private const val REQUEST_CODE_END = 4111
 
         fun start(context: Context, endsAtEpochMillis: Long, session: PulseSession) {
             val intent = Intent(context, PulseTimerOngoingService::class.java).apply {
