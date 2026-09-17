@@ -259,6 +259,30 @@ describe('Focus Horizon popup', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows the signed-in user FocushoMe badge beside the Focus title', async () => {
+    getAuthState.mockResolvedValue({
+      session: { user },
+      user,
+    })
+    getExtensionFocusHome.mockResolvedValue('verdant')
+
+    render(<App />)
+
+    expect(
+      await screen.findByLabelText(/your focushome badge/i),
+    ).toBeInTheDocument()
+  })
+
+  it('does not show a header badge while signed out', async () => {
+    render(<App />)
+
+    await screen.findByText('25:00')
+
+    expect(
+      screen.queryByLabelText(/your focushome badge/i),
+    ).not.toBeInTheDocument()
+  })
+
   it('offers Google sign in while preserving local mode', async () => {
     signInWithGoogle.mockResolvedValue(undefined)
     getAuthState
