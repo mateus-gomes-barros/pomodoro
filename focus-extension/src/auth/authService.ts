@@ -51,7 +51,17 @@ async function failAuth(
   throw new Error(message)
 }
 
-export async function signInWithGoogle(): Promise<Session | null> {
+export async function signInWithGoogle(): Promise<void> {
+  const response = await chrome.runtime.sendMessage({
+    type: 'focus-auth-google',
+  })
+
+  if (!response?.ok) {
+    throw new Error(response?.error ?? 'Google sign in failed.')
+  }
+}
+
+export async function performGoogleSignIn(): Promise<Session | null> {
   const redirectTo = chrome.identity.getRedirectURL('auth')
   await clearAuthDiagnostic()
 
