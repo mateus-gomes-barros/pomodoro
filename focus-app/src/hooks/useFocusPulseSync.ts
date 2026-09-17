@@ -127,6 +127,13 @@ export function useFocusPulseSync() {
           plannedDate: today,
         })
       }
+      if (action.type === 'select_task' && action.taskId) {
+        const task = tasks.data?.find((item) => item.id === action.taskId)
+        if (task) {
+          usePomodoroStore.getState().setActiveTask(task.id)
+          usePomodoroStore.getState().setActiveProject(task.projectId ?? null)
+        }
+      }
       if (action.type === 'complete_task' && action.taskId) {
         const task = tasks.data?.find((item) => item.id === action.taskId)
         if (task && !task.completed) void toggleTask.mutateAsync(task)
