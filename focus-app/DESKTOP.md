@@ -1,7 +1,7 @@
 # Focus — Horizon Desktop 6.0
 
 The desktop edition reuses the same React/Vite application as Focus Horizon Web
-and adds a native shell with Tauri 2 for macOS and Windows.
+and adds a native shell with Tauri 2 for Apple Silicon macOS and Windows.
 
 ## Local development
 
@@ -33,9 +33,9 @@ Desktop builds use the same public Supabase client variables as the web app:
 Never expose a Supabase secret or `service_role` key in a desktop build.
 
 GitHub Actions uses the project's public Supabase URL and publishable client key
-and produces separate artifacts for Apple Silicon macOS, Intel macOS, and
-Windows. These values are safe to ship in a frontend client; never replace the
-publishable key with a secret or `service_role` key.
+and produces separate artifacts for Apple Silicon macOS and Windows. These
+values are safe to ship in a frontend client; never replace the publishable key
+with a secret or `service_role` key.
 
 For Google sign-in, add the following URL to the Supabase Auth redirect URL
 allowlist:
