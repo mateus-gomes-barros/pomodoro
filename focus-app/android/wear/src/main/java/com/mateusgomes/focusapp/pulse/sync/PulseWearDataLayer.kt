@@ -9,6 +9,7 @@ import com.mateusgomes.focusapp.pulse.timer.FocusHomeKey
 import com.mateusgomes.focusapp.pulse.timer.PulseSession
 import com.mateusgomes.focusapp.pulse.timer.PulseTimerStatus
 import java.util.UUID
+import org.json.JSONObject
 import kotlin.math.max
 
 class PulseWearDataLayer(private val context: Context) {
@@ -92,6 +93,32 @@ class PulseWearDataLayer(private val context: Context) {
                     .putBoolean(KEY_PENDING_SYNC, true)
                     .apply()
                 Log.e(TAG, "Unable to publish Pulse timer", error)
+            }
+    }
+
+    fun publishAction(
+        type: String,
+        taskId: String = "",
+        title: String = "",
+    ) {
+        val now = System.currentTimeMillis()
+        val payload = JSONObject()
+            .put("id", UUID.randomUUID().toString())
+            .put("type", type)
+            .put("taskId", taskId)
+            .put("title", title)
+            .put("createdAt", now)
+            .toString()
+        val request = PutDataMapRequest.create(PulseWearContract.ACTION_PATH)
+        request.dataMap.apply {
+            putString(PulseWearContract.KEY_ACTION_JSON, payload)
+            putString(PulseWearContract.KEY_SOURCE_DEVICE, PulseWearContract.SOURCE_WATCH)
+            putLong(PulseWearContract.KEY_UPDATED_AT, now)
+        }
+        Wearable.getDataClient(context)
+            .putDataItem(request.asPutDataRequest().setUrgent())
+            .addOnFailureListener { error ->
+                Log.e(TAG, "Unable to queue Pulse action", error)
             }
     }
 
