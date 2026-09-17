@@ -7,10 +7,23 @@ import { supabase } from '@/lib/supabase'
 const nativeRedirectUrl =
   'com.mateusgomes.focusapp://login-callback'
 
-async function handleNativeAuthCallback(
+const desktopRedirectUrl =
+  'focus-horizon://login-callback'
+
+function isTauriDesktop() {
+  return (
+    typeof window !== 'undefined' &&
+    '__TAURI_INTERNALS__' in window
+  )
+}
+
+async function handleAuthCallback(
   url: string,
 ) {
-  if (!url.startsWith(nativeRedirectUrl)) {
+  if (
+    !url.startsWith(nativeRedirectUrl) &&
+    !url.startsWith(desktopRedirectUrl)
+  ) {
     return
   }
 
@@ -49,23 +62,83 @@ async function handleNativeAuthCallback(
     throw new Error(error.message)
   }
 
-  await Browser.close()
+  if (Capacitor.isNativePlatform()) {
+    await Browser.close()
+  }
 }
 
 if (Capacitor.isNativePlatform()) {
   void App.addListener(
     'appUrlOpen',
     ({ url }) => {
-      void handleNativeAuthCallback(
+      void handleAuthCallback(
         url,
       )
     },
   )
 }
 
+if (isTauriDesktop()) {
+  void setupDesktopAuthListener()
+}
+
+async function setupDesktopAuthListener() {
+  const {
+    getCurrent,
+    onOpenUrl,
+  } = await import(
+    '@tauri-apps/plugin-deep-link'
+  )
+
+  async function handleUrls(urls: string[]) {
+    const callbackUrl = urls.find(
+      (url) =>
+        url.startsWith(
+          desktopRedirectUrl,
+        ),
+    )
+
+    if (!callbackUrl) return
+
+    await handleAuthCallback(
+      callbackUrl,
+    )
+
+    const { getCurrentWindow } =
+      await import(
+        '@tauri-apps/api/window'
+      )
+
+    const window = getCurrentWindow()
+    await window.show()
+    await window.unminimize()
+    await window.setFocus()
+  }
+
+  const initialUrls = await getCurrent()
+
+  if (initialUrls) {
+    await handleUrls(initialUrls)
+  }
+
+  await onOpenUrl((urls) => {
+    void handleUrls(urls).catch(
+      (error: unknown) => {
+        console.error(
+          'Unable to complete desktop login:',
+          error,
+        )
+      },
+    )
+  })
+}
+
 export async function signInWithGoogle() {
   const isNative =
     Capacitor.isNativePlatform()
+
+  const isDesktop =
+    isTauriDesktop()
 
   const { data, error } =
     await supabase.auth.signInWithOAuth({
@@ -73,8 +146,11 @@ export async function signInWithGoogle() {
       options: {
         redirectTo: isNative
           ? nativeRedirectUrl
-          : window.location.origin,
-        skipBrowserRedirect: isNative,
+          : isDesktop
+            ? desktopRedirectUrl
+            : window.location.origin,
+        skipBrowserRedirect:
+          isNative || isDesktop,
       },
     })
 
@@ -92,6 +168,21 @@ export async function signInWithGoogle() {
     await Browser.open({
       url: data.url,
     })
+  }
+
+  if (isDesktop) {
+    if (!data.url) {
+      throw new Error(
+        'Não foi possível abrir o login com o Google.',
+      )
+    }
+
+    const { openUrl } =
+      await import(
+        '@tauri-apps/plugin-opener'
+      )
+
+    await openUrl(data.url)
   }
 
   return data
