@@ -1,0 +1,152 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #f7fbf9;
+  background: #08110e;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 360px;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(110, 231, 183, 0.16), transparent 42%),
+    #08110e;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+.popup-shell {
+  width: 360px;
+  min-height: 470px;
+  padding: 18px;
+}
+
+.popup-header,
+.status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.popup-header {
+  margin-bottom: 18px;
+}
+
+.popup-header h1,
+.popup-header p,
+.status-card p,
+.popup-footer {
+  margin: 0;
+}
+
+.eyebrow,
+.session-label,
+.status-label {
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.popup-header h1 {
+  margin-top: 3px;
+  font-size: 23px;
+  font-weight: 650;
+}
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+  cursor: pointer;
+}
+
+.timer-card,
+.status-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(18px);
+}
+
+.timer-card {
+  padding: 24px 18px 18px;
+  border-radius: 24px;
+  text-align: center;
+}
+
+.timer-value {
+  display: block;
+  margin: 8px 0 18px;
+  font-size: 58px;
+  line-height: 1;
+  font-weight: 580;
+  letter-spacing: -0.055em;
+}
+
+.primary-button {
+  width: 100%;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 14px;
+  background: oklch(84.5% 0.143 164.978);
+  color: #052218;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.status-card {
+  margin-top: 12px;
+  padding: 15px;
+  border-radius: 18px;
+}
+
+.status-value {
+  margin-top: 4px !important;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.status-pill {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(110, 231, 183, 0.11);
+  color: oklch(84.5% 0.143 164.978);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.popup-footer {
+  padding: 17px 8px 0;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+button:focus-visible {
+  outline: 2px solid oklch(84.5% 0.143 164.978);
+  outline-offset: 2px;
+}
