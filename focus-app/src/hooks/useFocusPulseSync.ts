@@ -5,9 +5,14 @@ import { useFocusHomeProfile } from '@/hooks/focusme/useFocusHomeProfile'
 import { useGoals } from '@/hooks/goals/useGoals'
 import { usePomodoroSessions } from '@/hooks/pomodoro/usePomodoroSessions'
 import { useProjects } from '@/hooks/projects/useProjects'
-import { useTasks } from '@/hooks/tasks/useTasks'
+import {
+  useCreateTask,
+  useTasks,
+  useToggleTask,
+} from '@/hooks/tasks/useTasks'
 import { getStreakBadge } from '@/lib/streakBadges'
 import {
+  addWearActionListener,
   isFocusPulseAvailable,
   publishFocusPulseSnapshot,
 } from '@/services/timerNotificationService'
@@ -29,6 +34,8 @@ function currentStreak(activeDates: string[]) {
 
 export function useFocusPulseSync() {
   const tasks = useTasks()
+  const createTask = useCreateTask()
+  const toggleTask = useToggleTask()
   const projects = useProjects()
   const goals = useGoals()
   const sessions = usePomodoroSessions()
@@ -108,6 +115,31 @@ export function useFocusPulseSync() {
     tasks.data,
     today,
   ])
+
+  useEffect(() => {
+    const listener = addWearActionListener((action) => {
+      if (action.type === 'create_task' && action.title?.trim()) {
+        void createTask.mutateAsync({
+          title: action.title.trim(),
+          priority: 'medium',
+          category: 'planned',
+          estimatedPomodoros: 1,
+          plannedDate: today,
+        })
+      }
+      if (action.type === 'complete_task' && action.taskId) {
+        const task = tasks.data?.find((item) => item.id === action.taskId)
+        if (task && !task.completed) void toggleTask.mutateAsync(task)
+      }
+    })
+    return () => {
+      if ('then' in listener) {
+        void listener.then((handle) => handle.remove())
+      } else {
+        listener.remove()
+      }
+    }
+  }, [createTask, tasks.data, today, toggleTask])
 
   useEffect(() => {
     if (!isFocusPulseAvailable()) return
