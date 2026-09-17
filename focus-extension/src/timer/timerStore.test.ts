@@ -69,18 +69,20 @@ describe('extension timer engine', () => {
     expect(state.endsAt).toBeNull()
   })
 
-  it('reconstructs an expired running timer as completed', async () => {
+  it('reconstructs an expired running timer as ready for a new session', async () => {
     storage[TIMER_STORAGE_KEY] = {
       ...DEFAULT_TIMER_STATE,
       status: 'running',
       endsAt: 2_000,
+      activeTaskId: 'task-1',
     }
 
     const state = await getTimerState(3_000)
 
     expect(state.status).toBe('idle')
-    expect(state.secondsLeft).toBe(0)
+    expect(state.secondsLeft).toBe(DEFAULT_TIMER_STATE.secondsLeft)
     expect(state.endsAt).toBeNull()
+    expect(state.activeTaskId).toBe('task-1')
   })
 
   it('resets to the default timer state', async () => {
