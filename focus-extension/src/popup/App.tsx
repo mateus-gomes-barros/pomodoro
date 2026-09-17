@@ -268,6 +268,7 @@ export function App() {
       setUser(null)
       setTasks([])
       setProjects([])
+      setFocusHome(null)
       setTimer(await setActiveTimerTask(null, null))
     } catch (error) {
       setAccountError(
@@ -303,7 +304,18 @@ export function App() {
       <header className="popup-header">
         <div>
           <p className="eyebrow">Focus — Horizon</p>
-          <h1>Focus</h1>
+          <div className="header-title-row">
+            <h1>Focus</h1>
+            {user && focusHome && (
+              <span
+                className="header-focus-badge"
+                aria-label="Your FocushoMe badge"
+                title="Your FocushoMe"
+              >
+                <FocusHomeSymbol type={focusHome} size={24} />
+              </span>
+            )}
+          </div>
         </div>
 
         <button
