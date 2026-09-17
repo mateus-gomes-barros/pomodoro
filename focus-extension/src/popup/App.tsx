@@ -22,6 +22,7 @@ import {
   type AuthDiagnostic,
 } from '../auth/authDiagnostics'
 import { getExtensionFocusHome, type FocusHomeKey } from '../data/focusHome'
+import { getExtensionCurrentBadgeMinimumDays } from '../data/streakBadge'
 import {
   getExtensionProjects,
   type ExtensionProject,
@@ -48,6 +49,7 @@ import {
 import { getSessionDurationSeconds, type ExtensionTimerState, type SessionType } from '../timer/timerStorage'
 import { CircularProgress } from './CircularProgress'
 import { FOCUS_HOME_COLORS, FocusHomeSymbol, FocusMeIcon } from './FocusIdentity'
+import { StreakBadgeIcon } from './StreakBadgeIcon'
 
 const FALLBACK_TIMER_STATE: ExtensionTimerState = {
   status: 'idle',
@@ -107,6 +109,7 @@ export function App() {
   const [tasks, setTasks] = useState<ExtensionTask[]>([])
   const [projects, setProjects] = useState<ExtensionProject[]>([])
   const [focusHome, setFocusHome] = useState<FocusHomeKey | null>(null)
+  const [badgeMinimumDays, setBadgeMinimumDays] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [accountError, setAccountError] = useState<string | null>(null)
@@ -118,15 +121,18 @@ export function App() {
   }, [])
 
   const loadAccountData = useCallback(async () => {
-    const [nextTasks, nextProjects, nextFocusHome] = await Promise.all([
-      getExtensionTasks(),
-      getExtensionProjects(),
-      getExtensionFocusHome(),
-    ])
+    const [nextTasks, nextProjects, nextFocusHome, nextBadgeMinimumDays] =
+      await Promise.all([
+        getExtensionTasks(),
+        getExtensionProjects(),
+        getExtensionFocusHome(),
+        getExtensionCurrentBadgeMinimumDays(),
+      ])
 
     setTasks(nextTasks)
     setProjects(nextProjects)
     setFocusHome(nextFocusHome)
+    setBadgeMinimumDays(nextBadgeMinimumDays)
   }, [])
 
   useEffect(() => {
@@ -269,6 +275,7 @@ export function App() {
       setTasks([])
       setProjects([])
       setFocusHome(null)
+      setBadgeMinimumDays(null)
       setTimer(await setActiveTimerTask(null, null))
     } catch (error) {
       setAccountError(
@@ -306,13 +313,13 @@ export function App() {
           <p className="eyebrow">Focus — Horizon</p>
           <div className="header-title-row">
             <h1>Focus</h1>
-            {user && focusHome && (
+            {user && badgeMinimumDays !== null && (
               <span
                 className="header-focus-badge"
-                aria-label="Your FocushoMe badge"
-                title="Your FocushoMe"
+                aria-label="Your current Focus badge"
+                title="Your current Focus badge"
               >
-                <FocusHomeSymbol type={focusHome} size={24} />
+                <StreakBadgeIcon minimumDays={badgeMinimumDays} size={26} />
               </span>
             )}
           </div>
