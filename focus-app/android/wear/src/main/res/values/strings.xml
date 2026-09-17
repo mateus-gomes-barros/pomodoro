@@ -18,6 +18,10 @@
     <string name="notification_focus_complete">Focus complete. Time to take a break.</string>
     <string name="notification_short_break_complete">Short break complete. Ready to focus?</string>
     <string name="notification_long_break_complete">Long break complete. Ready to focus?</string>
+    <string name="notification_start_break">Start break</string>
+    <string name="notification_start_focus">Start focus</string>
+    <string name="notification_pause">Pause</string>
+    <string name="notification_end">End</string>
     <string name="tile_timer_name">Focus Pulse Timer</string>
     <string name="ongoing_timer_title">Focus — Pulse</string>
     <string name="ongoing_timer_channel">Active timer</string>
@@ -55,4 +59,8 @@
     <string name="pulse_identity_setting">FocushoMe</string>
     <string name="pulse_default_identity">Default identity</string>
     <string name="tile_awards_name">Focus Pulse Awards</string>
+    <string name="tile_awards_focus_home">FOCUShoMe</string>
+    <string name="tile_awards_badge">BADGE</string>
+    <string name="tile_awards_show_badge">badge ›</string>
+    <string name="tile_awards_show_personality">‹ personality</string>
 </resources>
