@@ -31,20 +31,11 @@ class PulseAwardsTileService : TileService() {
         val showBadge = getSharedPreferences(PREFERENCES, MODE_PRIVATE)
             .getBoolean(KEY_BADGE, false)
         val focusHome = FocusHomeKey.fromWireValue(snapshot?.focusHome)
-        val accent = focusHome?.let(::accentFor) ?: 0xFF34D399.toInt()
         val mainLabel = if (showBadge) {
             snapshot?.badgeName ?: "First Drop"
         } else {
             focusHome?.wireValue?.replaceFirstChar { it.uppercase() } ?: "FocushoMe"
         }
-        val eyebrow = getString(
-            if (showBadge) R.string.tile_awards_badge
-            else R.string.tile_awards_focus_home,
-        )
-        val hint = getString(
-            if (showBadge) R.string.tile_awards_show_personality
-            else R.string.tile_awards_show_badge,
-        )
         val imageId = if (showBadge) {
             badgeImageId(snapshot?.badgeLevel ?: 0)
         } else {
@@ -72,31 +63,23 @@ class PulseAwardsTileService : TileService() {
                     .build(),
             )
             .addContent(
-                ring(
-                    diameter = 178f,
-                    color = accent,
-                    innerDiameter = 158f,
-                    content = LayoutElementBuilders.Column.Builder()
-                        .setWidth(DimensionBuilders.expand())
-                        .setHeight(DimensionBuilders.expand())
-                        .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                        .addContent(spacer(25f))
-                        .addContent(text(eyebrow, 10f, 0x88FFFFFF.toInt()))
-                        .addContent(spacer(4f))
-                        .addContent(
-                            LayoutElementBuilders.Image.Builder()
-                                .setResourceId(imageId)
-                                .setWidth(DimensionBuilders.dp(76f))
-                                .setHeight(DimensionBuilders.dp(76f))
-                                .setContentScaleMode(LayoutElementBuilders.CONTENT_SCALE_MODE_FIT)
-                                .build(),
-                        )
-                        .addContent(text(mainLabel.take(22), 10f, 0xDDFFFFFF.toInt()))
-                        .addContent(spacer(4f))
-                        .addContent(text(hint, 10f, 0x88FFFFFF.toInt()))
-                        .build(),
-                ),
+                LayoutElementBuilders.Column.Builder()
+                    .setWidth(DimensionBuilders.expand())
+                    .setHeight(DimensionBuilders.expand())
+                    .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                    .addContent(spacer(12f))
+                    .addContent(
+                        LayoutElementBuilders.Image.Builder()
+                            .setResourceId(imageId)
+                            .setWidth(DimensionBuilders.dp(148f))
+                            .setHeight(DimensionBuilders.dp(148f))
+                            .setContentScaleMode(LayoutElementBuilders.CONTENT_SCALE_MODE_FIT)
+                            .build(),
+                    )
+                    .addContent(text(mainLabel.take(22), 10f, 0xCCFFFFFF.toInt()))
+                    .build(),
             )
+            .addContent(navigationArrow(showBadge))
             .build()
 
         return Futures.immediateFuture(
@@ -203,52 +186,34 @@ class PulseAwardsTileService : TileService() {
         "badge_2000" to R.drawable.ic_streak_badge_2000,
     )
 
-    private fun ring(
-        diameter: Float,
-        color: Int,
-        innerDiameter: Float,
-        content: LayoutElementBuilders.LayoutElement,
-    ): LayoutElementBuilders.LayoutElement =
-        LayoutElementBuilders.Box.Builder()
-            .setWidth(DimensionBuilders.dp(diameter))
-            .setHeight(DimensionBuilders.dp(diameter))
+    private fun navigationArrow(showBadge: Boolean): LayoutElementBuilders.LayoutElement {
+        val row = LayoutElementBuilders.Row.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
             .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-            .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-            .setModifiers(
-                ModifiersBuilders.Modifiers.Builder()
-                    .setBackground(
-                        ModifiersBuilders.Background.Builder()
-                            .setColor(ColorBuilders.argb(color))
-                            .setCorner(
-                                ModifiersBuilders.Corner.Builder()
-                                    .setRadius(DimensionBuilders.dp(diameter / 2f))
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                    .build(),
-            )
-            .addContent(
-                LayoutElementBuilders.Box.Builder()
-                    .setWidth(DimensionBuilders.dp(innerDiameter))
-                    .setHeight(DimensionBuilders.dp(innerDiameter))
-                    .setModifiers(
-                        ModifiersBuilders.Modifiers.Builder()
-                            .setBackground(
-                                ModifiersBuilders.Background.Builder()
-                                    .setColor(ColorBuilders.argb(0xFF07110C.toInt()))
-                                    .setCorner(
-                                        ModifiersBuilders.Corner.Builder()
-                                            .setRadius(DimensionBuilders.dp(innerDiameter / 2f))
-                                            .build(),
-                                    )
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                    .addContent(content)
-                    .build(),
-            )
+
+        if (showBadge) {
+            row.addContent(horizontalSpacer(10f))
+            row.addContent(text("‹", 22f, 0x99FFFFFF.toInt()))
+            row.addContent(expandingHorizontalSpacer())
+        } else {
+            row.addContent(expandingHorizontalSpacer())
+            row.addContent(text("›", 22f, 0x99FFFFFF.toInt()))
+            row.addContent(horizontalSpacer(10f))
+        }
+        return row.build()
+    }
+
+    private fun horizontalSpacer(width: Float) =
+        LayoutElementBuilders.Spacer.Builder()
+            .setWidth(DimensionBuilders.dp(width))
+            .setHeight(DimensionBuilders.dp(1f))
+            .build()
+
+    private fun expandingHorizontalSpacer() =
+        LayoutElementBuilders.Spacer.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.dp(1f))
             .build()
 
     private fun text(value: String, size: Float, color: Int) =
@@ -270,23 +235,8 @@ class PulseAwardsTileService : TileService() {
             .setHeight(DimensionBuilders.dp(height))
             .build()
 
-    private fun accentFor(key: FocusHomeKey): Int = when (key) {
-        FocusHomeKey.ASTER -> 0xFFA78BFA.toInt()
-        FocusHomeKey.ATLAS -> 0xFF4F8EF7.toInt()
-        FocusHomeKey.FORGE -> 0xFFF59E0B.toInt()
-        FocusHomeKey.PULSE -> 0xFFFB7185.toInt()
-        FocusHomeKey.LOOM -> 0xFF22D3EE.toInt()
-        FocusHomeKey.ORBIT -> 0xFF818CF8.toInt()
-        FocusHomeKey.TIDE -> 0xFF2DD4BF.toInt()
-        FocusHomeKey.EMBER -> 0xFFF97316.toInt()
-        FocusHomeKey.NOVA -> 0xFFFBBF24.toInt()
-        FocusHomeKey.PRISM -> 0xFFE879F9.toInt()
-        FocusHomeKey.VANGUARD -> 0xFFF43F5E.toInt()
-        FocusHomeKey.VERDANT -> 0xFF34D399.toInt()
-    }
-
     companion object {
-        private const val RESOURCES_VERSION = "5"
+        private const val RESOURCES_VERSION = "6"
         private const val ACTION_TOGGLE = "pulse_awards_toggle"
         private const val PREFERENCES = "pulse_awards_tile"
         private const val KEY_BADGE = "show_badge"
