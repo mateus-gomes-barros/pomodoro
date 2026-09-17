@@ -1,4 +1,5 @@
 import { showTimerCompleteNotification } from './notifications'
+import { completeTimerState } from '../timer/timerStore'
 import {
   TIMER_ALARM_NAME,
   readTimerState,
@@ -16,12 +17,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     return
   }
 
-  await writeTimerState({
-    ...state,
-    status: 'idle',
-    secondsLeft: 0,
-    endsAt: null,
-  })
-
+  await writeTimerState(completeTimerState(state))
   await showTimerCompleteNotification()
 })
