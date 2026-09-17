@@ -46,6 +46,13 @@ public class PomodoroServicePlugin extends Plugin {
         }
     }
 
+    public static void onWearActionReceived(String actionJson) {
+        if (instance == null) return;
+        com.getcapacitor.JSObject ret = new com.getcapacitor.JSObject();
+        ret.put("actionJson", actionJson);
+        instance.notifyListeners("onWearAction", ret);
+    }
+
     public static void onWearTimerStateReceived(
             com.google.android.gms.wearable.DataMap state
     ) {
