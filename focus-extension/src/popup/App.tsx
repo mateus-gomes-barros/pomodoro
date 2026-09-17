@@ -181,10 +181,11 @@ export function App() {
       setIsSigningIn(true)
       setAccountError(null)
       setAuthDiagnostic(null)
-      const session = await signInWithGoogle()
-      setUser(session?.user ?? null)
+      await signInWithGoogle()
+      const authState = await getAuthState()
+      setUser(authState.user)
 
-      if (session?.user) {
+      if (authState.user) {
         await loadAccountData()
       }
     } catch (error) {
