@@ -4,6 +4,7 @@ import {
   getTimerState,
   pauseTimer,
   resetTimer,
+  setActiveTimerTask,
   startTimer,
 } from './timerStore'
 import {
@@ -67,6 +68,14 @@ describe('extension timer engine', () => {
     expect(state.status).toBe('paused')
     expect(state.secondsLeft).toBe(20)
     expect(state.endsAt).toBeNull()
+  })
+
+  it('persists the active task and project context', async () => {
+    const state = await setActiveTimerTask('task-1', 'project-1')
+
+    expect(state.activeTaskId).toBe('task-1')
+    expect(state.activeProjectId).toBe('project-1')
+    expect(storage[TIMER_STORAGE_KEY]).toEqual(state)
   })
 
   it('reconstructs an expired running timer as ready for a new session', async () => {
