@@ -7,6 +7,10 @@
     "default_title": "Focus — Horizon",
     "default_popup": "index.html"
   },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "permissions": [
     "storage",
     "alarms",
