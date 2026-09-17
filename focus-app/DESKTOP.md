@@ -1,4 +1,4 @@
-# Focus — Horizon Desktop
+# Focus — Horizon Desktop 6.0
 
 The desktop edition reuses the same React/Vite application as Focus Horizon Web
 and adds a native shell with Tauri 2 for macOS and Windows.
