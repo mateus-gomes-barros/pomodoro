@@ -13,6 +13,7 @@ import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.mateusgomes.focusapp.pulse.R
 import com.mateusgomes.focusapp.pulse.sync.PulseFocusSnapshotStore
 import com.mateusgomes.focusapp.pulse.timer.FocusHomeKey
 
@@ -36,8 +37,14 @@ class PulseAwardsTileService : TileService() {
         } else {
             focusHome?.wireValue?.replaceFirstChar { it.uppercase() } ?: "FocushoMe"
         }
-        val eyebrow = if (showBadge) "INSÍGNIA" else "FOCUShoMe"
-        val hint = if (showBadge) "‹ personalidade" else "insígnia ›"
+        val eyebrow = getString(
+            if (showBadge) R.string.tile_awards_badge
+            else R.string.tile_awards_focus_home,
+        )
+        val hint = getString(
+            if (showBadge) R.string.tile_awards_show_personality
+            else R.string.tile_awards_show_badge,
+        )
 
         val layout = LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())
