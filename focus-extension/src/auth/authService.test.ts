@@ -35,7 +35,7 @@ beforeEach(() => {
     chrome: {
       identity: {
         getRedirectURL: vi.fn(() => 'https://extension-id.chromiumapp.org/auth'),
-        launchWebAuthFlow: vi.fn(),
+        launchWebAuthFlow: vi.fn(async () => undefined),
       },
     },
   })
@@ -57,9 +57,11 @@ describe('extension auth service', () => {
       error: null,
     })
 
-    vi.mocked(chrome.identity.launchWebAuthFlow).mockResolvedValue(
-      'https://extension-id.chromiumapp.org/auth#access_token=access&refresh_token=refresh',
-    )
+    Object.assign(chrome.identity, {
+      launchWebAuthFlow: vi.fn(async () =>
+        'https://extension-id.chromiumapp.org/auth#access_token=access&refresh_token=refresh',
+      ),
+    })
 
     setSession.mockResolvedValue({
       data: { session: { user: { id: 'user-1' } } },
