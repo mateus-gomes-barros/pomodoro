@@ -1,3 +1,4 @@
+import { performGoogleSignIn } from '../auth/authService'
 import {
   showHydrationNotification,
   showTimerCompleteNotification,
@@ -28,4 +29,23 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
   await writeTimerState(completeTimerState(state))
   await showTimerCompleteNotification()
+})
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type !== 'focus-auth-google') {
+    return false
+  }
+
+  void performGoogleSignIn()
+    .then(() => {
+      sendResponse({ ok: true })
+    })
+    .catch((error: unknown) => {
+      sendResponse({
+        ok: false,
+        error: error instanceof Error ? error.message : 'Google sign in failed.',
+      })
+    })
+
+  return true
 })
