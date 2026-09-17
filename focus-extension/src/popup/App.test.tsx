@@ -10,6 +10,7 @@ const {
   getHydrationReminder,
   setHydrationReminder,
   getAuthState,
+  getAuthDiagnostic,
   signInWithGoogle,
   signOutUser,
   getExtensionTasks,
@@ -23,6 +24,7 @@ const {
   getHydrationReminder: vi.fn(),
   setHydrationReminder: vi.fn(),
   getAuthState: vi.fn(),
+  getAuthDiagnostic: vi.fn(),
   signInWithGoogle: vi.fn(),
   signOutUser: vi.fn(),
   getExtensionTasks: vi.fn(),
@@ -46,6 +48,10 @@ vi.mock('../auth/authService', () => ({
   getAuthState,
   signInWithGoogle,
   signOutUser,
+}))
+
+vi.mock('../auth/authDiagnostics', () => ({
+  getAuthDiagnostic,
 }))
 
 vi.mock('../data/tasks', () => ({
@@ -119,6 +125,7 @@ describe('Focus Horizon popup', () => {
     })
     setHydrationReminder.mockImplementation(async (state) => state)
     getAuthState.mockResolvedValue({ session: null, user: null })
+    getAuthDiagnostic.mockResolvedValue(null)
     signOutUser.mockResolvedValue(undefined)
     getExtensionTasks.mockResolvedValue(tasks)
     getExtensionProjects.mockResolvedValue(projects)
@@ -195,6 +202,22 @@ describe('Focus Horizon popup', () => {
         intervalMinutes: 45,
       })
     })
+  })
+
+  it('shows a persisted OAuth failure after the popup reopens', async () => {
+    getAuthDiagnostic.mockResolvedValue({
+      stage: 'launch-web-auth-flow',
+      message: 'Authorization page could not be loaded.',
+      redirectTo: 'https://extension-id.chromiumapp.org/auth',
+      createdAt: '2026-09-17T22:00:00.000Z',
+    })
+
+    render(<App />)
+
+    expect(await screen.findByText(/launch-web-auth-flow/i)).toBeInTheDocument()
+    expect(
+      screen.getByText('https://extension-id.chromiumapp.org/auth'),
+    ).toBeInTheDocument()
   })
 
   it('offers Google sign in while preserving local mode', async () => {
