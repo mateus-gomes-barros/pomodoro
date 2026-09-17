@@ -40,4 +40,18 @@
     <string name="pulse_settings_body">Timer, vibration, automatic sessions and synchronization preferences.</string>
     <string name="pulse_no_next_task">No next task selected</string>
     <string name="pulse_back">Back</string>
+    <string name="pulse_daily_progress">%1$d of %2$d min today</string>
+    <string name="pulse_task_missing">Task unavailable</string>
+    <string name="pulse_task_sessions">%1$d of %2$d sessions</string>
+    <string name="pulse_complete_task">Complete task</string>
+    <string name="pulse_task_name">Task name</string>
+    <string name="pulse_dictate">Dictate</string>
+    <string name="pulse_save">Save</string>
+    <string name="pulse_completed">Completed</string>
+    <string name="pulse_in_progress">In progress</string>
+    <string name="pulse_vibration_setting">Vibration</string>
+    <string name="pulse_enabled">Enabled</string>
+    <string name="pulse_language_setting">Language</string>
+    <string name="pulse_identity_setting">FocushoMe</string>
+    <string name="pulse_default_identity">Default identity</string>
 </resources>
