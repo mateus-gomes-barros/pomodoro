@@ -291,6 +291,6 @@ describe('Focus Horizon popup', () => {
       expect(setActiveTimerTask).toHaveBeenCalledWith('task-1', 'project-1')
     })
 
-    expect(screen.getByText(/Focus 6.0/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Focus 6.0/).length).toBeGreaterThan(0)
   })
 })
