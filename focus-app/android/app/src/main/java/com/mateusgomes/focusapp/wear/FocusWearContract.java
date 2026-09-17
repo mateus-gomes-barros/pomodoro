@@ -7,6 +7,7 @@ public final class FocusWearContract {
     public static final String TIMER_COMMAND_PATH = "/focus/timer/command";
     public static final String TIMER_ACK_PATH = "/focus/timer/ack";
     public static final String SNAPSHOT_PATH = "/focus/v6/snapshot";
+    public static final String ACTION_PATH = "/focus/v6/action";
     public static final String CAPABILITY_PHONE = "focus_phone";
     public static final String CAPABILITY_WATCH = "focus_watch";
 
@@ -28,6 +29,7 @@ public final class FocusWearContract {
     public static final String KEY_ACK_VERSION = "ack_version";
     public static final String KEY_ACK_STATUS = "ack_status";
     public static final String KEY_SNAPSHOT_JSON = "snapshot_json";
+    public static final String KEY_ACTION_JSON = "action_json";
 
     public static final String SOURCE_PHONE = "phone";
     public static final String SOURCE_WATCH = "watch";
