@@ -442,15 +442,6 @@ export function App() {
               <p className="status-label">Focus account</p>
               <p className="status-value">{getDisplayName(user)}</p>
             </div>
-            <button
-              className="text-button"
-              type="button"
-              onClick={() => void handleSignOut()}
-              aria-label="Sign out"
-            >
-              <LogOut size={14} />
-              Sign out
-            </button>
           </div>
 
           <label className="task-control">
@@ -492,6 +483,16 @@ export function App() {
               {activeProject.emoji} {activeProject.name}
             </p>
           )}
+
+          <button
+            className="signout-button"
+            type="button"
+            onClick={() => void handleSignOut()}
+            aria-label="Sign out"
+          >
+            <LogOut size={15} />
+            Sign out of Focus
+          </button>
         </section>
       ) : (
         <section className="account-card signed-out-card" aria-label="Focus account">
