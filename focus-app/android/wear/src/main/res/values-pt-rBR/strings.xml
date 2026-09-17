@@ -13,6 +13,7 @@
     <string name="timer_minutes_value">%1$d min</string>
     <string name="timer_setup_done">Concluir</string>
     <string name="timer_project_label">PROJETO</string>
+    <string name="timer_select_project">Selecionar projeto</string>
     <string name="timer_no_project">Sem projeto</string>
     <string name="notification_channel_timer">Conclusão do timer</string>
     <string name="notification_channel_timer_description">Avisos silenciosos de conclusão do timer</string>
