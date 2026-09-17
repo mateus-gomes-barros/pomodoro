@@ -12,6 +12,8 @@
     <string name="session_long_break_short">Long</string>
     <string name="timer_minutes_value">%1$d min</string>
     <string name="timer_setup_done">Done</string>
+    <string name="timer_project_label">PROJECT</string>
+    <string name="timer_no_project">No project</string>
     <string name="notification_channel_timer">Timer completion</string>
     <string name="notification_channel_timer_description">Silent timer completion alerts</string>
     <string name="notification_timer_complete">Session complete</string>

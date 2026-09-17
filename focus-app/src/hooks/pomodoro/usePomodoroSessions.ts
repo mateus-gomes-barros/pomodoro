@@ -17,6 +17,10 @@ export function usePomodoroSessions() {
   return useQuery({
     queryKey: pomodoroSessionsQueryKey,
     queryFn: getPomodoroSessions,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 

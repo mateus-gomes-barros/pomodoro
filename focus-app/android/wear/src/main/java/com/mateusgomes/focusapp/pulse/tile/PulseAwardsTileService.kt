@@ -45,6 +45,11 @@ class PulseAwardsTileService : TileService() {
             if (showBadge) R.string.tile_awards_show_personality
             else R.string.tile_awards_show_badge,
         )
+        val imageId = if (showBadge) {
+            badgeImageId(snapshot?.badgeLevel ?: 0)
+        } else {
+            focusHomeImageId(focusHome)
+        }
 
         val layout = LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())
@@ -75,11 +80,19 @@ class PulseAwardsTileService : TileService() {
                         .setWidth(DimensionBuilders.expand())
                         .setHeight(DimensionBuilders.expand())
                         .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                        .addContent(spacer(46f))
+                        .addContent(spacer(25f))
                         .addContent(text(eyebrow, 10f, 0x88FFFFFF.toInt()))
-                        .addContent(spacer(8f))
-                        .addContent(text(mainLabel.take(22), if (showBadge) 19f else 23f, accent))
-                        .addContent(spacer(9f))
+                        .addContent(spacer(4f))
+                        .addContent(
+                            LayoutElementBuilders.Image.Builder()
+                                .setResourceId(imageId)
+                                .setWidth(DimensionBuilders.dp(76f))
+                                .setHeight(DimensionBuilders.dp(76f))
+                                .setContentScaleMode(LayoutElementBuilders.CONTENT_SCALE_MODE_FIT)
+                                .build(),
+                        )
+                        .addContent(text(mainLabel.take(22), 10f, 0xDDFFFFFF.toInt()))
+                        .addContent(spacer(4f))
                         .addContent(text(hint, 10f, 0x88FFFFFF.toInt()))
                         .build(),
                 ),
@@ -101,8 +114,72 @@ class PulseAwardsTileService : TileService() {
         Futures.immediateFuture(
             ResourceBuilders.Resources.Builder()
                 .setVersion(requestParams.version)
+                .apply {
+                    imageResources().forEach { (id, resourceId) ->
+                        addIdToImageMapping(
+                            id,
+                            ResourceBuilders.ImageResource.Builder()
+                                .setAndroidResourceByResId(
+                                    ResourceBuilders.AndroidImageResourceByResId.Builder()
+                                        .setResourceId(resourceId)
+                                        .build(),
+                                )
+                                .build(),
+                        )
+                    }
+                }
                 .build(),
         )
+
+    private fun focusHomeImageId(key: FocusHomeKey?): String =
+        "focushome_${key?.wireValue ?: "default"}"
+
+    private fun badgeImageId(level: Int): String = "badge_" + when {
+        level >= 2000 -> "infinity"
+        level >= 1500 -> "trophy"
+        level >= 1000 -> "crown"
+        level >= 750 -> "crystal"
+        level >= 600 -> "diamond"
+        level >= 200 -> "medal"
+        level >= 100 -> "star"
+        level >= 75 -> "moon"
+        level >= 50 -> "rocket"
+        level >= 30 -> "bolt"
+        level >= 14 -> "heart"
+        level >= 7 -> "fire"
+        level >= 3 -> "sprout"
+        else -> "drop"
+    }
+
+    private fun imageResources(): Map<String, Int> = mapOf(
+        "focushome_default" to R.drawable.ic_focus_pulse,
+        "focushome_aster" to R.drawable.ic_focushome_aster,
+        "focushome_atlas" to R.drawable.ic_focushome_atlas,
+        "focushome_forge" to R.drawable.ic_focushome_forge,
+        "focushome_pulse" to R.drawable.ic_focushome_pulse,
+        "focushome_loom" to R.drawable.ic_focushome_loom,
+        "focushome_orbit" to R.drawable.ic_focushome_orbit,
+        "focushome_tide" to R.drawable.ic_focushome_tide,
+        "focushome_ember" to R.drawable.ic_focushome_ember,
+        "focushome_nova" to R.drawable.ic_focushome_nova,
+        "focushome_prism" to R.drawable.ic_focushome_prism,
+        "focushome_vanguard" to R.drawable.ic_focushome_vanguard,
+        "focushome_verdant" to R.drawable.ic_focushome_verdant,
+        "badge_drop" to R.drawable.ic_badge_drop,
+        "badge_sprout" to R.drawable.ic_badge_sprout,
+        "badge_fire" to R.drawable.ic_badge_fire,
+        "badge_heart" to R.drawable.ic_badge_heart,
+        "badge_bolt" to R.drawable.ic_badge_bolt,
+        "badge_rocket" to R.drawable.ic_badge_rocket,
+        "badge_moon" to R.drawable.ic_badge_moon,
+        "badge_star" to R.drawable.ic_badge_star,
+        "badge_medal" to R.drawable.ic_badge_medal,
+        "badge_diamond" to R.drawable.ic_badge_diamond,
+        "badge_crystal" to R.drawable.ic_badge_crystal,
+        "badge_crown" to R.drawable.ic_badge_crown,
+        "badge_trophy" to R.drawable.ic_badge_trophy,
+        "badge_infinity" to R.drawable.ic_badge_infinity,
+    )
 
     private fun ring(
         diameter: Float,

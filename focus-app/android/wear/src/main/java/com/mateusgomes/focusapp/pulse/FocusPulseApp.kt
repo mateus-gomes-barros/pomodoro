@@ -59,6 +59,8 @@ import androidx.core.content.ContextCompat
 import androidx.wear.compose.material3.Text
 import com.mateusgomes.focusapp.pulse.sync.PulseFocusSnapshot
 import com.mateusgomes.focusapp.pulse.sync.PulseFocusSnapshotStore
+import com.mateusgomes.focusapp.pulse.sync.PulseProject
+import com.mateusgomes.focusapp.pulse.sync.PulseProjectSelectionStore
 import com.mateusgomes.focusapp.pulse.sync.PulseTask
 import com.mateusgomes.focusapp.pulse.sync.PulseWearDataLayer
 import com.mateusgomes.focusapp.pulse.sync.PulseWearListenerService
@@ -131,6 +133,15 @@ fun FocusPulseApp() {
                 task = task,
                 onFocus = {
                     if (task != null) {
+                        PulseProjectSelectionStore(context).save(
+                            task.projectId?.let { projectId ->
+                                PulseProject(
+                                    id = projectId,
+                                    name = task.projectName.orEmpty(),
+                                    color = null,
+                                )
+                            },
+                        )
                         PulseWearDataLayer(context).publishAction(
                             type = "select_task",
                             taskId = task.id,

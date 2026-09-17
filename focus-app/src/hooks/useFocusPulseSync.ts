@@ -80,6 +80,13 @@ export function useFocusPulseSync() {
         sessions: todaySessions.length,
         goalMinutes: settings.dailyFocusGoalMinutes,
       },
+      projects: (projects.data ?? [])
+        .filter((project) => project.status === 'active')
+        .map((project) => ({
+          id: project.id,
+          name: project.name,
+          color: project.color ?? null,
+        })),
       tasks: (tasks.data ?? []).filter((task) => !task.completed).slice(0, 40).map(
         (task) => ({
           id: task.id,
@@ -133,6 +140,10 @@ export function useFocusPulseSync() {
           usePomodoroStore.getState().setActiveTask(task.id)
           usePomodoroStore.getState().setActiveProject(task.projectId ?? null)
         }
+      }
+      if (action.type === 'select_project') {
+        usePomodoroStore.getState().setActiveTask(null)
+        usePomodoroStore.getState().setActiveProject(action.projectId || null)
       }
       if (action.type === 'complete_task' && action.taskId) {
         const task = tasks.data?.find((item) => item.id === action.taskId)

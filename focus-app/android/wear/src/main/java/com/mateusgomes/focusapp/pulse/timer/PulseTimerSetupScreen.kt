@@ -1,6 +1,7 @@
 package com.mateusgomes.focusapp.pulse.timer
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,14 +25,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Text
 import com.mateusgomes.focusapp.pulse.R
+import com.mateusgomes.focusapp.pulse.sync.PulseProject
 
 @Composable
 fun PulseTimerSetupScreen(
     session: PulseSession,
     durationMinutes: Int,
+    projects: List<PulseProject>,
+    selectedProjectId: String,
     accent: Color,
     onSessionChange: (PulseSession) -> Unit,
     onDurationChange: (Int) -> Unit,
+    onProjectChange: (PulseProject?) -> Unit,
     onDone: () -> Unit,
 ) {
     val range = when (session) {
@@ -108,6 +113,45 @@ fun PulseTimerSetupScreen(
                         onDurationChange((durationMinutes + 1).coerceAtMost(range.last))
                     },
                 )
+            }
+
+            val projectOptions = listOf<PulseProject?>(null) + projects
+            val selectedIndex = projectOptions.indexOfFirst {
+                it?.id.orEmpty() == selectedProjectId
+            }.coerceAtLeast(0)
+            Text(
+                text = stringResource(R.string.timer_project_label),
+                color = Color.White.copy(alpha = 0.42f),
+                fontSize = 8.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ValueButton(label = "‹", enabled = projectOptions.size > 1) {
+                    val next = if (selectedIndex <= 0) {
+                        projectOptions.lastIndex
+                    } else selectedIndex - 1
+                    onProjectChange(projectOptions[next])
+                }
+                Text(
+                    text = projectOptions[selectedIndex]?.name
+                        ?: stringResource(R.string.timer_no_project),
+                    color = accent,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .size(width = 82.dp, height = 20.dp)
+                        .basicMarquee(),
+                )
+                ValueButton(label = "›", enabled = projectOptions.size > 1) {
+                    val next = if (selectedIndex >= projectOptions.lastIndex) {
+                        0
+                    } else selectedIndex + 1
+                    onProjectChange(projectOptions[next])
+                }
             }
 
             Box(

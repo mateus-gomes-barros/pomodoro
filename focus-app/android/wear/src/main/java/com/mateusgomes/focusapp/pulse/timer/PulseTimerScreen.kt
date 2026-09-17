@@ -39,6 +39,8 @@ import androidx.core.content.ContextCompat
 import androidx.wear.compose.material3.Text
 import com.mateusgomes.focusapp.pulse.R
 import com.mateusgomes.focusapp.pulse.sync.PulseRemoteTimerStore
+import com.mateusgomes.focusapp.pulse.sync.PulseFocusSnapshotStore
+import com.mateusgomes.focusapp.pulse.sync.PulseProjectSelectionStore
 import com.mateusgomes.focusapp.pulse.sync.PulseWearDataLayer
 import com.mateusgomes.focusapp.pulse.sync.PulseWearListenerService
 import kotlinx.coroutines.delay
@@ -58,6 +60,8 @@ fun PulseTimerScreen(
     val persistence = remember(context) { PulseTimerPersistence(context) }
     val alarmScheduler = remember(context) { PulseTimerAlarmScheduler(context) }
     val wearDataLayer = remember(context) { PulseWearDataLayer(context) }
+    val focusSnapshotStore = remember(context) { PulseFocusSnapshotStore(context) }
+    val projectSelectionStore = remember(context) { PulseProjectSelectionStore(context) }
     val restored = remember(persistence, settings) { persistence.load(settings) }
 
     var sessionName by rememberSaveable { mutableStateOf(restored.session.name) }
@@ -95,6 +99,10 @@ fun PulseTimerScreen(
     var setupVisible by rememberSaveable { mutableStateOf(false) }
     val remoteStore = remember(context) { PulseRemoteTimerStore(context) }
     var remoteState by remember { mutableStateOf(remoteStore.load()) }
+    var projects by remember { mutableStateOf(focusSnapshotStore.load()?.projects.orEmpty()) }
+    var selectedProjectId by rememberSaveable {
+        mutableStateOf(projectSelectionStore.id())
+    }
     var remoteFocusHome by rememberSaveable {
         mutableStateOf(remoteState?.focusHome.orEmpty())
     }
@@ -102,13 +110,19 @@ fun PulseTimerScreen(
     DisposableEffect(context, remoteStore) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(receiverContext: Context?, intent: Intent?) {
-                remoteState = remoteStore.load()
+                if (intent?.action == PulseWearListenerService.ACTION_FOCUS_SNAPSHOT_UPDATED) {
+                    projects = focusSnapshotStore.load()?.projects.orEmpty()
+                } else {
+                    remoteState = remoteStore.load()
+                }
             }
         }
         ContextCompat.registerReceiver(
             context,
             receiver,
-            IntentFilter(PulseWearListenerService.ACTION_REMOTE_TIMER_UPDATED),
+            IntentFilter(PulseWearListenerService.ACTION_REMOTE_TIMER_UPDATED).apply {
+                addAction(PulseWearListenerService.ACTION_FOCUS_SNAPSHOT_UPDATED)
+            },
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
         onDispose {
@@ -285,6 +299,8 @@ fun PulseTimerScreen(
         PulseTimerSetupScreen(
             session = session,
             durationMinutes = currentMinutes,
+            projects = projects,
+            selectedProjectId = selectedProjectId,
             accent = accent,
             onSessionChange = { nextSession ->
                 sessionName = nextSession.name
@@ -301,6 +317,14 @@ fun PulseTimerScreen(
                 remainingSeconds = minutes * 60
                 statusName = PulseTimerStatus.IDLE.name
                 endsAtEpochMillis = 0L
+            },
+            onProjectChange = { project ->
+                projectSelectionStore.save(project)
+                selectedProjectId = project?.id.orEmpty()
+                wearDataLayer.publishAction(
+                    type = "select_project",
+                    projectId = project?.id.orEmpty(),
+                )
             },
             onDone = {
                 remainingSeconds = durationSecondsFor(session)
@@ -322,7 +346,8 @@ fun PulseTimerScreen(
     )
     val timerContextLabel = listOfNotNull(
         remoteState?.taskName?.takeIf { it.isNotBlank() },
-        remoteState?.projectName?.takeIf { it.isNotBlank() },
+        projectSelectionStore.name().takeIf { it.isNotBlank() }
+            ?: remoteState?.projectName?.takeIf { it.isNotBlank() },
     ).joinToString(" • ").ifBlank { sessionLabel }
 
     Box(

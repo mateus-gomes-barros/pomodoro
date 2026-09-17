@@ -149,8 +149,9 @@ export function addNotificationActionListener(
 export function addWearActionListener(
   callback: (action: {
     id: string
-    type: 'create_task' | 'complete_task' | 'select_task'
+    type: 'create_task' | 'complete_task' | 'select_task' | 'select_project'
     taskId?: string
+    projectId?: string
     title?: string
   }) => void,
 ) {

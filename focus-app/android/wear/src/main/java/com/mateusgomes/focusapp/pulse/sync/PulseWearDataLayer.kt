@@ -31,6 +31,7 @@ class PulseWearDataLayer(private val context: Context) {
             preferences.getLong(KEY_LAST_VERSION, 0L) + 1L,
         )
         val remoteState = PulseRemoteTimerStore(context).load()
+        val projectSelection = PulseProjectSelectionStore(context)
         val sessionId =
             remoteState?.sessionId?.takeIf { it.isNotBlank() }
                 ?: preferences.getString(KEY_SESSION_ID, null)
@@ -61,11 +62,11 @@ class PulseWearDataLayer(private val context: Context) {
             )
             putString(
                 PulseWearContract.KEY_PROJECT_ID,
-                remoteState?.projectId.orEmpty(),
+                projectSelection.id().ifBlank { remoteState?.projectId.orEmpty() },
             )
             putString(
                 PulseWearContract.KEY_PROJECT_NAME,
-                remoteState?.projectName.orEmpty(),
+                projectSelection.name().ifBlank { remoteState?.projectName.orEmpty() },
             )
             putString(PulseWearContract.KEY_FOCUS_HOME, focusHome?.wireValue.orEmpty())
             putString(PulseWearContract.KEY_SOURCE_DEVICE, PulseWearContract.SOURCE_WATCH)
@@ -99,6 +100,7 @@ class PulseWearDataLayer(private val context: Context) {
     fun publishAction(
         type: String,
         taskId: String = "",
+        projectId: String = "",
         title: String = "",
     ) {
         val now = System.currentTimeMillis()
@@ -106,6 +108,7 @@ class PulseWearDataLayer(private val context: Context) {
             .put("id", UUID.randomUUID().toString())
             .put("type", type)
             .put("taskId", taskId)
+            .put("projectId", projectId)
             .put("title", title)
             .put("createdAt", now)
             .toString()
