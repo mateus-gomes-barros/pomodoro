@@ -57,6 +57,7 @@ const FALLBACK_HYDRATION_STATE: HydrationReminderState = {
 }
 
 const HYDRATION_INTERVALS: HydrationInterval[] = [30, 45, 60, 90]
+const HORIZON_WEB_URL = 'https://pomodoro-1ktl-theta.vercel.app/'
 
 function formatTimer(seconds: number) {
   const safeSeconds = Math.max(0, seconds)
@@ -156,6 +157,14 @@ export function App() {
     return projects.find((project) => project.id === projectId) ?? null
   }, [activeTask, projects, timer.activeProjectId])
 
+  const visibleTasks = useMemo(() => {
+    if (!timer.activeProjectId) {
+      return tasks
+    }
+
+    return tasks.filter((task) => task.projectId === timer.activeProjectId)
+  }, [tasks, timer.activeProjectId])
+
   const handlePrimaryAction = async () => {
     if (timer.status === 'running') {
       setTimer(await pauseTimer())
@@ -169,11 +178,28 @@ export function App() {
     setTimer(await resetTimer())
   }
 
+  const handleProjectChange = async (projectId: string) => {
+    const nextProjectId = projectId || null
+    const currentTask =
+      tasks.find((item) => item.id === timer.activeTaskId) ?? null
+    const keepCurrentTask =
+      currentTask?.projectId === nextProjectId ? currentTask.id : null
+
+    setTimer(await setActiveTimerTask(keepCurrentTask, nextProjectId))
+  }
+
   const handleTaskChange = async (taskId: string) => {
     const task = tasks.find((item) => item.id === taskId) ?? null
     setTimer(
-      await setActiveTimerTask(task?.id ?? null, task?.projectId ?? null),
+      await setActiveTimerTask(
+        task?.id ?? null,
+        task?.projectId ?? timer.activeProjectId ?? null,
+      ),
     )
+  }
+
+  const handleOpenHorizon = async () => {
+    await chrome.tabs.create({ url: HORIZON_WEB_URL })
   }
 
   const handleGoogleSignIn = async () => {
@@ -238,6 +264,7 @@ export function App() {
           type="button"
           aria-label="Open Focus Horizon"
           title="Open Focus Horizon"
+          onClick={() => void handleOpenHorizon()}
         >
           <ExternalLink size={17} />
         </button>
@@ -299,6 +326,22 @@ export function App() {
           </div>
 
           <label className="task-control">
+            <span className="status-label">Active project</span>
+            <select
+              aria-label="Active project"
+              value={timer.activeProjectId ?? ''}
+              onChange={(event) => void handleProjectChange(event.target.value)}
+            >
+              <option value="">No project selected</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.emoji ? `${project.emoji} ` : ''}{project.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="task-control">
             <span className="status-label">Active task</span>
             <select
               aria-label="Active task"
@@ -306,7 +349,7 @@ export function App() {
               onChange={(event) => void handleTaskChange(event.target.value)}
             >
               <option value="">No task selected</option>
-              {tasks.map((task) => (
+              {visibleTasks.map((task) => (
                 <option key={task.id} value={task.id}>
                   {task.title}
                 </option>
