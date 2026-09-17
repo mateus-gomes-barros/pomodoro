@@ -37,6 +37,13 @@ beforeEach(() => {
         getRedirectURL: vi.fn(() => 'https://extension-id.chromiumapp.org/auth'),
         launchWebAuthFlow: vi.fn(async () => undefined),
       },
+      storage: {
+        local: {
+          get: vi.fn(async () => ({})),
+          set: vi.fn(async () => undefined),
+          remove: vi.fn(async () => undefined),
+        },
+      },
     },
   })
 })
