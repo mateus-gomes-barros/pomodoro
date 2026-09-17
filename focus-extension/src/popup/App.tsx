@@ -16,6 +16,10 @@ import {
   type ExtensionAuthState,
 } from '../auth/authService'
 import {
+  getAuthDiagnostic,
+  type AuthDiagnostic,
+} from '../auth/authDiagnostics'
+import {
   getExtensionProjects,
   type ExtensionProject,
 } from '../data/projects'
@@ -83,6 +87,7 @@ export function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [accountError, setAccountError] = useState<string | null>(null)
+  const [authDiagnostic, setAuthDiagnostic] = useState<AuthDiagnostic | null>(null)
 
   const refreshTimer = useCallback(async () => {
     const nextState = await getTimerState()
@@ -104,10 +109,16 @@ export function App() {
       refreshTimer(),
       getHydrationReminder(),
       getAuthState(),
+      getAuthDiagnostic(),
     ])
-      .then(async ([, hydrationState, authState]) => {
+      .then(async ([, hydrationState, authState, diagnostic]) => {
         setHydration(hydrationState)
         setUser(authState.user)
+        setAuthDiagnostic(diagnostic)
+
+        if (diagnostic) {
+          setAccountError(`${diagnostic.stage}: ${diagnostic.message}`)
+        }
 
         if (authState.user) {
           await loadAccountData()
@@ -169,6 +180,7 @@ export function App() {
     try {
       setIsSigningIn(true)
       setAccountError(null)
+      setAuthDiagnostic(null)
       const session = await signInWithGoogle()
       setUser(session?.user ?? null)
 
@@ -176,8 +188,14 @@ export function App() {
         await loadAccountData()
       }
     } catch (error) {
+      const diagnostic = await getAuthDiagnostic()
+      setAuthDiagnostic(diagnostic)
       setAccountError(
-        error instanceof Error ? error.message : 'Could not sign in with Google.',
+        diagnostic
+          ? `${diagnostic.stage}: ${diagnostic.message}`
+          : error instanceof Error
+            ? error.message
+            : 'Could not sign in with Google.',
       )
     } finally {
       setIsSigningIn(false)
@@ -387,7 +405,15 @@ export function App() {
         </label>
       </section>
 
-      {accountError && <p className="account-error">{accountError}</p>}
+      {accountError && (
+        <div className="account-error" role="alert">
+          <strong>Google sign-in failed</strong>
+          <span>{accountError}</span>
+          {authDiagnostic && (
+            <code className="auth-redirect">{authDiagnostic.redirectTo}</code>
+          )}
+        </div>
+      )}
 
       <footer className="popup-footer">
         Timer and reminders work even without signing in.
