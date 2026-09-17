@@ -18,6 +18,10 @@
     <string name="notification_focus_complete">Foco concluído. Hora de fazer uma pausa.</string>
     <string name="notification_short_break_complete">Pausa curta concluída. Vamos focar?</string>
     <string name="notification_long_break_complete">Pausa longa concluída. Vamos focar?</string>
+    <string name="notification_start_break">Iniciar pausa</string>
+    <string name="notification_start_focus">Iniciar foco</string>
+    <string name="notification_pause">Pausar</string>
+    <string name="notification_end">Encerrar</string>
     <string name="ongoing_timer_title">Focus — Pulse</string>
     <string name="ongoing_timer_channel">Timer ativo</string>
     <string name="ongoing_timer_channel_description">Mostra o timer ativo do Focus no relógio</string>
@@ -54,4 +58,8 @@
     <string name="pulse_identity_setting">FocushoMe</string>
     <string name="pulse_default_identity">Identidade padrão</string>
     <string name="tile_awards_name">Prêmios Focus Pulse</string>
+    <string name="tile_awards_focus_home">FOCUShoMe</string>
+    <string name="tile_awards_badge">INSÍGNIA</string>
+    <string name="tile_awards_show_badge">insígnia ›</string>
+    <string name="tile_awards_show_personality">‹ personalidade</string>
 </resources>
