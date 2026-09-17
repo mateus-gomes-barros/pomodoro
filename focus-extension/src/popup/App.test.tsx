@@ -7,6 +7,8 @@ const {
   pauseTimer,
   resetTimer,
   setActiveTimerTask,
+  switchTimerSession,
+  toggleTimerSound,
   getHydrationReminder,
   setHydrationReminder,
   getAuthState,
@@ -15,12 +17,15 @@ const {
   signOutUser,
   getExtensionTasks,
   getExtensionProjects,
+  getExtensionFocusHome,
 } = vi.hoisted(() => ({
   getTimerState: vi.fn(),
   startTimer: vi.fn(),
   pauseTimer: vi.fn(),
   resetTimer: vi.fn(),
   setActiveTimerTask: vi.fn(),
+  switchTimerSession: vi.fn(),
+  toggleTimerSound: vi.fn(),
   getHydrationReminder: vi.fn(),
   setHydrationReminder: vi.fn(),
   getAuthState: vi.fn(),
@@ -29,6 +34,7 @@ const {
   signOutUser: vi.fn(),
   getExtensionTasks: vi.fn(),
   getExtensionProjects: vi.fn(),
+  getExtensionFocusHome: vi.fn(),
 }))
 
 vi.mock('../timer/timerStore', () => ({
@@ -37,6 +43,8 @@ vi.mock('../timer/timerStore', () => ({
   pauseTimer,
   resetTimer,
   setActiveTimerTask,
+  switchTimerSession,
+  toggleTimerSound,
 }))
 
 vi.mock('../reminders/reminderStore', () => ({
@@ -62,6 +70,10 @@ vi.mock('../data/projects', () => ({
   getExtensionProjects,
 }))
 
+vi.mock('../data/focusHome', () => ({
+  getExtensionFocusHome,
+}))
+
 import { App } from './App'
 
 const idleState = {
@@ -69,8 +81,16 @@ const idleState = {
   sessionType: 'work' as const,
   secondsLeft: 1500,
   endsAt: null,
+  currentSessionCount: 0,
   activeTaskId: null,
   activeProjectId: null,
+  settings: {
+    workDuration: 25,
+    shortBreakDuration: 5,
+    longBreakDuration: 15,
+    sessionsUntilLongBreak: 4,
+    soundEnabled: true,
+  },
 }
 
 const user = {
@@ -122,6 +142,16 @@ describe('Focus Horizon popup', () => {
       secondsLeft: 1490,
     })
     resetTimer.mockResolvedValue(idleState)
+    switchTimerSession.mockImplementation(async (sessionType) => ({
+      ...idleState,
+      sessionType,
+      secondsLeft:
+        sessionType === 'work' ? 1500 : sessionType === 'short_break' ? 300 : 900,
+    }))
+    toggleTimerSound.mockResolvedValue({
+      ...idleState,
+      settings: { ...idleState.settings, soundEnabled: false },
+    })
     setActiveTimerTask.mockImplementation(async (taskId, projectId) => ({
       ...idleState,
       activeTaskId: taskId,
@@ -137,6 +167,7 @@ describe('Focus Horizon popup', () => {
     signOutUser.mockResolvedValue(undefined)
     getExtensionTasks.mockResolvedValue(tasks)
     getExtensionProjects.mockResolvedValue(projects)
+    getExtensionFocusHome.mockResolvedValue('verdant')
   })
 
   it('renders the persisted focus timer', async () => {
@@ -144,7 +175,7 @@ describe('Focus Horizon popup', () => {
 
     expect(await screen.findByText('25:00')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /start focus/i }),
+      screen.getByRole('button', { name: /start timer/i }),
     ).toBeInTheDocument()
   })
 
@@ -152,14 +183,14 @@ describe('Focus Horizon popup', () => {
     render(<App />)
 
     fireEvent.click(
-      await screen.findByRole('button', { name: /start focus/i }),
+      await screen.findByRole('button', { name: /start timer/i }),
     )
 
     await waitFor(() => {
       expect(startTimer).toHaveBeenCalledTimes(1)
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /pause focus/i }))
+    fireEvent.click(screen.getByRole('button', { name: /pause timer/i }))
 
     await waitFor(() => {
       expect(pauseTimer).toHaveBeenCalledTimes(1)
