@@ -7,8 +7,8 @@
     "default_title": "Focus — Horizon",
     "default_popup": "index.html",
     "default_icon": {
-      "16": "focus-icon-16.png",
-      "32": "focus-icon-32.png"
+      "16": "focus-icon-128.png",
+      "32": "focus-icon-128.png"
     }
   },
   "background": {
@@ -25,9 +25,9 @@
     "https://fjixvpdfbvfwgzzjlphb.supabase.co/*"
   ],
   "icons": {
-    "16": "focus-icon-16.png",
-    "32": "focus-icon-32.png",
-    "48": "focus-icon-48.png",
+    "16": "focus-icon-128.png",
+    "32": "focus-icon-128.png",
+    "48": "focus-icon-128.png",
     "128": "focus-icon-128.png"
   }
 }
