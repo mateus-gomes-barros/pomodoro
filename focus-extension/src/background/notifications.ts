@@ -1,4 +1,4 @@
-const NOTIFICATION_ICON = 'focus-icon-128.png'
+const NOTIFICATION_ICON = 'focus-clock-approved-128.png'
 
 export async function showTimerCompleteNotification() {
   await chrome.notifications.create('focus-timer-complete', {
